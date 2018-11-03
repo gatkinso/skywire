@@ -87,6 +87,30 @@ TEST_F(StencilUnitTest, read_file)
     ASSERT_EQ(true, rc);
 }
 
+TEST_F(StencilUnitTest, read_string)
+{
+    std::string json_str = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
+    skyloupe::Stencil stencil;
+
+    bool rc = stencil.read_string(json_str);
+    ASSERT_EQ(true, rc);
+}
+
+TEST_F(StencilUnitTest, write_string)
+{
+    std::string json_str_in = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
+    std::string json_str_out;
+    skyloupe::Stencil stencil;
+
+    bool rc = stencil.read_string(json_str_in);
+    ASSERT_EQ(true, rc);
+
+    rc = stencil.write_string(json_str_out);
+    ASSERT_EQ(true, rc);
+
+    ASSERT_EQ(json_str_in, json_str_out);
+}
+
 TEST_F(StencilUnitTest, read_file_Doesnt_Exist)
 {
     skyloupe::Stencil stencil;

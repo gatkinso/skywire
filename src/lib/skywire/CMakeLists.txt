@@ -23,13 +23,19 @@ set(_INC_DIRS ${TARGET_INC_DIR}
 
 include_directories(${TARGETNAME} ${_INC_DIRS})
 
-set(_SOURCES ${TARGETNAME}.cpp)
+set(_SOURCES ${TARGETNAME}.cpp
+             cppgenerator.cpp
+             generator.cpp)
 
-set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h)
+set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
+             ${TARGET_INC_DIR}/cppgenerator.h
+             ${TARGET_INC_DIR}/generator.h
+             ${TARGET_INC_DIR}/generators.h
+             ${TARGET_INC_DIR}/protos.h)
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_SOURCES})
 
-target_link_libraries(${TARGETNAME} skywireproto)
+target_link_libraries(${TARGETNAME} skywireproto stencil)
 
 set_target_properties(${TARGETNAME} PROPERTIES FOLDER "Static Libs")
 

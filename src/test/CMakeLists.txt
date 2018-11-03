@@ -20,17 +20,18 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/include)
 
 set(UNIT_TESTS
+                generator_unit_test.cpp
                 stencil_unit_test.cpp)
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
 
 add_executable(${TARGETNAME} main.cpp ${UNIT_TESTS})
 
-target_link_libraries(${TARGETNAME} stencil GTest::GTest GTest::Main)
+target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main)
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
-add_dependencies(${TARGETNAME} stencil)
+add_dependencies(${TARGETNAME} stencil skywire)
 
 install(TARGETS ${TARGETNAME} DESTINATION ${CMAKE_INSTALL_DIR}/bin)
 install(FILES ${UNIT_TEST_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

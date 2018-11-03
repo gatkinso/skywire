@@ -14,13 +14,17 @@
 //
 
 #include <iostream>
+#include <memory>
 #include "stencil/stencil.h"
 #include "skywire.h"
+#include "generators.h"
+
+static std::string language_key("language");
+static std::string cpp_str("C++");
 
 bool skywire_init()
 {
 	std::cout << "Skywire initializing!" << std::endl;
-    skyloupe::Stencil stencil;
 
     return true;
 }
@@ -28,6 +32,38 @@ bool skywire_init()
 bool skywire_fini()
 {
     std::cout << "Skywire shutting down!" << std::endl;
+
+    return true;
+}
+
+bool parse_file(const std::string pathname, int& error)
+{
+    skyloupe::Stencil stencil;
+
+    if (false == stencil.read_file(pathname))
+    {
+        error = 1;
+        std::cerr << "Error reading file: " << pathname << std::endl;
+        return false;
+    }
+
+    std::string lang = stencil.get_value_string(language_key);
+
+    // temporary - replace with factory, dynamic language definition via json
+    std::unique_ptr<skyloupe::Generator> genny;
+    if (lang == cpp_str)
+    {
+        genny = std::make_unique<skyloupe::CppGenerator>(stencil);
+    }
+    else
+    {
+        error = 2;
+        std::cerr << "Unsupported language: " << lang << std::endl;
+        return false;
+    }
+    // end temporary 
+
+
 
     return true;
 }

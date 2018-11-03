@@ -17,7 +17,9 @@
 
 #include <vector>
 #include <string>
+#pragma warning(disable:4800)  
 #include "stencil.pb.h"
+#pragma warning(default:4800)  
 
 namespace skyloupe
 {
@@ -27,27 +29,30 @@ class Stencil
 public:
     Stencil() { };
 
-    bool read_file(const std::string& pathname);
-    bool write_file(const std::string& pathname) const;
+    virtual bool read_file(const std::string& pathname);
+    virtual bool write_file(const std::string& pathname) const;
 
-    std::vector<std::string> get_value(const::std::string& key, const std::string nomatch = "@NOTFOUND");
-    std::string get_value_string(const::std::string& key, const std::string nomatch = "@NOTFOUND");
-    bool get_value_int(const::std::string& key, int& value, int nomatch = 0);
-    bool get_value_bool(const::std::string& key, bool& value, bool = false);
-    bool get_value_member(uint32_t key, std::string& type_val, std::string& name_val);
+    virtual bool read_string(const std::string& json_str);
+    virtual bool write_string(std::string& json_str) const;
 
-    bool set_value(const::std::string& key, const std::string& value);
-    bool set_value_string(const::std::string& key, const std::string& value);
-    bool set_value_int(const::std::string& key, int value);
-    bool set_value_bool(const::std::string& key, bool value);
-    bool set_value_member(uint32_t key, const std::string& type, const std::string& name);
+    virtual std::vector<std::string> get_value(const::std::string& key, const std::string nomatch = "@NOTFOUND");
+    virtual std::string get_value_string(const::std::string& key, const std::string nomatch = "@NOTFOUND");
+    virtual bool get_value_int(const::std::string& key, int& value, int nomatch = 0);
+    virtual bool get_value_bool(const::std::string& key, bool& value, bool = false);
+    virtual bool get_value_member(uint32_t key, std::string& type_val, std::string& name_val);
 
-    bool clear();
-    bool clear_key(const::std::string& key);
-    bool clear_key_string(const::std::string& key);
-    bool clear_key_int(const::std::string& key);
-    bool clear_key_bool(const::std::string& key);
-    bool clear_key_member(uint32_t key);
+    virtual bool set_value(const::std::string& key, const std::string& value);
+    virtual bool set_value_string(const::std::string& key, const std::string& value);
+    virtual bool set_value_int(const::std::string& key, int value);
+    virtual bool set_value_bool(const::std::string& key, bool value);
+    virtual bool set_value_member(uint32_t key, const std::string& type, const std::string& name);
+
+    virtual bool clear();
+    virtual bool clear_key(const::std::string& key);
+    virtual bool clear_key_string(const::std::string& key);
+    virtual bool clear_key_int(const::std::string& key);
+    virtual bool clear_key_bool(const::std::string& key);
+    virtual bool clear_key_member(uint32_t key);
 
     const skyloupe::skywireproto::Stencil& get_proto() const { return stencil_proto_; }
     void set_proto(const skyloupe::skywireproto::Stencil& settings) { stencil_proto_.CopyFrom(settings); }

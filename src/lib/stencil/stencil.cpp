@@ -47,13 +47,13 @@ bool Stencil::read_file(const std::string& pathname)
 
         std::string str(memblock);
 
-        auto ret = google::protobuf::util::JsonStringToMessage(str, &stencil_proto_);
+        auto ret = read_string(str);
 
         delete[] memblock;
         
-        if (ret != google::protobuf::util::Status::OK)
+        if (ret == false)
         {
-           stencil_proto_.Clear();
+            stencil_proto_.Clear();
             return false;
         }
     }
@@ -75,9 +75,9 @@ bool Stencil::write_file(const std::string& pathname) const
     try
     {
         std::string json_str;
-        auto ret = google::protobuf::util::MessageToJsonString(stencil_proto_, &json_str);
+        auto ret = write_string(json_str);
 
-        if (ret != google::protobuf::util::Status::OK)
+        if (ret == false)
         {
             return false;
         }
@@ -92,6 +92,55 @@ bool Stencil::write_file(const std::string& pathname) const
         file.write(json_str.c_str(), json_str.size());
 
         file.close();
+    }
+    catch (std::ofstream::failure e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Stencil::read_string(const std::string& json_str)
+{
+    if (json_str.length() == 0)
+    {
+        return false;
+    }
+
+    try
+    {
+        auto ret = google::protobuf::util::JsonStringToMessage(json_str, &stencil_proto_);
+
+        if (ret != google::protobuf::util::Status::OK)
+        {
+            stencil_proto_.Clear();
+            return false;
+        }
+    }
+    catch (std::ifstream::failure e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Stencil::write_string(std::string& json_str) const
+{
+    if (stencil_proto_.IsInitialized() == false)
+    {
+        return false;
+    }
+
+    try
+    {
+        auto ret = google::protobuf::util::MessageToJsonString(stencil_proto_, &json_str);
+
+        if (ret != google::protobuf::util::Status::OK)
+        {
+            return false;
+        }
     }
     catch (std::ofstream::failure e)
     {
@@ -454,7 +503,7 @@ bool Stencil::get_value_member(uint32_t key, std::string& type_val, std::string&
 
 bool Stencil::clear_key_member(uint32_t key)
 {
-    int ret = stencil_proto_.mutable_members()->erase(key);
+    size_t ret = stencil_proto_.mutable_members()->erase(key);
     if (ret == 0)
         return false;
     return true;
