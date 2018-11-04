@@ -18,10 +18,10 @@
 namespace skyloupe
 {
 
-bool CppGenerator::do_generate(int& error)
+bool CppGenerator::do_generate(int& errorcode)
 {
     std::cout << "Generating C++" << std::endl;
-    error = 0;
+    errorcode = 0;
     return true;
 }
 

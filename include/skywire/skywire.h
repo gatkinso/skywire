@@ -15,8 +15,9 @@
 
 #pragma once
 
-bool skywire_init();
-
-bool skywire_fini();
-
-bool parse_file(const std::string pathname, int& error);
+namespace skyloupe
+{
+    bool skywire_init();
+    bool skywire_fini();
+    bool process_file(const std::string pathname, int& error);
+}

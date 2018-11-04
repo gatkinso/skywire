@@ -15,14 +15,18 @@
 
 set(TARGETNAME wiregen)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/3rd_party/qwikpirate/include)
 
-set(_SOURCES main.cpp) 
+set(_SOURCES main.cpp)
+
+set(EXAMPLE_MESSAGE_JSON ${PROJECT_SOURCE_DIR}/cfg/cpp.testspace.MyTestClass.json)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
-add_dependencies(${TARGETNAME} skywire)
+add_dependencies(${TARGETNAME} skywire skywireproto cli)
 
-target_link_libraries(${TARGETNAME} skywire skywireproto)
+target_link_libraries(${TARGETNAME} skywire skywireproto cli)
 
 install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_DIR}/bin)
+install(FILES ${EXAMPLE_MESSAGE_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

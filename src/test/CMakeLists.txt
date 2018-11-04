@@ -21,6 +21,7 @@ include_directories(
 
 set(UNIT_TESTS
                 generator_unit_test.cpp
+                processor_unit_test.cpp
                 stencil_unit_test.cpp)
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)

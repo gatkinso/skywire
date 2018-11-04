@@ -1,0 +1,51 @@
+//
+//   Copyright (C) 2017 Skyloupe, LLC
+//   
+//   Licensed under the Apache License, Version 2.0 (the "License").
+//   You may not use this file except in compliance with the License.
+//   A copy of the License is located at
+//   
+//   https://www.apache.org/licenses/LICENSE-2.0.html
+//   
+//   or in the "license" file accompanying this file. This file is distributed
+//   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+//   express or implied. See the License for the specific language governing
+//   permissions and limitations under the License.
+//
+
+#include "processor.h"
+
+namespace skyloupe
+{
+
+bool Processor::process_file(const std::string pathname, int& errorcode)
+{
+    bool success = false;
+    if (false == stencil_.read_file(pathname))
+    {
+        errorcode = 1;
+        std::cerr << "Error reading file: " << pathname << std::endl;
+        return success;
+    }
+
+    std::string lang = stencil_.get_value_string(language_key);
+
+    // temporary - replace with factory, dynamic language definition via json
+    std::unique_ptr<skyloupe::Generator> genny;
+    if (lang == cpp_str)
+    {
+        genny = std::make_unique<skyloupe::CppGenerator>(stencil_);
+        success = genny->do_generate(errorcode);
+    }
+    else
+    {
+        errorcode = 2;
+        std::cerr << "Unsupported language: " << lang << std::endl;
+        return success;
+    }
+    // end temporary 
+
+    return success;
+}
+
+}

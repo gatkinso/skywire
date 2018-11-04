@@ -1,0 +1,26 @@
+{
+   "stringValues":{  
+      "classname":"MyTestClass",
+      "namespace":"testspace",
+      "language":"C++"
+   },
+   "members":{  
+      "100":{  
+         "type":"float",
+         "name":"m_myfloat"
+      },    
+      "200":{  
+         "type":"int",
+         "name":"m_myint"
+      },
+      "201":{  
+         "type":"int",
+         "name":"m_myint2"
+      }
+   },
+   "includes":[  
+      "\u003cheader1.h\u003e",
+      "\u003cheader2.h\u003e",
+      "\u003cheader3.h\u003e"
+   ]
+}

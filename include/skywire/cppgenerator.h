@@ -27,7 +27,7 @@ public:
     CppGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~CppGenerator() {}
 
-    virtual bool do_generate(int& error);
+    virtual bool do_generate(int& errorcode);
 };
 
 }

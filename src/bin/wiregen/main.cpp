@@ -14,11 +14,100 @@
 //
 
 #include <iostream>
+#include <string>
+#include "argv.h"
 #include "skywire/skywire.h"
+
+using namespace skyloupe;
+
+qwikpirate::ArgVee cmdargs;
+std::string config_pathname = "settings.json";
+std::string message_pathname;
+
+void cli_callback(const std::string& flag, const std::string& value, void* param)
+{
+    if (flag.compare("--help") == 0)
+    {
+        std::cout << "Use:  wiregen  (no paramters)       -- defaults to using settings.json" << std::endl
+            << "      wiregen --version             -- prints version and exits" << std::endl
+            << "      wiregen --config filename     -- launches using fiename for configuration file" << std::endl
+            << "      wiregen --input filename      -- launches using filename for input" << std::endl;
+        exit(0);
+    }
+
+    if (flag.compare("--version") == 0)
+    {
+        std::cout << "TODO not yet implemented" << std::endl;
+        exit(0);
+    }
+
+    if (flag.compare("--config") == 0)
+    {
+        if (false == value.empty())
+        {
+            config_pathname = value;
+        }
+        else
+        {
+            std::cout << "Need a file name for --config switch" << std::endl;
+        }
+    }
+
+    if (flag.compare("--input") == 0)
+    {
+        if (false == value.empty())
+        {
+            message_pathname = value;
+        }
+        else
+        {
+            std::cout << "Need a file name for --input switch" << std::endl;
+        }
+    }
+}
+
+bool process_cmd_line(int argc, const char* argv[])
+{
+    std::vector<std::string> cli_errors_;
+
+    cmdargs.setOption("--help", true, true, cli_callback);
+    cmdargs.setOption("--version", true, true, cli_callback);
+    cmdargs.setOption("--config", true, false, cli_callback);
+    cmdargs.setOption("--input", true, false, cli_callback);
+
+    bool ret = cmdargs.parse(argc, argv, cli_errors_);
+
+    cmdargs.apply();
+
+    return ret;
+}
 
 int main(int argc, const char* argv[])
 {
-	skywire_init();
+    bool success = false;
+    int errorcode = -1;
+
+    success = process_cmd_line(argc, argv);
+    if (false == success)
+    {
+        std::cout << "Invalid parameters" << std::endl;
+        return success;
+    }
+
+	skywire_init(); 
+
+    success = process_file(message_pathname, errorcode);
+    if (success == true)
+    {
+        std::cout << "Successful process: " << message_pathname << std::endl;
+    }
+    else
+    {
+        std::cout << "Failure processing: " << message_pathname << std::endl;
+        std::cout << "Error number: " << errorcode << std::endl;
+    }
+
     skywire_fini();
+
 	return 0;
 }
