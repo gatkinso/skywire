@@ -39,6 +39,7 @@ protected:
     virtual bool hdr_namespace(std::string& str, int& errorcode);
     virtual bool hdr_classname(std::string& str, int& errorcode);
     virtual bool hdr_public(std::string& str, int& errorcode);
+    virtual bool hdr_private(std::string& str, int& errorcode);
     virtual bool hdr_cons(std::string& str, int& errorcode);
     virtual bool hdr_des(std::string& str, int& errorcode);
     virtual bool hdr_functions(std::string& str, int& errorcode);

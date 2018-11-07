@@ -49,6 +49,7 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_cons(header_string, errorcode);
     hdr_des(header_string, errorcode);
     hdr_functions(header_string, errorcode);
+    hdr_private(header_string, errorcode);
     hdr_members(header_string, errorcode);
     hdr_classend(header_string, errorcode);
     hdr_namespaceend(header_string, errorcode);
@@ -91,10 +92,16 @@ bool CppGenerator::hdr_sentry(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_includes(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("include_str");
-    std::stringstream ss;
+    std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
 
-    ss << value_str << std::endl;
+    if (values[0] == "@NOTFOUND")
+        return false;
+
+    std::stringstream ss;
+    for (auto& item : values)
+    {
+        ss << "#include " << item << std::endl;
+    }
 
     str.append(ss.str());
 
@@ -145,6 +152,18 @@ bool CppGenerator::hdr_public(std::string& str, int& errorcode)
     return true;
 }
 
+bool CppGenerator::hdr_private(std::string& str, int& errorcode)
+{
+    std::string value_str = lang_stencil_.get_value_string("private_str");
+    std::stringstream ss;
+
+    ss << value_str << std::endl;
+
+    str.append(ss.str());
+
+    return true;
+}
+
 bool CppGenerator::hdr_cons(std::string& str, int& errorcode)
 {
     std::string template_str = lang_stencil_.get_value_string("cons_str");
@@ -179,10 +198,19 @@ bool CppGenerator::hdr_des(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_functions(std::string& str, int& errorcode)
 {
-    std::string value_str = "        //functions";
-    std::stringstream ss;
+    std::string indent_str = lang_stencil_.get_value_string("indent_str");
 
-    ss << value_str << std::endl;
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        return false;
+    }
+
+    std::stringstream ss;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        ss << indent_str << indent_str << member.second.type() << " " << "Get_" << member.second.name() << "() const { return " << member.second.name() << " };" << std::endl;
+        ss << indent_str << indent_str << "void " << "Set_" << member.second.name() << "(const " << member.second.type() << " _in_" << member.second.name() << ") { " << member.second.name() << " = " << "_in_" << member.second.name() << "; }" << std::endl << std::endl;
+    }
 
     str.append(ss.str());
 
@@ -191,10 +219,18 @@ bool CppGenerator::hdr_functions(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_members(std::string& str, int& errorcode)
 {
-    std::string value_str = "        //memebers";
-    std::stringstream ss;
+    std::string indent_str = lang_stencil_.get_value_string("indent_str");
 
-    ss << value_str << std::endl;
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        return false;
+    }
+
+    std::stringstream ss;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        ss << indent_str << indent_str << member.second.type() << " " << member.second.name() << ";" << std::endl;
+    }
 
     str.append(ss.str());
 
