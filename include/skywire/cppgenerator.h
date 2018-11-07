@@ -24,10 +24,29 @@ namespace skyloupe
 class CppGenerator : public Generator
 {
 public:
-    CppGenerator(Stencil& stencil) : Generator(stencil) {}
+    CppGenerator(Stencil& stencil);
     virtual ~CppGenerator() {}
 
-    virtual bool do_generate(int& errorcode);
+    virtual bool generate(int& errorcode);
+
+protected:
+    virtual bool do_header(int& errorcode);
+    virtual bool do_implementation(int& errorcode);
+
+    virtual bool hdr_banner(std::string& str, int& errorcode);
+    virtual bool hdr_sentry(std::string& str, int& errorcode);
+    virtual bool hdr_includes(std::string& str, int& errorcode);
+    virtual bool hdr_namespace(std::string& str, int& errorcode);
+    virtual bool hdr_classname(std::string& str, int& errorcode);
+    virtual bool hdr_public(std::string& str, int& errorcode);
+    virtual bool hdr_cons(std::string& str, int& errorcode);
+    virtual bool hdr_des(std::string& str, int& errorcode);
+    virtual bool hdr_functions(std::string& str, int& errorcode);
+    virtual bool hdr_members(std::string& str, int& errorcode);
+    virtual bool hdr_classend(std::string& str, int& errorcode);
+    virtual bool hdr_namespaceend(std::string& str, int& errorcode);
+
+    virtual bool write_file(const std::string& pathname, const std::string& str, int errorcode);
 };
 
 }

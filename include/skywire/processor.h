@@ -25,16 +25,21 @@ namespace skyloupe
 class Processor
 {
 public:
-    Processor(Stencil& stencil) : stencil_(stencil) {}
+    Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string pathname, int& errorcode);
+    virtual bool process_file(const std::string& pathname, int& errorcode);
 
 private:
-    Stencil& stencil_;
+    Stencil msg_stencil_;
 
     std::string language_key = "language";
-    std::string cpp_str = "C++";
+
+    std::string ada_str = "ada";
+    std::string c_str = "c";
+    std::string cpp_str = "c++";
+    std::string java_str = "java";
+    std::string py_str = "python";
 };
 
 }

@@ -13,33 +13,15 @@
 //   permissions and limitations under the License.
 //
 
-#include <iostream>
-#include <memory>
-#include "stencil/stencil.h"
 #include "skywire.h"
 #include "processor.h"
 
 namespace skyloupe
 {
 
-bool skywire_init()
+bool process_file(const std::string& pathname, int& error, const std::string lang_pathname)
 {
-    std::cout << "Skywire initializing!" << std::endl;
-
-    return true;
-}
-
-bool skywire_fini()
-{
-    std::cout << "Skywire shutting down!" << std::endl;
-
-    return true;
-}
-
-bool process_file(const std::string pathname, int& error)
-{
-    skyloupe::Stencil stencil;
-    skyloupe::Processor processor(stencil);
+    skyloupe::Processor processor;
 
     bool success = processor.process_file(pathname, error);
 

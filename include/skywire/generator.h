@@ -24,13 +24,16 @@ namespace skyloupe
 class Generator
 {
 public:
-    Generator(Stencil& stencil) : stencil_(stencil) {}
+    Generator(Stencil& stencil) : msg_stencil_(stencil) {}
     virtual ~Generator() {}
 
-    virtual bool do_generate(int& error) = 0;
+    virtual bool generate(int& error) = 0;
+    virtual bool set_lang_settings(const std::string pathname);
+    virtual bool set_msg_settings(const std::string pathname);
 
 protected:
-    Stencil& stencil_;
+    Stencil lang_stencil_;
+    Stencil msg_stencil_;
     std::string result_;
     int error_;
 };

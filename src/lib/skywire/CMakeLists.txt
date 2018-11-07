@@ -23,19 +23,30 @@ set(_INC_DIRS ${TARGET_INC_DIR}
 
 include_directories(${TARGETNAME} ${_INC_DIRS})
 
-set(_SOURCES ${TARGETNAME}.cpp
+set(_GENERATORS
+             adagenerator.cpp
+             cgenerator.cpp
              cppgenerator.cpp
+             javagenerator.cpp
+             pygenerator.cpp
+             ${TARGET_INC_DIR}/adagenerator.h
+             ${TARGET_INC_DIR}/cgenerator.h
+             ${TARGET_INC_DIR}/cppgenerator.h
+             ${TARGET_INC_DIR}/javagenerator.h
+             ${TARGET_INC_DIR}/pygenerator.h
+)
+
+set(_SOURCES ${TARGETNAME}.cpp
              generator.cpp
              processor.cpp)
 
 set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
-             ${TARGET_INC_DIR}/cppgenerator.h
              ${TARGET_INC_DIR}/generator.h
              ${TARGET_INC_DIR}/generators.h
              ${TARGET_INC_DIR}/processor.h
              ${TARGET_INC_DIR}/protos.h)
 
-add_library(${TARGETNAME} STATIC ${_HEADERS} ${_SOURCES})
+add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
 
 target_link_libraries(${TARGETNAME} skywireproto stencil)
 

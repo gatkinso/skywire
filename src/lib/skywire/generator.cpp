@@ -18,4 +18,18 @@
 namespace skyloupe
 {
 
+bool Generator::set_msg_settings(const std::string pathname)
+{
+    msg_stencil_.clear();
+
+    return msg_stencil_.read_file(pathname);
+}
+
+bool Generator::set_lang_settings(const std::string pathname)
+{
+    lang_stencil_.clear();
+
+    return lang_stencil_.read_file(pathname);
+}
+
 }

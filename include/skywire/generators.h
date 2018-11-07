@@ -16,4 +16,8 @@
 #pragma once
 
 #include "generator.h"
+#include "adagenerator.h"
+#include "cgenerator.h"
 #include "cppgenerator.h"
+#include "javagenerator.h"
+#include "pygenerator.h"

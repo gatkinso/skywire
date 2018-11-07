@@ -2,7 +2,7 @@
    "stringValues":{  
       "classname":"MyTestClass",
       "namespace":"testspace",
-      "language":"C++"
+      "language":"c++"
    },
    "members":{  
       "100":{  

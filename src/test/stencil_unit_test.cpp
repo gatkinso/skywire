@@ -301,12 +301,12 @@ TEST_F(StencilUnitTest, clear_key_string)
 
     std::string values = stencil.get_value_string("language", "NOT FOUND");
 
-    ASSERT_TRUE(values == "C++");
+    ASSERT_TRUE(values == "c++");
 
-    rc = stencil.clear_key_string("language");
+    rc = stencil.clear_key_string("c++");
     ASSERT_EQ(true, rc);
 
-    values = stencil.get_value_string("endpointId", "NOT FOUND");
+    values = stencil.get_value_string("c++", "NOT FOUND");
 
     ASSERT_TRUE(values == "NOT FOUND");
 }

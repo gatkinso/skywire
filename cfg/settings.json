@@ -2,7 +2,7 @@
     "stringValues": {
         "namespace": "testspace",
         "classname": "MyTestClass",
-        "language": "C++"
+        "language": "c++"
     },
     "intValues":{
         "index":2

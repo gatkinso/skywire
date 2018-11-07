@@ -32,25 +32,4 @@ TEST_F(GeneratorUnitTest, Instantiate)
 TEST_F(GeneratorUnitTest, generatecpp)
 {
     skyloupe::CppGenerator unit(stencil);
-
-    //std::string json_str = "{}";
-    //int errorcode = -1;
-
-    //bool success = unit.generate_from_file(json_str, errorcode);
-
-    //ASSERT_TRUE(success);
-    //ASSERT_EQ(errorcode, 0);
 }
-
-//TEST_F(GeneratorUnitTest, generate_from_str)
-//{
-//    skyloupe::Generator unit(stencil);
-//
-//    //std::string json_str = "{}";
-//    //int errorcode = -1;
-//
-//    //bool success = unit.generate_from_str(json_str, errorcode);
-//
-//    //ASSERT_TRUE(success);
-//    //ASSERT_EQ(errorcode, 0);
-//}

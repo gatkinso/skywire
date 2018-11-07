@@ -15,9 +15,9 @@
 
 #pragma once
 
+#include <string>
+
 namespace skyloupe
 {
-    bool skywire_init();
-    bool skywire_fini();
-    bool process_file(const std::string pathname, int& error);
+    bool process_file(const std::string& pathname, int& error, const std::string lang_pathname = "");
 }

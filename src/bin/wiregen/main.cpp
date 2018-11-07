@@ -94,8 +94,6 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-	skywire_init(); 
-
     success = process_file(message_pathname, errorcode);
     if (success == true)
     {
@@ -106,8 +104,6 @@ int main(int argc, const char* argv[])
         std::cout << "Failure processing: " << message_pathname << std::endl;
         std::cout << "Error number: " << errorcode << std::endl;
     }
-
-    skywire_fini();
 
 	return 0;
 }
