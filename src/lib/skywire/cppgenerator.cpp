@@ -103,14 +103,14 @@ bool CppGenerator::hdr_includes(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_namespace(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("namespace_str");
+    std::string template_str = lang_stencil_.get_value_string("namespace_str");
+    std::string subst_str = msg_stencil_.get_value_string("namespace");
+    std::string target_str = lang_stencil_.get_value_string("namespace_substr");
     std::stringstream ss;
 
-    std::string subst_str = msg_stencil_.get_value_string("namespace");
+    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
 
-    value_str = std::regex_replace(value_str, std::regex("__NAMESPACE__"), subst_str);
-
-    ss << value_str << std::endl;
+    ss << template_str << std::endl;
 
     str.append(ss.str());
 
@@ -119,10 +119,14 @@ bool CppGenerator::hdr_namespace(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_classname(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("classname_str");
+    std::string template_str = lang_stencil_.get_value_string("classname_str");
+    std::string subst_str = msg_stencil_.get_value_string("classname");
+    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
 
-    ss << value_str << std::endl;
+    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
+
+    ss << template_str << std::endl;
 
     str.append(ss.str());
 
@@ -143,10 +147,14 @@ bool CppGenerator::hdr_public(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_cons(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("cons_str");
+    std::string template_str = lang_stencil_.get_value_string("cons_str");
+    std::string subst_str = msg_stencil_.get_value_string("classname");
+    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
 
-    ss << value_str << std::endl;
+    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
+
+    ss << template_str << std::endl;
 
     str.append(ss.str());
 
@@ -155,10 +163,14 @@ bool CppGenerator::hdr_cons(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_des(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("des_str");
+    std::string template_str = lang_stencil_.get_value_string("des_str");
+    std::string subst_str = msg_stencil_.get_value_string("classname");
+    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
 
-    ss << value_str << std::endl;
+    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
+
+    ss << template_str << std::endl;
 
     str.append(ss.str());
 

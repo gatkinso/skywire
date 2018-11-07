@@ -9,6 +9,8 @@
         "cons_str":"        __CLASSNAME__() {}",
         "des_str":"        virtual ~__CLASSNAME__() {}",
         "endclass_str":"    };",
-        "endnamespace_str":"}"
+        "endnamespace_str":"}",
+        "namespace_substr":"__NAMESPACE__",
+        "classname_substr":"__CLASSNAME__"
     }
 }
