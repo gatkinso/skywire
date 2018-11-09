@@ -1,26 +1,30 @@
 {
    "stringValues":{  
-      "classname":"MyTestClass",
+      "classname":"ClassyMcClassface",
       "namespace":"testspace",
       "language":"c++"
    },
    "members":{  
       "100":{  
          "type":"float",
-         "name":"m_myfloat"
+         "name":"a_myfloat100"
       },    
       "200":{  
          "type":"int",
-         "name":"m_myint"
+         "name":"b_myint200"
       },
       "201":{  
          "type":"int",
-         "name":"m_myint2"
-      }
+         "name":"c_myint201"
+      },
+      "202":{  
+         "type":"double",
+         "name":"d_myDoubleBubble202"
+      }      
    },
    "includes":[  
-      "\u003cheader1.h\u003e",
-      "\u003cheader2.h\u003e",
-      "\u003cheader3.h\u003e"
+      "\u003cstring\u003e",
+      "\u003cstdint.h\u003e",
+      "\u003ciostream\u003e"
    ]
 }

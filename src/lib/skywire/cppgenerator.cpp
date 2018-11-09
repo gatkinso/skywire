@@ -66,10 +66,23 @@ bool CppGenerator::do_implementation(int& errorcode)
 
 ///////////////////////////////////////////////////////////////////////
 
-bool CppGenerator::hdr_banner(std::string& str, int& errorcode)
+bool CppGenerator::do_indents(std::stringstream& ss, std::string& str, unsigned int indents)
 {
-    std::string value_str = lang_stencil_.get_value_string("banner_str");
-    std::stringstream ss;
+    std::string indent_str = lang_stencil_.get_value_string("indent_str");
+
+    for (unsigned int i = 0; i < indents; i++)
+    {
+        ss << indent_str;
+    }
+
+    return true;
+}
+
+bool CppGenerator::do_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents)
+{
+    std::string value_str = lang_stencil_.get_value_string(key);
+
+    do_indents(ss, str, indents);
 
     ss << value_str << std::endl;
 
@@ -78,16 +91,33 @@ bool CppGenerator::hdr_banner(std::string& str, int& errorcode)
     return true;
 }
 
-bool CppGenerator::hdr_sentry(std::string& str, int& errorcode)
+bool CppGenerator::do_one_line_subst(std::stringstream& ss, std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
 {
-    std::string value_str = lang_stencil_.get_value_string("sentry_str");
-    std::stringstream ss;
+    std::string template_str = lang_stencil_.get_value_string(template_key);
+    std::string subst_str = msg_stencil_.get_value_string(subst_key);
+    std::string target_str = lang_stencil_.get_value_string(target_key);
 
-    ss << value_str << std::endl;
+    do_indents(ss, str, indents);
+
+    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
+
+    ss << template_str << std::endl;
 
     str.append(ss.str());
 
     return true;
+}
+
+bool CppGenerator::hdr_banner(std::string& str, int& errorcode)
+{
+    std::stringstream ss;
+    return do_one_line(ss, str, "banner_str");
+}
+
+bool CppGenerator::hdr_sentry(std::string& str, int& errorcode)
+{
+    std::stringstream ss;
+    return do_one_line(ss, str, "sentry_str");
 }
 
 bool CppGenerator::hdr_includes(std::string& str, int& errorcode)
@@ -110,86 +140,41 @@ bool CppGenerator::hdr_includes(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_namespace(std::string& str, int& errorcode)
 {
-    std::string template_str = lang_stencil_.get_value_string("namespace_str");
-    std::string subst_str = msg_stencil_.get_value_string("namespace");
-    std::string target_str = lang_stencil_.get_value_string("namespace_substr");
     std::stringstream ss;
-
-    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
-
-    ss << template_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line_subst(ss, str, "namespace_str", "namespace", "namespace_substr", 0);
 }
 
 bool CppGenerator::hdr_classname(std::string& str, int& errorcode)
 {
-    std::string template_str = lang_stencil_.get_value_string("classname_str");
-    std::string subst_str = msg_stencil_.get_value_string("classname");
-    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
-
-    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
-
-    ss << template_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line_subst(ss, str, "classname_str", "classname", "classname_substr", 1);
 }
 
 bool CppGenerator::hdr_public(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("public_str");
     std::stringstream ss;
-
-    ss << value_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return  do_one_line(ss, str, "public_str", 1);
 }
 
 bool CppGenerator::hdr_private(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("private_str");
     std::stringstream ss;
-
-    ss << value_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line(ss, str, "private_str", 1);
 }
 
 bool CppGenerator::hdr_cons(std::string& str, int& errorcode)
 {
-    std::string template_str = lang_stencil_.get_value_string("cons_str");
-    std::string subst_str = msg_stencil_.get_value_string("classname");
-    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
-
-    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
-
-    ss << template_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line_subst(ss, str, "cons_str", "classname", "classname_substr", 2);
 }
 
 bool CppGenerator::hdr_des(std::string& str, int& errorcode)
 {
-    std::string template_str = lang_stencil_.get_value_string("des_str");
-    std::string subst_str = msg_stencil_.get_value_string("classname");
-    std::string target_str = lang_stencil_.get_value_string("classname_substr");
     std::stringstream ss;
+    do_one_line_subst(ss, str, "des_str", "classname", "classname_substr", 2);
 
-    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
-
-    ss << template_str << std::endl;
+    ss.str("");
+    ss << std::endl;
 
     str.append(ss.str());
 
@@ -198,8 +183,6 @@ bool CppGenerator::hdr_des(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_functions(std::string& str, int& errorcode)
 {
-    std::string indent_str = lang_stencil_.get_value_string("indent_str");
-
     if (msg_stencil_.get_proto().members_size() == 0)
     {
         return false;
@@ -208,8 +191,10 @@ bool CppGenerator::hdr_functions(std::string& str, int& errorcode)
     std::stringstream ss;
     for (auto& member : msg_stencil_.get_proto().members())
     {
-        ss << indent_str << indent_str << member.second.type() << " " << "Get_" << member.second.name() << "() const { return " << member.second.name() << " };" << std::endl;
-        ss << indent_str << indent_str << "void " << "Set_" << member.second.name() << "(const " << member.second.type() << " _in_" << member.second.name() << ") { " << member.second.name() << " = " << "_in_" << member.second.name() << "; }" << std::endl << std::endl;
+        do_indents(ss, str, 2);
+        ss << member.second.type() << " " << "Get_" << member.second.name() << "() const { return " << member.second.name() << " };" << std::endl;
+        do_indents(ss, str, 2);
+        ss << "void " << "Set_" << member.second.name() << "(const " << member.second.type() << " _in_" << member.second.name() << ") { " << member.second.name() << " = " << "_in_" << member.second.name() << "; }" << std::endl << std::endl;
     }
 
     str.append(ss.str());
@@ -219,8 +204,6 @@ bool CppGenerator::hdr_functions(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_members(std::string& str, int& errorcode)
 {
-    std::string indent_str = lang_stencil_.get_value_string("indent_str");
-
     if (msg_stencil_.get_proto().members_size() == 0)
     {
         return false;
@@ -229,7 +212,8 @@ bool CppGenerator::hdr_members(std::string& str, int& errorcode)
     std::stringstream ss;
     for (auto& member : msg_stencil_.get_proto().members())
     {
-        ss << indent_str << indent_str << member.second.type() << " " << member.second.name() << ";" << std::endl;
+        do_indents(ss, str, 2);
+        ss << member.second.type() << " " << member.second.name() << ";" << std::endl;
     }
 
     str.append(ss.str());
@@ -239,26 +223,14 @@ bool CppGenerator::hdr_members(std::string& str, int& errorcode)
 
 bool CppGenerator::hdr_classend(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("endclass_str");
     std::stringstream ss;
-
-    ss << value_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line(ss, str, "endclass_str", 1);
 }
 
 bool CppGenerator::hdr_namespaceend(std::string& str, int& errorcode)
 {
-    std::string value_str = lang_stencil_.get_value_string("endnamespace_str");
     std::stringstream ss;
-
-    ss << value_str << std::endl;
-
-    str.append(ss.str());
-
-    return true;
+    return do_one_line(ss, str, "endnamespace_str");
 }
 
 bool CppGenerator::write_file(const std::string& pathname, const std::string& str, int errorcode)

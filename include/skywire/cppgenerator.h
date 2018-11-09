@@ -48,6 +48,11 @@ protected:
     virtual bool hdr_namespaceend(std::string& str, int& errorcode);
 
     virtual bool write_file(const std::string& pathname, const std::string& str, int errorcode);
+
+private:
+    bool do_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents = 0);
+    bool do_one_line_subst(std::stringstream& ss, std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    bool do_indents(std::stringstream& ss, std::string& str, unsigned int indents = 0);
 };
 
 }
