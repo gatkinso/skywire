@@ -42,7 +42,9 @@ protected:
     virtual bool hdr_private(std::string& str, int& errorcode);
     virtual bool hdr_cons(std::string& str, int& errorcode);
     virtual bool hdr_des(std::string& str, int& errorcode);
-    virtual bool hdr_functions(std::string& str, int& errorcode);
+    virtual bool hdr_get_functions(std::string& str, int& errorcode);
+    virtual bool hdr_set_functions(std::string& str, int& errorcode);
+    virtual bool hdr_overrides(std::string& str, int& errorcode);
     virtual bool hdr_members(std::string& str, int& errorcode);
     virtual bool hdr_classend(std::string& str, int& errorcode);
     virtual bool hdr_namespaceend(std::string& str, int& errorcode);
@@ -50,9 +52,11 @@ protected:
     virtual bool write_file(const std::string& pathname, const std::string& str, int errorcode);
 
 private:
-    bool do_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents = 0);
-    bool do_one_line_subst(std::stringstream& ss, std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
-    bool do_indents(std::stringstream& ss, std::string& str, unsigned int indents = 0);
+    bool gen_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents = 0);
+    bool gen_one_line_subst(std::stringstream& ss, std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    bool insert_indents(std::stringstream& ss, std::string& str, unsigned int indents = 0);
+    bool inorder_functions(std::string& str, const std::string& funct_str, int& errorcode);
+    bool inorder_members(std::string& str, int& errorcode);
 };
 
 }
