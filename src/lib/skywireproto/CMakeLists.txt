@@ -56,6 +56,6 @@ foreach(PROTO ${PROTO_FILES})
     )
 endforeach(PROTO)
 
-add_library(${TARGETNAME} ${PROTOCPP_RESULTS})
+add_library(${TARGETNAME} STATIC ${PROTOCPP_RESULTS})
 
 target_link_libraries(${TARGETNAME} ${PROTOBUF_LIBRARIES})

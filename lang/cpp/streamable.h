@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stream.h>
+
 namespace skyloupe
 {
   class Streamable
@@ -21,7 +22,7 @@ namespace skyloupe
 
     virtual unsigned int size() = 0;
 
-    virtual bool serialize_as_json() const;
+    virtual bool serialize_as_json() const { return false; };
   };
 }
 
