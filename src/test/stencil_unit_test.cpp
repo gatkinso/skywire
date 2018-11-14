@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <google/protobuf/util/json_util.h>
+#include "google/protobuf/util/message_differencer.h"
 #include <string>
 #include "stencil.pb.h"
 #include "stencil/stencil.h"
@@ -100,15 +101,17 @@ TEST_F(StencilUnitTest, write_string)
 {
     std::string json_str_in = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
     std::string json_str_out;
-    skyloupe::Stencil stencil;
+    skyloupe::Stencil stencil_left, stencil_right;
 
-    bool rc = stencil.read_string(json_str_in);
+    bool rc = stencil_left.read_string(json_str_in);
     ASSERT_EQ(true, rc);
 
-    rc = stencil.write_string(json_str_out);
+    rc = stencil_left.write_string(json_str_out);
     ASSERT_EQ(true, rc);
 
-    ASSERT_EQ(json_str_in, json_str_out);
+    stencil_right.read_string(json_str_out);
+
+    ASSERT_TRUE(google::protobuf::util::MessageDifferencer::Equivalent(stencil_left.get_proto(), stencil_right.get_proto()));
 }
 
 TEST_F(StencilUnitTest, read_file_Doesnt_Exist)
