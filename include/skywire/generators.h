@@ -13,8 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#pragma once
-
 #include "generator.h"
 #include "adagenerator.h"
 #include "cgenerator.h"

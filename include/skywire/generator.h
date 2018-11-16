@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "stencil/stencil.h"
 
 namespace skyloupe 
@@ -24,18 +25,22 @@ namespace skyloupe
 class Generator
 {
 public:
+    typedef std::vector<std::string> results_t;
+
     Generator(Stencil& stencil) : msg_stencil_(stencil) {}
     virtual ~Generator() {}
 
-    virtual bool generate(int& error) = 0;
+    virtual bool generate(int& errorcode) = 0;
     virtual bool set_lang_settings(const std::string pathname);
     virtual bool set_msg_settings(const std::string pathname);
+
+    virtual results_t get_results() const { return results_; }
 
 protected:
     Stencil lang_stencil_;
     Stencil msg_stencil_;
-    std::string result_;
-    int error_;
+    results_t results_;
+    int errorcode_;
 };
 
 }

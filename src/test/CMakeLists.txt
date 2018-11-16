@@ -20,6 +20,8 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/include)
 
 set(UNIT_TESTS
+                cppgenerator_unit_test.cpp
+                filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp
                 stencil_unit_test.cpp)

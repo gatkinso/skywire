@@ -27,6 +27,7 @@ set(_GENERATORS
              adagenerator.cpp
              cgenerator.cpp
              cppgenerator.cpp
+             file_writer.cpp
              javagenerator.cpp
              pygenerator.cpp
              ${TARGET_INC_DIR}/adagenerator.h
@@ -41,10 +42,12 @@ set(_SOURCES ${TARGETNAME}.cpp
              processor.cpp)
 
 set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
+             ${TARGET_INC_DIR}/file_writer.h
              ${TARGET_INC_DIR}/generator.h
              ${TARGET_INC_DIR}/generators.h
              ${TARGET_INC_DIR}/processor.h
-             ${TARGET_INC_DIR}/protos.h)
+             ${TARGET_INC_DIR}/protos.h
+             ${TARGET_INC_DIR}/result_presenter.h)
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
 

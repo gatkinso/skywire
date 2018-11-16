@@ -32,6 +32,8 @@ bool CppGenerator::generate(int& errorcode)
     std::cout << "Generating C++" << std::endl;
     errorcode = 0;
 
+    results_.clear();
+
     if (false == do_header(errorcode)) return false;
     if (false == do_implementation(errorcode)) return false;
     return true;
@@ -39,7 +41,9 @@ bool CppGenerator::generate(int& errorcode)
 
 bool CppGenerator::do_header(int& errorcode)
 {
-    std::string header_string;
+    results_.push_back("");
+
+    std::string& header_string = results_[0];
 
     hdr_banner(header_string, errorcode);
     hdr_sentry(header_string, errorcode);
