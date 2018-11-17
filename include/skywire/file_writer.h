@@ -1,5 +1,5 @@
 //
-//   Copyright (C) 2018 Skyloupe, LLC
+//   Copyright (C) 2017 Skyloupe, LLC
 //   
 //   Licensed under the Apache License, Version 2.0 (the "License").
 //   You may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ public:
     bool present(int& errorcode) override;
 
 private:
-    bool write_file();
+    bool write_file(int& errorcode);
 
     const std::string& result_string_;
     const std::string& pathname_;

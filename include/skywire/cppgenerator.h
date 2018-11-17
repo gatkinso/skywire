@@ -24,8 +24,9 @@ namespace skyloupe
 class CppGenerator : public Generator
 {
 public:
+    CppGenerator() = delete;
     CppGenerator(Stencil& stencil);
-    virtual ~CppGenerator() {}
+    virtual ~CppGenerator() = default;
 
     virtual bool generate(int& errorcode);
 
@@ -48,8 +49,6 @@ protected:
     virtual bool hdr_members(std::string& str, int& errorcode);
     virtual bool hdr_classend(std::string& str, int& errorcode);
     virtual bool hdr_namespaceend(std::string& str, int& errorcode);
-
-    virtual bool write_file(const std::string& pathname, const std::string& str, int errorcode);
 
 private:
     bool gen_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents = 0);

@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <fstream>
 #include "file_writer.h"
 
 namespace skyloupe
@@ -25,12 +26,16 @@ FileWriter::FileWriter(const std::string& pathname, const std::string& result_st
 
 bool FileWriter::present(int& errorcode)
 {
-    return true;
+    return write_file(errorcode);
 }
 
-bool FileWriter::write_file()
+bool FileWriter::write_file(int& errorcode)
 {
-    return false;
+    std::ofstream out_file(pathname_, std::ofstream::out);
+
+    out_file.write(result_string_.c_str(), result_string_.size());
+
+    return true;
 }
 
 }

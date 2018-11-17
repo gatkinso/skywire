@@ -27,8 +27,9 @@ class Generator
 public:
     typedef std::vector<std::string> results_t;
 
+    Generator() = delete;
     Generator(Stencil& stencil) : msg_stencil_(stencil) {}
-    virtual ~Generator() {}
+    virtual ~Generator() = default;
 
     virtual bool generate(int& errorcode) = 0;
     virtual bool set_lang_settings(const std::string pathname);

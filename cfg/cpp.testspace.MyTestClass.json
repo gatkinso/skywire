@@ -1,6 +1,7 @@
 {
    "stringValues":{  
       "classname":"ClassyMcClassface",
+      "outputfilename":"ClassyMcClassface.h",
       "namespace":"testspace",
       "language":"c++"
    },

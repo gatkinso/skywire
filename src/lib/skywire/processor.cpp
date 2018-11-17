@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include "file_writer.h"
 #include "processor.h"
 
 namespace skyloupe
@@ -30,33 +31,49 @@ bool Processor::process_file(const std::string& pathname, int& errorcode)
 
     std::string lang = msg_stencil_.get_value_string(language_key);
 
+    std::unique_ptr<skyloupe::Generator> genny;
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
-    
     if (lang == ada_str)
     {
-        std::unique_ptr<skyloupe::Generator> genny(new skyloupe::AdaGenerator(msg_stencil_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
     else if (lang == c_str)
     {
-        std::unique_ptr<skyloupe::Generator> genny(new skyloupe::CGenerator(msg_stencil_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
     else if (lang == cpp_str)
     {
-        std::unique_ptr<skyloupe::Generator> genny(new skyloupe::CppGenerator(msg_stencil_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil_));
         genny->set_lang_settings("lang.cpp.json");
         success = genny->generate(errorcode);
+
+        if (success)
+        {
+            Generator::results_t results = genny->get_results();
+            if (results.empty() == false)
+            {
+                std::string path_str = "./"; //TODO get from settings
+                std::string filename_str = msg_stencil_.get_value_string("outputfilename");
+                std::string pathname_str = path_str + filename_str;
+                const std::string& contents_str = results[0];
+
+                std::unique_ptr<skyloupe::ResultPresenter> ressie;
+                ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
+                ressie->present(errorcode);
+            }
+        }
     }
     else if (lang == java_str)
     {
-        std::unique_ptr<skyloupe::Generator> genny(new skyloupe::JavaGenerator(msg_stencil_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
     else if (lang == py_str)
     {
-        std::unique_ptr<skyloupe::Generator> genny(new skyloupe::PyGenerator(msg_stencil_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::PyGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
     else
@@ -65,7 +82,9 @@ bool Processor::process_file(const std::string& pathname, int& errorcode)
         std::cerr << "Unsupported language: " << lang << std::endl;
         return success;
     }
-    // end temporary 
+    // end temporary
+
+
 
     return success;
 }

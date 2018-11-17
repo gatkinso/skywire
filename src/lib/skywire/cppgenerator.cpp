@@ -13,7 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#include <fstream>
 #include <sstream>
 #include <regex>
 #include <map>
@@ -60,8 +59,6 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_classend(header_string, errorcode);
     hdr_namespaceend(header_string, errorcode);
 
-    write_file("test.h", header_string, errorcode);
-
     return true;
 }
 
@@ -69,8 +66,6 @@ bool CppGenerator::do_implementation(int& errorcode)
 {
     return true;
 }
-
-///////////////////////////////////////////////////////////////////////
 
 bool CppGenerator::hdr_banner(std::string& str, int& errorcode)
 {
@@ -275,15 +270,6 @@ bool CppGenerator::inorder_members(std::string& str, int& errorcode)
     }
 
     str.append(ss.str());
-
-    return true;
-}
-
-bool CppGenerator::write_file(const std::string& pathname, const std::string& str, int errorcode)
-{
-    std::ofstream h_file(pathname, std::ofstream::out);
-
-    h_file.write(str.c_str(), str.size());
 
     return true;
 }
