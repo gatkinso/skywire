@@ -17,10 +17,12 @@ set(TARGETNAME unit_tests)
 
 include_directories(
                 ${PROJECT_BINARY_DIR}/proto/cpp
-                ${PROJECT_SOURCE_DIR}/include)
+                ${PROJECT_SOURCE_DIR}/include
+                ${PROJECT_SOURCE_DIR}/lang/cpp)
 
 set(UNIT_TESTS
                 cppgenerator_unit_test.cpp
+                cppresults_unit_test.cpp
                 filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp

@@ -8,22 +8,19 @@
 
 #pragma once
 
-#include <stream.h>
+#include "stream.h"
 
 namespace skyloupe
 {
-  class Streamable
-  {
-  public:
-    Streamable() = delete;
 
-    virtual bool serialize(const stream& str) const = 0;
-    virtual bool deserialize(stream& str) = 0;
+class Streamable
+{
+public:
+    virtual bool serialize(skyloupe::Stream& str) const = 0;
+    virtual bool deserialize(skyloupe::Stream& str) = 0;
+    virtual size_t size() const = 0;
+};
 
-    virtual unsigned int size() = 0;
-
-    virtual bool serialize_as_json() const { return false; };
-  };
 }
 
 

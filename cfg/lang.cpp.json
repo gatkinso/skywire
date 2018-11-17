@@ -9,6 +9,9 @@
         "private_str"  :"private:",        
         "cons_str":"__CLASSNAME__() {}",
         "des_str":"virtual ~__CLASSNAME__() {}",
+        "serialize_str":"bool serialize(skyloupe::Stream& str) const { return true; }",
+        "deserialize_str":"bool deserialize(skyloupe::Stream& str) { return true; }",
+        "size_str":"size_t size() const { return 0; }",
         "endclass_str":"};",
         "endnamespace_str":"}",
         "namespace_substr":"__NAMESPACE__",
@@ -16,7 +19,7 @@
         "type_substr":"__TYPE__",
         "member_substr":"__MEMBERNAME__",
         "indent_str":"    ",
-        "get_str": "__TYPE__ Get___MEMBERNAME__ const { return __MEMBERNAME__; }",
+        "get_str": "__TYPE__ Get___MEMBERNAME__() const { return __MEMBERNAME__; }",
         "set_str": "void Set___MEMBERNAME__(const __TYPE__ newval) { __MEMBERNAME__ = newval; }"
     }
 }

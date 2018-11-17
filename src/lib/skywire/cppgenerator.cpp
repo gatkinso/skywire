@@ -52,6 +52,9 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_public(header_string, errorcode);
     hdr_cons(header_string, errorcode);
     hdr_des(header_string, errorcode);
+    hdr_serialize(header_string, errorcode);
+    hdr_deserialize(header_string, errorcode);
+    hdr_size(header_string, errorcode);
     hdr_get_functions(header_string, errorcode);
     hdr_set_functions(header_string, errorcode);
     hdr_private(header_string, errorcode);
@@ -150,9 +153,22 @@ bool CppGenerator::hdr_set_functions(std::string& str, int& errorcode)
     return inorder_functions(str, "set_str", errorcode);
 }
 
-bool CppGenerator::hdr_overrides(std::string& str, int& errorcode)
+bool CppGenerator::hdr_serialize(std::string& str, int& errorcode)
 {
-    return true;
+    std::stringstream ss;
+    return gen_one_line(ss, str, "serialize_str", 2);
+}
+
+bool CppGenerator::hdr_deserialize(std::string& str, int& errorcode)
+{
+    std::stringstream ss;
+    return gen_one_line(ss, str, "deserialize_str", 2);
+}
+
+bool CppGenerator::hdr_size(std::string& str, int& errorcode)
+{
+    std::stringstream ss;
+    return gen_one_line(ss, str, "size_str", 2);
 }
 
 bool CppGenerator::hdr_members(std::string& str, int& errorcode)

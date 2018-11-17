@@ -24,7 +24,7 @@
       }      
    },
    "includes":[  
-      "\u003cstreamable.h\u003e",
+      "\"streamable.h\"",
       "\u003cstdint.h\u003e",
       "\u003ciostream\u003e"
    ]

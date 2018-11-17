@@ -19,11 +19,11 @@
 namespace skyloupe
 {
 
-bool process_file(const std::string& pathname, int& error, const std::string lang_pathname)
+bool process_file(const std::string& pathname, const std::string& outdirname, int& error, const std::string lang_pathname)
 {
     skyloupe::Processor processor;
 
-    bool success = processor.process_file(pathname, error);
+    bool success = processor.process_file(pathname, outdirname, error);
 
     return success;
 }

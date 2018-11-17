@@ -19,7 +19,7 @@
 namespace skyloupe
 {
 
-bool Processor::process_file(const std::string& pathname, int& errorcode)
+bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode)
 {
     bool success = false;
     if (false == msg_stencil_.read_file(pathname))
@@ -55,9 +55,8 @@ bool Processor::process_file(const std::string& pathname, int& errorcode)
             Generator::results_t results = genny->get_results();
             if (results.empty() == false)
             {
-                std::string path_str = "./"; //TODO get from settings
                 std::string filename_str = msg_stencil_.get_value_string("outputfilename");
-                std::string pathname_str = path_str + filename_str;
+                std::string pathname_str = outputdir + "/" + filename_str;
                 const std::string& contents_str = results[0];
 
                 std::unique_ptr<skyloupe::ResultPresenter> ressie;

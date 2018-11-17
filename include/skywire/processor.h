@@ -28,7 +28,7 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string& pathname, int& errorcode);
+    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode);
 
 private:
     Stencil msg_stencil_;

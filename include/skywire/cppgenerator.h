@@ -45,7 +45,9 @@ protected:
     virtual bool hdr_des(std::string& str, int& errorcode);
     virtual bool hdr_get_functions(std::string& str, int& errorcode);
     virtual bool hdr_set_functions(std::string& str, int& errorcode);
-    virtual bool hdr_overrides(std::string& str, int& errorcode);
+    virtual bool hdr_serialize(std::string& str, int& errorcode);
+    virtual bool hdr_deserialize(std::string& str, int& errorcode);
+    virtual bool hdr_size(std::string& str, int& errorcode);
     virtual bool hdr_members(std::string& str, int& errorcode);
     virtual bool hdr_classend(std::string& str, int& errorcode);
     virtual bool hdr_namespaceend(std::string& str, int& errorcode);
