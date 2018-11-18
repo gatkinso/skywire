@@ -26,7 +26,8 @@ set(UNIT_TESTS
                 filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp
-                stencil_unit_test.cpp)
+                stencil_unit_test.cpp
+                stream_unit_test.cpp)
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
 

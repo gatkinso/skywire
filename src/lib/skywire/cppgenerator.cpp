@@ -45,18 +45,25 @@ bool CppGenerator::do_header(int& errorcode)
     std::string& header_string = results_[0];
 
     hdr_banner(header_string, errorcode);
+    cr(header_string);
     hdr_sentry(header_string, errorcode);
+    cr(header_string);
     hdr_includes(header_string, errorcode);
+    cr(header_string);
     hdr_namespace(header_string, errorcode);
     hdr_classname(header_string, errorcode);
     hdr_public(header_string, errorcode);
     hdr_cons(header_string, errorcode);
     hdr_des(header_string, errorcode);
+    cr(header_string);
     hdr_serialize(header_string, errorcode);
     hdr_deserialize(header_string, errorcode);
     hdr_size(header_string, errorcode);
+    cr(header_string);
     hdr_get_functions(header_string, errorcode);
+    cr(header_string);
     hdr_set_functions(header_string, errorcode);
+    cr(header_string);
     hdr_private(header_string, errorcode);
     hdr_members(header_string, errorcode);
     hdr_classend(header_string, errorcode);
@@ -135,11 +142,6 @@ bool CppGenerator::hdr_des(std::string& str, int& errorcode)
     std::stringstream ss;
     gen_one_line_subst(ss, str, "des_str", "classname", "classname_substr", 2);
 
-    ss.str("");
-    ss << std::endl;
-
-    str.append(ss.str());
-
     return true;
 }
 
@@ -156,19 +158,123 @@ bool CppGenerator::hdr_set_functions(std::string& str, int& errorcode)
 bool CppGenerator::hdr_serialize(std::string& str, int& errorcode)
 {
     std::stringstream ss;
-    return gen_one_line(ss, str, "serialize_str", 2);
+    gen_one_line(ss, str, "serialize_str", 2);
+
+    ss.str(std::string());
+
+    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("serialize_mem_str");
+        insert_indents(ss, str, 3);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        ss << template_str << std::endl;
+    }
+
+    insert_indents(ss, str, 3);
+    ss << "return true;" << std::endl;
+    insert_indents(ss, str, 2);
+    gen_one_line(ss, str, "endfunction_str");
+
+    return true;
 }
 
 bool CppGenerator::hdr_deserialize(std::string& str, int& errorcode)
 {
     std::stringstream ss;
-    return gen_one_line(ss, str, "deserialize_str", 2);
+    gen_one_line(ss, str, "deserialize_str", 2);
+
+    ss.str(std::string());
+
+    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("deserialize_mem_str");
+        insert_indents(ss, str, 3);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        ss << template_str << std::endl;
+    }
+
+    insert_indents(ss, str, 3);
+    ss << "return true;" << std::endl;
+    insert_indents(ss, str, 2);
+    gen_one_line(ss, str, "endfunction_str");
+
+    return true;
 }
 
 bool CppGenerator::hdr_size(std::string& str, int& errorcode)
 {
     std::stringstream ss;
-    return gen_one_line(ss, str, "size_str", 2);
+    gen_one_line(ss, str, "size_str", 2);
+
+    ss.str(std::string());
+
+    insert_indents(ss, str, 3);
+    ss << "return(" << std::endl;
+
+    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    int i = 0;
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("size_mem_str");
+        insert_indents(ss, str, 4);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        ss << template_str;
+
+        if (i++ < ordered_members.size() - 1)
+        {
+            ss << "+";
+        }
+
+        ss << std::endl;
+    }
+
+    insert_indents(ss, str, 3);
+    ss << ");" << std::endl;
+    insert_indents(ss, str, 2);
+    gen_one_line(ss, str, "endfunction_str");
+
+    return true;
 }
 
 bool CppGenerator::hdr_members(std::string& str, int& errorcode)
@@ -257,7 +363,6 @@ bool CppGenerator::inorder_functions(std::string& str, const std::string& funct_
         ss << template_str << std::endl;
     }
 
-    ss << std::endl;
     str.append(ss.str());
 
     return true;
@@ -288,6 +393,13 @@ bool CppGenerator::inorder_members(std::string& str, int& errorcode)
     str.append(ss.str());
 
     return true;
+}
+
+void CppGenerator::cr(std::string& str)
+{
+    std::stringstream ss;
+    ss << std::endl;
+    str.append(ss.str());
 }
 
 }

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "stdint.h"
 #include <vector>
 
 namespace skyloupe
@@ -18,10 +19,9 @@ class Streamable;
 class Stream
 {
 public:
-    Stream(std::vector<char>& buffer, size_t size, size_t expand_size = 512)
+    Stream(size_t size = 512, size_t expand_size = 512)
     :expand_size_(expand_size)
     ,pos_(0)
-    ,buffer_(buffer)
     {
         buffer_.resize(size);
     }
@@ -31,19 +31,19 @@ public:
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(short d)
+    void serialize(int16_t d)
     {
-        write((char*)&d, sizeof(short));
+        write((char*)&d, sizeof(int16_t));
     }
 
-    void serialize(int d)
+    void serialize(int32_t d)
     {
-        write((char*)&d, sizeof(int));
+        write((char*)&d, sizeof(int32_t));
     }
 
-    void serialize(long d)
+    void serialize(int64_t d)
     {
-        write((char*)&d, sizeof(long));
+        write((char*)&d, sizeof(int64_t));
     }
 
     void serialize(unsigned char d)
@@ -51,19 +51,19 @@ public:
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(unsigned short d)
+    void serialize(uint16_t d)
     {
-        write((char*)&d, sizeof(short));
+        write((char*)&d, sizeof(uint16_t));
     }
 
-    void serialize(unsigned int d)
+    void serialize(uint32_t d)
     {
-        write((char*)&d, sizeof(int));
+        write((char*)&d, sizeof(uint32_t));
     }
 
-    void serialize(unsigned long d)
+    void serialize(uint64_t d)
     {
-        write((char*)&d, sizeof(long));
+        write((char*)&d, sizeof(uint64_t));
     }
 
     void serialize(float d)
@@ -81,19 +81,19 @@ public:
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(short& d)
+    void deserialize(int16_t& d)
     {
-        read((char*)&d, sizeof(short));
+        read((char*)&d, sizeof(int16_t));
     }
 
-    void deserialize(int& d)
+    void deserialize(int32_t& d)
     {
-        read((char*)&d, sizeof(int));
+        read((char*)&d, sizeof(int32_t));
     }
 
-    void deserialize(long& d)
+    void deserialize(int64_t& d)
     {
-        read((char*)&d, sizeof(int));
+        read((char*)&d, sizeof(int64_t));
     }
 
     void deserialize(unsigned char& d)
@@ -101,19 +101,19 @@ public:
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(unsigned short& d)
+    void deserialize(uint16_t& d)
     {
-        read((char*)&d, sizeof(short));
+        read((char*)&d, sizeof(uint16_t));
     }
 
-    void deserialize(unsigned int& d)
+    void deserialize(uint32_t& d)
     {
-        read((char*)&d, sizeof(int));
+        read((char*)&d, sizeof(uint32_t));
     }
 
-    void deserialize(unsigned long& d)
+    void deserialize(uint64_t& d)
     {
-        read((char*)&d, sizeof(long));
+        read((char*)&d, sizeof(uint64_t));
     }
 
     void deserialize(float& d)
@@ -165,7 +165,7 @@ public:
     protected:
     size_t pos_;
     size_t expand_size_;
-    std::vector<char>& buffer_;
+    std::vector<char> buffer_;
 };
 
 }

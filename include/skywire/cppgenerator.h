@@ -58,6 +58,7 @@ private:
     bool insert_indents(std::stringstream& ss, std::string& str, unsigned int indents = 0);
     bool inorder_functions(std::string& str, const std::string& funct_str, int& errorcode);
     bool inorder_members(std::string& str, int& errorcode);
+    void cr(std::string& str);
 };
 
 }
