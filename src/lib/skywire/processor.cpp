@@ -21,10 +21,11 @@ namespace skyloupe
 
 bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode)
 {
+    errorcode = SW_SUCCESS;
     bool success = false;
     if (false == msg_stencil_.read_file(pathname))
     {
-        errorcode = 1;
+        errorcode = SW_ERROR;
         std::cerr << "Error reading file: " << pathname << std::endl;
         return success;
     }
@@ -77,13 +78,11 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     }
     else
     {
-        errorcode = 2;
+        errorcode = SW_UNKNOWNLANG;
         std::cerr << "Unsupported language: " << lang << std::endl;
         return success;
     }
     // end temporary
-
-
 
     return success;
 }

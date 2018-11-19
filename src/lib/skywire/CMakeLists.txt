@@ -42,6 +42,7 @@ set(_SOURCES ${TARGETNAME}.cpp
              processor.cpp)
 
 set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
+             ${TARGET_INC_DIR}/errorcodes.h
              ${TARGET_INC_DIR}/file_writer.h
              ${TARGET_INC_DIR}/generator.h
              ${TARGET_INC_DIR}/generators.h

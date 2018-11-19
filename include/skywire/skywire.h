@@ -1,5 +1,5 @@
 //
-//   Copyright (C) 2017 Skyloupe, LLC
+//   Copyright (C) 2018 Skyloupe, LLC
 //   
 //   Licensed under the Apache License, Version 2.0 (the "License").
 //   You may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include "errorcodes.h"
 
 namespace skyloupe
 {

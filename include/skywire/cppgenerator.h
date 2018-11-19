@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <sstream>
 #include <string>
 #include "generator.h"
 
@@ -53,9 +54,10 @@ protected:
     virtual bool hdr_namespaceend(std::string& str, int& errorcode);
 
 private:
-    bool gen_one_line(std::stringstream& ss, std::string& str, const std::string& key, unsigned int indents = 0);
-    bool gen_one_line_subst(std::stringstream& ss, std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
-    bool insert_indents(std::stringstream& ss, std::string& str, unsigned int indents = 0);
+    std::stringstream ss_;
+    bool gen_one_line(std::string& str, const std::string& key, unsigned int indents = 0);
+    bool gen_one_line_subst(std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    bool insert_indents(std::string& str, unsigned int indents = 0);
     bool inorder_functions(std::string& str, const std::string& funct_str, int& errorcode);
     bool inorder_members(std::string& str, int& errorcode);
     void cr(std::string& str);

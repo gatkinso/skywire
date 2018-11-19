@@ -18,6 +18,7 @@
 #include <string>
 #include "stencil/stencil.h"
 #include "generators.h"
+#include "errorcodes.h"
 
 namespace skyloupe 
 {
