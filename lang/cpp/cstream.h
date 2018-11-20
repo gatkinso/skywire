@@ -9,7 +9,9 @@
 #ifndef __wiregen_stream_h
 #define __wiregen_stream_h
 
+#include <stdlib.h>
 #include <stdint.h>
+#include <memory.h>
 
 #define DEF_CSTREAM_SIZE 1024
 
