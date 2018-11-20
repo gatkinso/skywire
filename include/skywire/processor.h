@@ -31,16 +31,19 @@ public:
 
     virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode);
 
+    void set_langfile_dir(const std::string& dir) { language_file_dir_ = dir; }
 private:
     Stencil msg_stencil_;
 
-    std::string language_key = "language";
+    std::string language_key_ = "language";
+    std::string language_file_key_ = "lang_file";
+    std::string language_file_dir_ = ".";
 
-    std::string ada_str = "ada";
-    std::string c_str = "c";
-    std::string cpp_str = "c++";
-    std::string java_str = "java";
-    std::string py_str = "python";
+    std::string ada_str_ = "ada";
+    std::string c_str_ = "c";
+    std::string cpp_str_ = "c++";
+    std::string java_str_ = "java";
+    std::string py_str_ = "python";
 };
 
 }

@@ -30,25 +30,28 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         return success;
     }
 
-    std::string lang = msg_stencil_.get_value_string(language_key);
+    std::string lang = msg_stencil_.get_value_string(language_key_);
+    std::string lang_file(language_file_dir_);
+    lang_file.append("/");
 
     std::unique_ptr<skyloupe::Generator> genny;
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
-    if (lang == ada_str)
+    if (lang == ada_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
-    else if (lang == c_str)
+    else if (lang == c_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
-    else if (lang == cpp_str)
+    else if (lang == cpp_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil_));
-        genny->set_lang_settings("lang.cpp.json");
+        lang_file = msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json");
+        genny->set_lang_settings(lang_file);
         success = genny->generate(errorcode);
 
         if (success)
@@ -66,12 +69,12 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
             }
         }
     }
-    else if (lang == java_str)
+    else if (lang == java_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_stencil_));
         success = genny->generate(errorcode);
     }
-    else if (lang == py_str)
+    else if (lang == py_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::PyGenerator(msg_stencil_));
         success = genny->generate(errorcode);

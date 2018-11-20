@@ -20,7 +20,13 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp)
 
+set(WIREGEN_FILES
+                ClassyMcClassface.h
+                StructyMcStructface.c
+                StructyMcStructface.h)
 set(UNIT_TESTS
+                cgenerator_unit_test.cpp
+                cresults_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 cppresults_unit_test.cpp
                 filewriter_unit_test.cpp
@@ -31,13 +37,13 @@ set(UNIT_TESTS
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
 
-add_executable(${TARGETNAME} main.cpp ${UNIT_TESTS})
+add_executable(${TARGETNAME} main.cpp ${WIREGEN_FILES} ${UNIT_TESTS})
 
 target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main)
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
-add_dependencies(${TARGETNAME} stencil skywire)
+add_dependencies(${TARGETNAME} stencil skywire wiregen)
 
 install(TARGETS ${TARGETNAME} DESTINATION ${CMAKE_INSTALL_DIR}/bin)
 install(FILES ${UNIT_TEST_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

@@ -1,0 +1,7 @@
+{
+    "stringValues": {
+        "banner_str":"// This is the generated file",
+        "sentry_str":"#pragma once",
+        "include_str":"#include __INCLUDEFILE__"
+    }
+}

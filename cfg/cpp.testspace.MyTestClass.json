@@ -3,7 +3,8 @@
       "classname":"ClassyMcClassface",
       "outputfilename":"ClassyMcClassface.h",
       "namespace":"testspace",
-      "language":"c++"
+      "language": "c++",
+      "lang_file": "lang.cpp.json"
    },
    "members":{  
       "100":{  
@@ -25,6 +26,6 @@
    },
    "includes":[  
       "\"streamable.h\"",
-      "\u003cstdint.h\u003e"
+      "<stdint.h>"
    ]
 }
