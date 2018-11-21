@@ -23,11 +23,6 @@ protected:
     CppResultsUnitTest() {}
 };
 
-TEST_F(CppResultsUnitTest, Instantiate)
-{
-    ASSERT_NO_THROW(testspace::ClassyMcClassface classy);
-}
-
 TEST_F(CppResultsUnitTest, Serialize)
 {
     testspace::ClassyMcClassface classy;

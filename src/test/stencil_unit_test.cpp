@@ -18,7 +18,9 @@
 #include <google/protobuf/util/json_util.h>
 #include "google/protobuf/util/message_differencer.h"
 #include <string>
+#pragma warning(disable:4800)  
 #include "stencil.pb.h"
+#pragma warning(default:4800) 
 #include "stencil/stencil.h"
 
 class StencilUnitTest : public ::testing::Test
@@ -32,11 +34,6 @@ protected:
 
     std::string includes_[3];
 };
-
-TEST_F(StencilUnitTest, Instantiate)
-{
-    ASSERT_NO_THROW(skyloupe::Stencil unit);
-}
 
 TEST_F(StencilUnitTest, Serialize_Json)
 {

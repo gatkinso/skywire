@@ -5,35 +5,18 @@
 //
 //    This software is the property of Geoffrey John Atkinson.
 //
-
-#ifndef __wiregen_stream_h
-#define __wiregen_stream_h
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <memory.h>
-
-#define DEF_CSTREAM_SIZE 1024
-
-typedef struct CStreamTag {
-    char* buffer_;
-    size_t size_;
-    char *head_, *tail_;
-} Cstream;
+#include <stdio.h>
+#include "cstream.h"
 
 void cstream_init(Cstream* streamer, size_t size)
 {
-    if (streamer != NULL)
-        free(streamer->buffer_);
-
     streamer->buffer_ = (char*)malloc(size);
     streamer->size_ = size;
     streamer->head_ = streamer->buffer_;
     streamer->tail_ = streamer->head_;
 }
 
-
-void cstream_fini(Cstream* streamer, size_t size)
+void cstream_fini(Cstream* streamer)
 {
     if (streamer != NULL)
         free(streamer->buffer_);
@@ -43,7 +26,7 @@ void cstream_fini(Cstream* streamer, size_t size)
     streamer->tail_ = NULL;
 }
 
-void write(Cstream* streamer, const void* d, size_t sz)
+void cstream_write(Cstream* streamer, const void* d, size_t sz)
 {
     size_t tsize = 0;
     size_t hsize = 0;
@@ -60,7 +43,7 @@ void write(Cstream* streamer, const void* d, size_t sz)
         return;
     }
 
-    if (streamer->tail_+sz >= streamer->buffer_+streamer->size_)
+    if (streamer->tail_+sz > streamer->buffer_+streamer->size_)
     {
         hsize = streamer->head_ - streamer->buffer_;
         tsize = streamer->tail_ - streamer->buffer_;
@@ -70,18 +53,20 @@ void write(Cstream* streamer, const void* d, size_t sz)
         {
             grow = sz * 2;
         }
-        streamer->buffer_ = (char*)realloc(streamer->buffer_, streamer->size_+grow);
 
+        streamer->size_ = streamer->size_ + grow;
+        char* newbuffer = (char*)realloc(streamer->buffer_, streamer->size_);
+        streamer->buffer_ = newbuffer;
         streamer->head_ = streamer->buffer_ + hsize;
         streamer->tail_ = streamer->buffer_ + tsize;
     }
 
-    memcpy(streamer->tail_, d, sizeof(char));
+    memcpy(streamer->tail_, d, sz);
 
     streamer->tail_ += sz;
 }
 
-void read(Cstream* streamer, void* d, size_t sz)
+void cstream_read(Cstream* streamer, void* d, size_t sz)
 {
     size_t tsize = 0;
     size_t hsize = 0;
@@ -97,8 +82,8 @@ void read(Cstream* streamer, void* d, size_t sz)
         return;
     }
 
-    if (streamer->head_+sz > streamer->tail_ ||
-        streamer->head_- streamer->buffer_ > (0.8)*streamer->size_)
+    if (streamer->head_ + sz > streamer->tail_ ||
+        streamer->head_ - streamer->buffer_ > (0.8) * streamer->size_)
     {
         tsize = streamer->tail_ - streamer->head_;
 
@@ -107,12 +92,11 @@ void read(Cstream* streamer, void* d, size_t sz)
         {
             grow = sz * 2;
         }
-        char* newbuffer = (char*)malloc(streamer->size_ + grow);        
+
+        streamer->size_ = streamer->size_ + grow;
+        char* newbuffer = (char*)malloc(streamer->size_);        
         memcpy(newbuffer, streamer->head_, tsize);
-
-        free(streamer->buffer_);
         streamer->buffer_ = newbuffer;
-
         streamer->head_ = streamer->buffer_;
         streamer->tail_ = streamer->buffer_ + tsize;
     }
@@ -121,7 +105,3 @@ void read(Cstream* streamer, void* d, size_t sz)
 
     streamer->head_ += sz;
 }
-
-#endif
-
-

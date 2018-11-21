@@ -26,5 +26,5 @@ protected:
 
 TEST_F(ProcessorUnitTest, Instantiate)
 {
-    ASSERT_NO_THROW(skyloupe::Processor unit);
+
 }

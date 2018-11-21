@@ -23,22 +23,35 @@ protected:
     CResultsUnitTest() {}
 };
 
-TEST_F(CResultsUnitTest, Instantiate)
+TEST_F(CResultsUnitTest, SerDes)
 {
-    ASSERT_NO_THROW(StructyMcStructface structy);
-}
+    StructyMcStructface structy, structz;
+    Cstream cs;
 
-TEST_F(CResultsUnitTest, Serialize)
-{
+    structy.a_myfloat100 = static_cast<float>(101.1);
+    structy.b_myuint32_200 = 200;
+    structy.c_myint64_201 = 201;
+    structy.d_myDoubleBubble202 = (double)202.2;
 
-}
+    cstream_init(&cs, 1024 * 64);
 
-TEST_F(CResultsUnitTest, Deserialize)
-{
+    StructyMcStructface_serialize(&structy, &cs);
 
+    StructyMcStructface_deserialize(&structz, &cs);
+
+    ASSERT_EQ(1, StructyMcStructface_Equals(&structy, &structz));
+
+    cstream_fini(&cs);
 }
 
 TEST_F(CResultsUnitTest, Size)
 {
+    StructyMcStructface structy;
 
+    structy.a_myfloat100 = static_cast<float>(101.1);
+    structy.b_myuint32_200 = 200;
+    structy.c_myint64_201 = 201;
+    structy.d_myDoubleBubble202 = 202.2;
+
+    ASSERT_EQ(StructyMcStructface_size(), 24);
 }

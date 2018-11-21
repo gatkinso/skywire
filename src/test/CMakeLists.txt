@@ -18,17 +18,20 @@ set(TARGETNAME unit_tests)
 include_directories(
                 ${PROJECT_BINARY_DIR}/proto/cpp
                 ${PROJECT_SOURCE_DIR}/include
-                ${PROJECT_SOURCE_DIR}/lang/cpp)
+                ${PROJECT_SOURCE_DIR}/lang/cpp
+                ${PROJECT_SOURCE_DIR}/lang/c)
 
 set(WIREGEN_FILES
+                ${PROJECT_SOURCE_DIR}/lang/c/cstream.c
                 ClassyMcClassface.h
                 StructyMcStructface.c
                 StructyMcStructface.h)
 set(UNIT_TESTS
                 cgenerator_unit_test.cpp
-                cresults_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 cppresults_unit_test.cpp
+                cresults_unit_test.cpp
+                cstream_unit_test.cpp
                 filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp
