@@ -15,6 +15,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <cstring>
 #include "cstream.h"
 
 class CStreamUnitTest : public ::testing::Test
