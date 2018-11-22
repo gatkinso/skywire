@@ -129,12 +129,17 @@ public:
 
     size_t write(const void* data, size_t len)
     {
-        if(buffer_.size() < pos_+len)
+        if(buffer_.size() < pos_ + len)
         {
-            buffer_.resize(buffer_.size()+ expand_size_);
+            size_t grow = expand_size_;
+            if (len > expand_size_)
+            {
+                grow = len + expand_size_;
+            }
+            buffer_.resize(buffer_.size() + grow);
         }
 
-        std::memcpy(buffer_.data()+pos_, data, len);
+        std::memcpy(buffer_.data() + pos_, data, len);
         pos_ += len;
 
         return len;
@@ -142,13 +147,15 @@ public:
 
     size_t read(void* data, size_t len)
     {
-        if(len == 0 || buffer_.size() < len)
+        if(len == 0 || buffer_.size() < len || pos_ < len)
         {
             return 0;
         }
 
         std::memcpy(data, buffer_.data(), len);
         buffer_.erase(buffer_.begin(), buffer_.begin() + len);
+
+        pos_ -= len;
 
         return len;
     }
@@ -158,12 +165,24 @@ public:
         return buffer_.size();
     }
 
+    size_t byte_size() const
+    {
+        return pos_;
+    }
+
     void clear()
     {
         buffer_.clear();
     }
 
-    protected:
+    void set_expand_size(size_t expand_size)
+    {
+        if (expand_size_ == 0) return;
+
+        expand_size_ = expand_size;
+    }
+
+protected:
     size_t pos_;
     size_t expand_size_;
     std::vector<char> buffer_;
