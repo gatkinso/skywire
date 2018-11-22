@@ -72,7 +72,7 @@ TEST_F(StreamUnitTest, WriteBigGrow)
 {
     const size_t ARRAYSIZE = 100000;
     skyloupe::Stream ss;
-    uint64_t big_array[ARRAYSIZE];
+    uint64_t* big_array = new uint64_t[ARRAYSIZE];
 
     for (uint64_t i = 0; i < static_cast<uint64_t>(ARRAYSIZE); i++)
     {
@@ -84,6 +84,8 @@ TEST_F(StreamUnitTest, WriteBigGrow)
 
     bytes = ARRAYSIZE * sizeof(uint64_t);
     ASSERT_EQ(ss.byte_size(), bytes);
+    
+    delete [] big_array;
 }
 
 TEST_F(StreamUnitTest, WriteReadBigGrow)
@@ -113,8 +115,8 @@ TEST_F(StreamUnitTest, WriteReadBigGrow)
         ASSERT_EQ(big_array_out[i], i);
     }
 
-    delete big_array_out;
-    delete big_array;
+    delete [] big_array_out;
+    delete [] big_array;
 }
 
 TEST_F(StreamUnitTest, WriteLittleGrows)
@@ -160,7 +162,7 @@ TEST_F(StreamUnitTest, WriteReadLittleGrows)
         ASSERT_EQ(array_out[i], static_cast<double>(i));
     }
 
-    delete array_out;
+    delete [] array_out;
 }
 
 TEST_F(StreamUnitTest, InterleavedSerDes)

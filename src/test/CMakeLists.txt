@@ -21,11 +21,18 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c)
 
-set(WIREGEN_FILES
+set(WIREGEN_C_FILES
                 ${PROJECT_SOURCE_DIR}/lang/c/cstream.c
-                ClassyMcClassface.h
                 StructyMcStructface.c
                 StructyMcStructface.h)
+
+set(WIREGEN_CPP_FILES
+                ClassyMcClassface.h)
+
+if(UNIX)
+    set_source_files_properties(${WIREGEN_C_FILES} PROPERTIES COMPILE_FLAGS -std=c99)
+endif(UNIX)
+
 set(UNIT_TESTS
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
@@ -40,7 +47,7 @@ set(UNIT_TESTS
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
 
-add_executable(${TARGETNAME} main.cpp ${WIREGEN_FILES} ${UNIT_TESTS})
+add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
 target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main)
 

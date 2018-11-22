@@ -21,8 +21,8 @@ class Stream
 {
 public:
     Stream(size_t size = 512, size_t expand_size = 512)
-    :expand_size_(expand_size)
-    ,pos_(0)
+    :pos_(0)
+    ,expand_size_(expand_size)
     {
         buffer_.resize(size);
     }
