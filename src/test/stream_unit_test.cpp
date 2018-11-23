@@ -165,7 +165,7 @@ TEST_F(StreamUnitTest, WriteReadLittleGrows)
     delete [] array_out;
 }
 
-TEST_F(StreamUnitTest, InterleavedSerDes)
+TEST_F(StreamUnitTest, SequentialSerDes)
 {
     skyloupe::Stream ss(16 * 1024);
     uint32_t ui32 = 0xCAFEBABE;
@@ -202,3 +202,153 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
     }
 }
 
+TEST_F(StreamUnitTest, InterleavedSerDes)
+{
+    skyloupe::Stream ss(16 * 1024);
+    uint32_t total = 10000;
+    uint32_t i = 0;
+    uint32_t j = 0;
+
+    for (i = 0; i < total/2; i++)
+    {
+        uint32_t ui32 = i;
+        float floaty = static_cast<float>(i);
+        float boaty = static_cast<float>(i);
+        char coal = static_cast<char>(i);
+
+        ss.serialize(ui32);
+        ss.serialize(floaty);
+        ss.serialize(boaty);
+        ss.serialize(coal);
+    }
+
+    for (j = 0; j < total/4; j++) 
+    {
+        uint32_t ui32 = j;
+        float floaty = static_cast<float>(j);
+        float boaty = static_cast<float>(j);
+        char coal = static_cast<char>(j);
+
+        uint32_t ui32_out = 0;
+        float floaty_out = 0;
+        float boaty_out = 0;
+        char coal_out = 0;
+
+        ss.deserialize(ui32_out);
+        ss.deserialize(floaty_out);
+        ss.deserialize(boaty_out);
+        ss.deserialize(coal_out);
+
+        ASSERT_EQ(ui32, ui32_out);
+        ASSERT_EQ(floaty, floaty_out);
+        ASSERT_EQ(boaty, boaty_out);
+        ASSERT_EQ(coal, coal_out);
+    }
+
+    for (; i < (3*total)/4; i++)
+    {
+        uint32_t ui32 = i;
+        float floaty = static_cast<float>(i);
+        float boaty = static_cast<float>(i);
+        char coal = static_cast<char>(i);
+
+        ss.serialize(ui32);
+        ss.serialize(floaty);
+        ss.serialize(boaty);
+        ss.serialize(coal);
+    }
+
+    for (; j < i-2; j++)
+    {
+        uint32_t ui32 = j;
+        float floaty = static_cast<float>(j);
+        float boaty = static_cast<float>(j);
+        char coal = static_cast<char>(j);
+
+        uint32_t ui32_out = 0;
+        float floaty_out = 0;
+        float boaty_out = 0;
+        char coal_out = 0;
+
+        ss.deserialize(ui32_out);
+        ss.deserialize(floaty_out);
+        ss.deserialize(boaty_out);
+        ss.deserialize(coal_out);
+
+        ASSERT_EQ(ui32, ui32_out);
+        ASSERT_EQ(floaty, floaty_out);
+        ASSERT_EQ(boaty, boaty_out);
+        ASSERT_EQ(coal, coal_out);
+    }
+
+    for (; i < total; i++)
+    {
+        uint32_t ui32 = i;
+        float floaty = static_cast<float>(i);
+        float boaty = static_cast<float>(i);
+        char coal = static_cast<char>(i);
+
+        ss.serialize(ui32);
+        ss.serialize(floaty);
+        ss.serialize(boaty);
+        ss.serialize(coal);
+    }
+
+    for (; j < total; j++)
+    {
+        uint32_t ui32 = j;
+        float floaty = static_cast<float>(j);
+        float boaty = static_cast<float>(j);
+        char coal = static_cast<char>(j);
+
+        uint32_t ui32_out = 0;
+        float floaty_out = 0;
+        float boaty_out = 0;
+        char coal_out = 0;
+
+        ss.deserialize(ui32_out);
+        ss.deserialize(floaty_out);
+        ss.deserialize(boaty_out);
+        ss.deserialize(coal_out);
+
+        ASSERT_EQ(ui32, ui32_out);
+        ASSERT_EQ(floaty, floaty_out);
+        ASSERT_EQ(boaty, boaty_out);
+        ASSERT_EQ(coal, coal_out);
+    }
+
+    ASSERT_EQ(ss.byte_size(), 0);
+}
+
+TEST_F(StreamUnitTest, OutofBoundRead)
+{
+    skyloupe::Stream ss(512, 32);
+    const size_t NUMWRITES = 10;
+    double boaty = 0.0;
+    double* array_out = new double[NUMWRITES];
+
+    for (size_t i = 0; i < NUMWRITES; i++)
+    {
+        array_out[i] = 0.0;
+        boaty = static_cast<double>(i);
+        size_t bytes = ss.write(&boaty, sizeof(boaty));
+        ASSERT_EQ(bytes, sizeof(boaty));
+    }
+
+    size_t bytes = NUMWRITES * sizeof(boaty);
+    ASSERT_EQ(ss.byte_size(), bytes);
+
+    bytes = ss.read(array_out, NUMWRITES * sizeof(double));
+    ASSERT_EQ(bytes, NUMWRITES * sizeof(double));
+
+    for (size_t i = 0; i < NUMWRITES; i++)
+    {
+        ASSERT_EQ(array_out[i], static_cast<double>(i));
+    }
+
+    //Extra read, should return zero
+    bytes = ss.read(array_out, sizeof(double));
+    ASSERT_EQ(bytes, 0);
+
+    delete[] array_out;
+}
