@@ -43,7 +43,7 @@ void cstream_write(Cstream* streamer, const void* d, size_t sz)
         return;
     }
 
-    if (streamer->tail_+sz > streamer->buffer_+streamer->size_)
+    if (streamer->tail_ + sz > streamer->buffer_ + streamer->size_)
     {
         hsize = streamer->head_ - streamer->buffer_;
         tsize = streamer->tail_ - streamer->buffer_;
@@ -72,28 +72,15 @@ void cstream_read(Cstream* streamer, void* d, size_t sz)
     size_t hsize = 0;
     size_t grow = 0;
 
-    if (sz == 0)
+    if (sz == 0 || streamer == NULL || streamer->head_ + sz > streamer->tail_)
     {
         return;
     }
 
-    if (streamer == NULL)
-    {
-        return;
-    }
-
-    if (streamer->head_ + sz > streamer->tail_ ||
-        streamer->head_ - streamer->buffer_ > (0.8) * streamer->size_)
+    if((streamer->head_ - streamer->buffer_) > (0.8) * streamer->size_)
     {
         tsize = streamer->tail_ - streamer->head_;
 
-        grow = streamer->size_ * 2;
-        if (sz >= grow)
-        {
-            grow = sz * 2;
-        }
-
-        streamer->size_ = streamer->size_ + grow;
         char* newbuffer = (char*)malloc(streamer->size_);        
         memcpy(newbuffer, streamer->head_, tsize);
         streamer->buffer_ = newbuffer;

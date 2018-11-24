@@ -24,6 +24,7 @@ namespace skyloupe
 class CGenerator : public Generator
 {
 public:
+    CGenerator() = delete;
     CGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~CGenerator() {}
 
@@ -32,6 +33,31 @@ public:
 protected:
     virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
+
+    virtual bool hdr_banner(std::string& str, int& errorcode);
+    virtual bool hdr_sentry_top(std::string& str, int& errorcode);
+    virtual bool hdr_includes(std::string& str, int& errorcode);
+    virtual bool hdr_extern_top(std::string& str, int& errorcode);
+    virtual bool hdr_structtag(std::string& str, int& errorcode);
+    virtual bool hdr_members(std::string& str, int& errorcode);
+    virtual bool hdr_structtype(std::string& str, int& errorcode);
+    virtual bool hdr_serialize(std::string& str, int& errorcode);
+    virtual bool hdr_deserialize(std::string& str, int& errorcode);
+    virtual bool hdr_size(std::string& str, int& errorcode);
+    virtual bool hdr_get_functions(std::string& str, int& errorcode);
+    virtual bool hdr_set_functions(std::string& str, int& errorcode);
+    virtual bool hdr_equals_function(std::string& str, int& errorcode);
+    virtual bool hdr_extern_bottom(std::string& str, int& errorcode);
+    virtual bool hdr_sentry_bottom(std::string& str, int& errorcode);
+
+    virtual bool imp_banner(std::string& str, int& errorcode);
+    virtual bool imp_includes(std::string& str, int& errorcode);
+    virtual bool imp_serialize(std::string& str, int& errorcode);
+    virtual bool imp_deserialize(std::string& str, int& errorcode);
+    virtual bool imp_size(std::string& str, int& errorcode);
+    virtual bool imp_get_functions(std::string& str, int& errorcode);
+    virtual bool imp_set_functions(std::string& str, int& errorcode);
+    virtual bool imp_equals_function(std::string& str, int& errorcode);
 };
 
 }

@@ -21,7 +21,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 set(_SOURCES main.cpp)
 
 set(EXAMPLE_MESSAGE_JSON ${PROJECT_SOURCE_DIR}/cfg/cpp.testspace.MyTestClass.json)
-set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/cfg/lang.cpp.json)
+set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/cfg/lang.cpp.json
+                   ${PROJECT_SOURCE_DIR}/cfg/lang.c.json)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 

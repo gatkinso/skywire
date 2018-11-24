@@ -45,7 +45,32 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     else if (lang == c_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
+        lang_file = msg_stencil_.get_value_string(language_file_key_, "lang.c.json");
+        genny->set_lang_settings(lang_file);
         success = genny->generate(errorcode);
+
+        if (success)
+        {
+            Generator::results_t results = genny->get_results();
+            if (results.empty() == false)
+            {
+                std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
+                std::string pathname_str = outputdir + "/" + filename_str;
+                const std::string& contents_h_str = results[0];
+                const std::string& contents_c_str = results[1];
+
+                std::unique_ptr<skyloupe::ResultPresenter> ressie_h;
+                ressie_h = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_h_str));
+                ressie_h->present(errorcode);
+
+                filename_str = msg_stencil_.get_value_string("outputcfilename");
+                pathname_str = outputdir + "/" + filename_str;
+
+                std::unique_ptr<skyloupe::ResultPresenter> ressie_c;
+                ressie_c = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_c_str));
+                ressie_c->present(errorcode);
+            }
+        }
     }
     else if (lang == cpp_str_)
     {
@@ -59,7 +84,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
             Generator::results_t results = genny->get_results();
             if (results.empty() == false)
             {
-                std::string filename_str = msg_stencil_.get_value_string("outputfilename");
+                std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
                 std::string pathname_str = outputdir + "/" + filename_str;
                 const std::string& contents_str = results[0];
 

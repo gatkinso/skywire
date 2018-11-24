@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include "errorcodes.h"
 #include "stencil/stencil.h"
 
@@ -42,7 +43,13 @@ protected:
     Stencil lang_stencil_;
     Stencil msg_stencil_;
     results_t results_;
+    std::stringstream ss_;
     int errorcode_;
+
+    void cr(std::string& str);
+    bool insert_indents(std::string& str, unsigned int indents = 0);
+    bool gen_one_line(std::string& str, const std::string& key, unsigned int indents = 0);
+    bool gen_one_line_subst(std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
 };
 
 }

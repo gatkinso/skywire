@@ -1,7 +1,8 @@
 {
    "stringValues":{  
       "classname":"StructyMcClassface",
-      "outputfilename":"StructyMcClassface.h",
+      "outputheaderfilename":"StructyMcStructface.h",
+      "outputcfilename":"StructyMcStructface.c",
       "namespace":"testspace",
       "language": "c",
       "lang_file": "lang.c.json"
