@@ -46,10 +46,13 @@ protected:
     std::stringstream ss_;
     int errorcode_;
 
-    void cr(std::string& str);
-    bool insert_indents(std::string& str, unsigned int indents = 0);
-    bool gen_one_line(std::string& str, const std::string& key, unsigned int indents = 0);
-    bool gen_one_line_subst(std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    void cr();
+    void insert_char(const char c);
+    bool insert_indents(unsigned int indents = 0);
+    bool gen_one_line(const std::string& key, unsigned int indents = 0);
+    bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    bool inorder_members(int& errorcode, unsigned int indents = 0);
+    bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
 };
 
 }

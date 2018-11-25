@@ -20,18 +20,17 @@ extern "C" {
     int StructyMcStructface_serialize(StructyMcStructface* structure, Cstream* str);
     int StructyMcStructface_deserialize(StructyMcStructface* structure, Cstream* str);
     size_t StructyMcStructface_size();
-
-    int StructyMcStructface_Get_a_myfloat100(const StructyMcStructface* structure, float* value);
-    int StructyMcStructface_Get_b_myuint32_200(const StructyMcStructface* structure, uint32_t* value);
-    int StructyMcStructface_Get_c_myint64_201(const StructyMcStructface* structure, int64_t* value);
-    int StructyMcStructface_Get_d_myDoubleBubble202(const StructyMcStructface* structure, double* value);
-
-    void StructyMcStructface_Set_a_myfloat100(StructyMcStructface* const structure, const float newval);
-    void StructyMcStructface_Set_b_myuint32_200(StructyMcStructface* const structure, const uint32_t newval);
-    void StructyMcStructface_Set_c_myint64_201(StructyMcStructface* const structure, const int64_t newval);
-    void StructyMcStructface_Set_d_myDoubleBubble202(StructyMcStructface* const structure, const double newval);
-
     int StructyMcStructface_Equals(StructyMcStructface* const left, StructyMcStructface* const right);
+
+    int Get_StructyMcStructface_a_myfloat100(const StructyMcStructface* structure, float* value);
+    int Get_StructyMcStructface_b_myuint32_200(const StructyMcStructface* structure, uint32_t* value);
+    int Get_StructyMcStructface_c_myint64_201(const StructyMcStructface* structure, int64_t* value);
+    int Get_StructyMcStructface_d_myDoubleBubble202(const StructyMcStructface* structure, double* value);
+
+    void Set_StructyMcStructface_a_myfloat100(StructyMcStructface* const structure, const float newval);
+    void Set_StructyMcStructface_b_myuint32_200(StructyMcStructface* const structure, const uint32_t newval);
+    void Set_StructyMcStructface_c_myint64_201(StructyMcStructface* const structure, const int64_t newval);
+    void Set_StructyMcStructface_d_myDoubleBubble202(StructyMcStructface* const structure, const double newval);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 {
    "stringValues":{  
-      "classname":"StructyMcClassface",
+      "classname":"StructyMcStructface",
       "outputheaderfilename":"StructyMcStructface.h",
       "outputcfilename":"StructyMcStructface.c",
       "namespace":"testspace",

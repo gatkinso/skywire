@@ -40,32 +40,21 @@ bool CGenerator::do_header(int& errorcode)
 
     std::string& header_string = results_[0];
 
-    hdr_banner(header_string, errorcode);
-    cr(header_string);
-    hdr_sentry_top(header_string, errorcode);
-    cr(header_string);
-    hdr_includes(header_string, errorcode);
-    cr(header_string);
-    hdr_extern_top(header_string, errorcode);
-    cr(header_string);
-    hdr_structtag(header_string, errorcode);
-    hdr_members(header_string, errorcode);
-    hdr_structtype(header_string, errorcode);
-    cr(header_string);
-    hdr_serialize(header_string, errorcode);
-    hdr_deserialize(header_string, errorcode);
-    hdr_size(header_string, errorcode);
-    cr(header_string);
-    hdr_get_functions(header_string, errorcode);
-    cr(header_string);
-    hdr_set_functions(header_string, errorcode);
-    cr(header_string);
-    hdr_equals_function(header_string, errorcode);
-    cr(header_string);
-    hdr_extern_bottom(header_string, errorcode);
-    cr(header_string);
-    hdr_sentry_bottom(header_string, errorcode);
-    cr(header_string);
+    hdr_banner(errorcode);
+    hdr_sentry_top(errorcode);
+    hdr_includes(errorcode);
+    hdr_extern_top(errorcode);
+    hdr_structtag(errorcode);
+    hdr_members(errorcode);
+    hdr_structtype(errorcode);
+    hdr_serialize(errorcode);
+    hdr_deserialize(errorcode);
+    hdr_size(errorcode);
+    hdr_get_functions(errorcode);
+    hdr_set_functions(errorcode);
+    hdr_equals_function(errorcode);
+    hdr_extern_bottom(errorcode);
+    hdr_sentry_bottom(errorcode);
 
     header_string.append(ss_.str());
 
@@ -78,34 +67,34 @@ bool CGenerator::do_implementation(int& errorcode)
 
     std::string& imp_string = results_[1];
 
-    imp_banner(imp_string, errorcode);
-    cr(imp_string);
-    imp_includes(imp_string, errorcode);
-    cr(imp_string);
-    imp_serialize(imp_string, errorcode);
-    imp_deserialize(imp_string, errorcode);
-    imp_size(imp_string, errorcode);
-    imp_get_functions(imp_string, errorcode);
-    imp_set_functions(imp_string, errorcode);
-    imp_equals_function(imp_string, errorcode);
-    cr(imp_string);
+    imp_banner(errorcode);
+    cr();
+    imp_includes(errorcode);
+    cr();
+    imp_serialize(errorcode);
+    imp_deserialize(errorcode);
+    imp_size(errorcode);
+    imp_get_functions(errorcode);
+    imp_set_functions(errorcode);
+    imp_equals_function(errorcode);
+    cr();
 
     imp_string.append(ss_.str());
 
     return true;
 }
 
-bool CGenerator::hdr_banner(std::string& str, int& errorcode)
+bool CGenerator::hdr_banner(int& errorcode)
 {
-    return gen_one_line(str, "banner_str");
+    return gen_one_line("banner_str");
 }
 
-bool CGenerator::hdr_sentry_top(std::string& str, int& errorcode)
+bool CGenerator::hdr_sentry_top(int& errorcode)
 {
-    return gen_one_line(str, "sentry_top_str");
+    return gen_one_line_subst("sentry_top_str", "classname", "classname_substr", 0);
 }
 
-bool CGenerator::hdr_includes(std::string& str, int& errorcode) {
+bool CGenerator::hdr_includes(int& errorcode) {
     std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
@@ -122,103 +111,113 @@ bool CGenerator::hdr_includes(std::string& str, int& errorcode) {
     return true;
 }
 
-bool CGenerator::hdr_extern_top(std::string& str, int& errorcode)
+bool CGenerator::hdr_extern_top(int& errorcode)
 {
-    return gen_one_line(str, "extern_bottom_str");
+    return gen_one_line("extern_top_str");
 }
 
-bool CGenerator::hdr_structtag(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_members(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_structtype(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_serialize(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_deserialize(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_size(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_get_functions(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_set_functions(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-bool CGenerator::hdr_equals_function(std::string& str, int& errorcode) {
-    bool success = true;
-
-    return success;
-}
-
-bool CGenerator::hdr_extern_bottom(std::string& str, int& errorcode)
+bool CGenerator::hdr_structtag(int& errorcode)
 {
-    return gen_one_line(str, "extern_bottom_str");
+    return gen_one_line_subst("classname_top_str", "classname", "classname_substr", 1);
 }
 
-bool CGenerator::hdr_sentry_bottom(std::string& str, int& errorcode)
+bool CGenerator::hdr_members(int& errorcode)
 {
-    return gen_one_line(str, "sentry_bottom_str");
+    return inorder_members(errorcode, 2);
 }
 
-bool CGenerator::imp_banner(std::string& str, int& errorcode) {
+bool CGenerator::hdr_structtype(int& errorcode)
+{
+    bool success = gen_one_line_subst("classname_bottom_str", "classname", "classname_substr", 1);
+    return success;
+}
+
+bool CGenerator::hdr_serialize(int& errorcode)
+{
+    bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 1);
+    insert_char(';');
+    cr();
+    return success;
+}
+
+bool CGenerator::hdr_deserialize(int& errorcode)
+{
+    bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 1);
+    insert_char(';');
+    cr();
+    return success;
+}
+
+bool CGenerator::hdr_size(int& errorcode)
+{
+    bool success = gen_one_line_subst("size_str", "classname", "classname_substr", 1);
+    insert_char(';');
+    cr();
+    return success;
+}
+
+bool CGenerator::hdr_get_functions(int& errorcode)
+{
+    return inorder_functions("get_str", errorcode, 1, true);
+}
+bool CGenerator::hdr_set_functions(int& errorcode)
+{
+    return inorder_functions("set_str", errorcode, 1, true);
+}
+
+bool CGenerator::hdr_equals_function(int& errorcode) {
+    bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 1);
+    insert_char(';');
+    cr();
+    return success;
+}
+
+bool CGenerator::hdr_extern_bottom(int& errorcode)
+{
+    return gen_one_line("extern_bottom_str");
+}
+
+bool CGenerator::hdr_sentry_bottom(int& errorcode)
+{
+    return gen_one_line("sentry_bottom_str");
+}
+
+bool CGenerator::imp_banner(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_includes(std::string& str, int& errorcode) {
+bool CGenerator::imp_includes(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_serialize(std::string& str, int& errorcode) {
+bool CGenerator::imp_serialize(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_deserialize(std::string& str, int& errorcode) {
+bool CGenerator::imp_deserialize(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_size(std::string& str, int& errorcode) {
+bool CGenerator::imp_size(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_get_functions(std::string& str, int& errorcode) {
+bool CGenerator::imp_get_functions(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_set_functions(std::string& str, int& errorcode) {
+bool CGenerator::imp_set_functions(int& errorcode) {
     bool success = true;
 
     return success;
 }
-bool CGenerator::imp_equals_function(std::string& str, int& errorcode) {
+bool CGenerator::imp_equals_function(int& errorcode) {
     bool success = true;
 
     return success;

@@ -1,32 +1,35 @@
 {
     "stringValues": {
-        "banner_str":"// This is the generated file",
-        "sentry_top_str":"#ifndef __CLASSNAME___h\n#define __CLASSNAME___h",
-        "sentry_bottom_str":"#endif //__CLASSNAME___h",
-        "include_str":"#include __INCLUDEFILE__",
-        "extern_top_str":"#ifdef __cplusplus\nextern \"C\" {\n#endif",
-        "extern_bottom_str":"#ifdef __cplusplus\n}\n#endif",
+        "banner_str":"// This is the generated file\n\n",
+        "sentry_top_str":"#ifndef ___CLASSNAME___h\n#define ___CLASSNAME___h\n\n",
+        "sentry_bottom_str":"#endif //___CLASSNAME___h\n",
+        "include_str":"#include __INCLUDEFILE__\n",
+        "extern_top_str":"\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n",
+        "extern_bottom_str":"\n#ifdef __cplusplus\n}\n#endif\n\n",
         "indent_str":"    ",
 
-        "classname_str":"class __CLASSNAME__ : public skyloupe::Streamable {",
+        "classname_top_str":"typedef struct __CLASSNAME__Tag {\n",
+        "classname_bottom_str":"} __CLASSNAME__;\n\n",
       
         
-        "serialize_str": "bool serialize(skyloupe::Stream& str) const { ",
-        "deserialize_str": "bool deserialize(skyloupe::Stream& str) { ",
-        "size_str": "size_t size() const { ",
-        "serialize_mem_str": "str.serialize(__MEMBERNAME__);",
-        "deserialize_mem_str": "str.deserialize(__MEMBERNAME__);",
+        "serialize_str": "int __CLASSNAME___Serialize(__CLASSNAME__* structure, Cstream* str)",
+        "deserialize_str": "int __CLASSNAME___Deserialize(__CLASSNAME__* structure, Cstream* str)",
+        "size_str": "size_t __CLASSNAME___size()",
+        "serialize_mem_str": "str.serialize(__MEMBERNAME__);\n",
+        "deserialize_mem_str": "str.deserialize(__MEMBERNAME__);\n",
         "size_mem_str":"sizeof(__MEMBERNAME__)",
         "endclass_str":"};",
 
         "endfunction_str":"}",
 
+        "semicolon_str":";",
+
         "classname_substr":"__CLASSNAME__",
         "type_substr":"__TYPE__",
         "member_substr":"__MEMBERNAME__",
-        "get_str": "__TYPE__ __CLASSNAME__Set___MEMBERNAME__(__CLASSNAME__* structure, __TYPE__* valule);",
-        "set_str": "void Set___MEMBERNAME__(const __TYPE__ newval) { __MEMBERNAME__ = newval; }"
-
+        "get_str": "int Get___CLASSNAME_____MEMBERNAME__(__CLASSNAME__* structure, __TYPE__* value);\n",
+        "set_str": "int Set___CLASSNAME_____MEMBERNAME__(__CLASSNAME__* const structure, __TYPE__* const value);\n",
+        "equals_str": "int Equals___CLASSNAME__(__CLASSNAME__ const * left, __CLASSNAME__ const * right)",
 
     }
 }

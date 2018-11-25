@@ -34,30 +34,30 @@ protected:
     virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool hdr_banner(std::string& str, int& errorcode);
-    virtual bool hdr_sentry_top(std::string& str, int& errorcode);
-    virtual bool hdr_includes(std::string& str, int& errorcode);
-    virtual bool hdr_extern_top(std::string& str, int& errorcode);
-    virtual bool hdr_structtag(std::string& str, int& errorcode);
-    virtual bool hdr_members(std::string& str, int& errorcode);
-    virtual bool hdr_structtype(std::string& str, int& errorcode);
-    virtual bool hdr_serialize(std::string& str, int& errorcode);
-    virtual bool hdr_deserialize(std::string& str, int& errorcode);
-    virtual bool hdr_size(std::string& str, int& errorcode);
-    virtual bool hdr_get_functions(std::string& str, int& errorcode);
-    virtual bool hdr_set_functions(std::string& str, int& errorcode);
-    virtual bool hdr_equals_function(std::string& str, int& errorcode);
-    virtual bool hdr_extern_bottom(std::string& str, int& errorcode);
-    virtual bool hdr_sentry_bottom(std::string& str, int& errorcode);
+    virtual bool hdr_banner(int& errorcode);
+    virtual bool hdr_sentry_top(int& errorcode);
+    virtual bool hdr_includes(int& errorcode);
+    virtual bool hdr_extern_top(int& errorcode);
+    virtual bool hdr_structtag(int& errorcode);
+    virtual bool hdr_members(int& errorcode);
+    virtual bool hdr_structtype(int& errorcode);
+    virtual bool hdr_serialize(int& errorcode);
+    virtual bool hdr_deserialize(int& errorcode);
+    virtual bool hdr_size(int& errorcode);
+    virtual bool hdr_get_functions(int& errorcode);
+    virtual bool hdr_set_functions(int& errorcode);
+    virtual bool hdr_equals_function(int& errorcode);
+    virtual bool hdr_extern_bottom(int& errorcode);
+    virtual bool hdr_sentry_bottom(int& errorcode);
 
-    virtual bool imp_banner(std::string& str, int& errorcode);
-    virtual bool imp_includes(std::string& str, int& errorcode);
-    virtual bool imp_serialize(std::string& str, int& errorcode);
-    virtual bool imp_deserialize(std::string& str, int& errorcode);
-    virtual bool imp_size(std::string& str, int& errorcode);
-    virtual bool imp_get_functions(std::string& str, int& errorcode);
-    virtual bool imp_set_functions(std::string& str, int& errorcode);
-    virtual bool imp_equals_function(std::string& str, int& errorcode);
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_includes(int& errorcode);
+    virtual bool imp_serialize(int& errorcode);
+    virtual bool imp_deserialize(int& errorcode);
+    virtual bool imp_size(int& errorcode);
+    virtual bool imp_get_functions(int& errorcode);
+    virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_equals_function(int& errorcode);
 };
 
 }

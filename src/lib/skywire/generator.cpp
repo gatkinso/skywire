@@ -33,12 +33,17 @@ bool Generator::set_lang_settings(const std::string pathname)
     return lang_stencil_.read_file(pathname);
 }
 
-void Generator::cr(std::string& str)
+void Generator::cr()
 {
     ss_ << std::endl;
 }
 
-bool Generator::insert_indents(std::string& str, unsigned int indents)
+void Generator::insert_char(const char c)
+{
+    ss_ << c;
+}
+
+bool Generator::insert_indents(unsigned int indents)
 {
     std::string indent_str = lang_stencil_.get_value_string("indent_str");
 
@@ -50,30 +55,94 @@ bool Generator::insert_indents(std::string& str, unsigned int indents)
     return true;
 }
 
-bool Generator::gen_one_line(std::string& str, const std::string& key, unsigned int indents)
+bool Generator::gen_one_line(const std::string& key, unsigned int indents)
 {
     std::string value_str = lang_stencil_.get_value_string(key);
 
-    insert_indents(str, indents);
+    insert_indents(indents);
 
-    ss_ << value_str << std::endl;
+    ss_ << value_str;
 
     return true;
 }
 
-bool Generator::gen_one_line_subst(std::string& str, const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
+bool Generator::gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
 {
     std::string template_str = lang_stencil_.get_value_string(template_key);
     std::string subst_str = msg_stencil_.get_value_string(subst_key);
     std::string target_str = lang_stencil_.get_value_string(target_key);
 
-    insert_indents(str, indents);
+    insert_indents(indents);
 
     template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
 
-    ss_ << template_str << std::endl;
+    ss_ << template_str;
 
     return true;
 }
 
+bool Generator::inorder_members(int& errorcode, unsigned int indents)
+{
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        errorcode = SW_LANGCPPNOMEMBERS;
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        insert_indents(indents);
+        ss_ << member.second.first << " " << member.second.second << ";" << std::endl;
+    }
+
+    return true;
+}
+
+bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents, bool prepend_classname)
+{
+    std::string type_substr = lang_stencil_.get_value_string("type_substr");
+    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    std::string class_substr("");
+    if (prepend_classname == true)
+    {
+        class_substr = lang_stencil_.get_value_string("classname_substr");
+    }
+
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        errorcode = SW_LANGCPPNOMEMBERS;
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string(funct_str);
+        insert_indents(indents);
+        if (prepend_classname == true)
+        {
+            template_str = 
+                std::regex_replace(template_str, std::regex(class_substr), msg_stencil_.get_value_string("classname"));
+        }
+        template_str = std::regex_replace(template_str, std::regex(type_substr), member.second.first);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        ss_ << template_str;
+    }
+
+    return true;
+}
 }

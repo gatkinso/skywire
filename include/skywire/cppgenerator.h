@@ -34,27 +34,23 @@ protected:
     virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool hdr_banner(std::string& str, int& errorcode);
-    virtual bool hdr_sentry(std::string& str, int& errorcode);
-    virtual bool hdr_includes(std::string& str, int& errorcode);
-    virtual bool hdr_namespace(std::string& str, int& errorcode);
-    virtual bool hdr_classname(std::string& str, int& errorcode);
-    virtual bool hdr_public(std::string& str, int& errorcode);
-    virtual bool hdr_private(std::string& str, int& errorcode);
-    virtual bool hdr_cons(std::string& str, int& errorcode);
-    virtual bool hdr_des(std::string& str, int& errorcode);
-    virtual bool hdr_get_functions(std::string& str, int& errorcode);
-    virtual bool hdr_set_functions(std::string& str, int& errorcode);
-    virtual bool hdr_serialize(std::string& str, int& errorcode);
-    virtual bool hdr_deserialize(std::string& str, int& errorcode);
-    virtual bool hdr_size(std::string& str, int& errorcode);
-    virtual bool hdr_members(std::string& str, int& errorcode);
-    virtual bool hdr_classend(std::string& str, int& errorcode);
-    virtual bool hdr_namespaceend(std::string& str, int& errorcode);
-
-private:
-    bool inorder_functions(std::string& str, const std::string& funct_str, int& errorcode);
-    bool inorder_members(std::string& str, int& errorcode);
+    virtual bool hdr_banner(int& errorcode);
+    virtual bool hdr_sentry(int& errorcode);
+    virtual bool hdr_includes(int& errorcode);
+    virtual bool hdr_namespace(int& errorcode);
+    virtual bool hdr_classname(int& errorcode);
+    virtual bool hdr_public(int& errorcode);
+    virtual bool hdr_private(int& errorcode);
+    virtual bool hdr_cons(int& errorcode);
+    virtual bool hdr_des(int& errorcode);
+    virtual bool hdr_get_functions(int& errorcode);
+    virtual bool hdr_set_functions(int& errorcode);
+    virtual bool hdr_serialize(int& errorcode);
+    virtual bool hdr_deserialize(int& errorcode);
+    virtual bool hdr_size(int& errorcode);
+    virtual bool hdr_members(int& errorcode);
+    virtual bool hdr_classend(int& errorcode);
+    virtual bool hdr_namespaceend(int& errorcode);
 };
 
 }
