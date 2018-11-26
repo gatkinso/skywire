@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <regex>
 #include "cgenerator.h"
 
 namespace skyloupe
@@ -50,9 +51,9 @@ bool CGenerator::do_header(int& errorcode)
     hdr_serialize(errorcode);
     hdr_deserialize(errorcode);
     hdr_size(errorcode);
+    hdr_equals_function(errorcode);
     hdr_get_functions(errorcode);
     hdr_set_functions(errorcode);
-    hdr_equals_function(errorcode);
     hdr_extern_bottom(errorcode);
     hdr_sentry_bottom(errorcode);
 
@@ -68,16 +69,13 @@ bool CGenerator::do_implementation(int& errorcode)
     std::string& imp_string = results_[1];
 
     imp_banner(errorcode);
-    cr();
     imp_includes(errorcode);
-    cr();
     imp_serialize(errorcode);
     imp_deserialize(errorcode);
     imp_size(errorcode);
+    imp_equals_function(errorcode);
     imp_get_functions(errorcode);
     imp_set_functions(errorcode);
-    imp_equals_function(errorcode);
-    cr();
 
     imp_string.append(ss_.str());
 
@@ -86,7 +84,7 @@ bool CGenerator::do_implementation(int& errorcode)
 
 bool CGenerator::hdr_banner(int& errorcode)
 {
-    return gen_one_line("banner_str");
+    return gen_one_line("banner_h_str");
 }
 
 bool CGenerator::hdr_sentry_top(int& errorcode)
@@ -160,12 +158,14 @@ bool CGenerator::hdr_get_functions(int& errorcode)
 {
     return inorder_functions("get_str", errorcode, 1, true);
 }
+
 bool CGenerator::hdr_set_functions(int& errorcode)
 {
     return inorder_functions("set_str", errorcode, 1, true);
 }
 
-bool CGenerator::hdr_equals_function(int& errorcode) {
+bool CGenerator::hdr_equals_function(int& errorcode)
+{
     bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 1);
     insert_char(';');
     cr();
@@ -179,48 +179,246 @@ bool CGenerator::hdr_extern_bottom(int& errorcode)
 
 bool CGenerator::hdr_sentry_bottom(int& errorcode)
 {
-    return gen_one_line("sentry_bottom_str");
+    return gen_one_line_subst("sentry_bottom_str", "classname", "classname_substr", 1);
 }
 
-bool CGenerator::imp_banner(int& errorcode) {
-    bool success = true;
+bool CGenerator::imp_banner(int& errorcode)
+{
+    return gen_one_line("banner_c_str");
+}
+
+bool CGenerator::imp_includes(int& errorcode)
+{
+    std::string value = msg_stencil_.get_value_string("outputheaderfilename", "@NOTFOUND");
+
+    if (value == "@NOTFOUND")
+    {
+        errorcode = SW_LANGCINCLUDES;
+        return false;
+    }
+
+    bool success = gen_one_line_subst("include_c_str", "outputheaderfilename", "include_substr", 0);
+
+    cr();
 
     return success;
 }
-bool CGenerator::imp_includes(int& errorcode) {
-    bool success = true;
+
+bool CGenerator::imp_serialize(int& errorcode)
+{
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
+    bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 0);
+    
+    ss_ << " {" << std::endl;
+    
+    insert_indents(1);
+    ss_ << null_check_str;
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("write_template_str");
+        insert_indents(1);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        ss_ << template_str;
+        ss_ << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << "return 0;" << std::endl;
+
+    ss_ << "}" << std::endl;
 
     return success;
 }
-bool CGenerator::imp_serialize(int& errorcode) {
-    bool success = true;
+
+bool CGenerator::imp_deserialize(int& errorcode)
+{
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
+    bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 0);
+
+    ss_ << " {" << std::endl;
+
+    insert_indents(1);
+    ss_ << null_check_str;
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("read_template_str");
+        insert_indents(1);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        ss_ << template_str;
+        ss_ << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << "return 0;" << std::endl;
+    ss_ << "}" << std::endl;
 
     return success;
 }
-bool CGenerator::imp_deserialize(int& errorcode) {
-    bool success = true;
+
+bool CGenerator::imp_size(int& errorcode)
+{
+    bool success = gen_one_line_subst("size_str", "classname", "classname_substr", 0);
+    ss_ << " {" << std::endl;
+
+    insert_indents(1);
+    ss_ << "return (" << std::endl;
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    int i = 0;
+    for (auto& member : ordered_members)
+    {
+        insert_indents(2);
+        ss_ << "sizeof(" << member.second.first << ")";
+
+        if (i++ < ordered_members.size() - 1)
+        {
+            ss_ << "+";
+        }
+
+        ss_ << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << ");" << std::endl;
+   
+    gen_one_line("endfunction_str");
+    
+    return success;
+}
+
+bool CGenerator::imp_equals_function(int& errorcode)
+{
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string null_check_str = lang_stencil_.get_value_string("struct_equals_null_check_str");
+    bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 0);
+    ss_ << " {" << std::endl;
+
+    insert_indents(1);
+    ss_ << null_check_str;
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    insert_indents(1);
+    ss_ << "if(" << std::endl;
+
+    int i = 0;
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string("equal_check_template_str");
+        insert_indents(2);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        ss_ << template_str;
+
+        if (i++ < ordered_members.size() - 1)
+        {
+            ss_ << "&&";
+        }
+
+        ss_ << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << ")" << std::endl;
+    insert_indents(2);
+    ss_ << "return 1;" << std::endl;
+    insert_indents(1);
+    ss_ << "return 0;" << std::endl;
+
+    ss_ << "}" << std::endl;
 
     return success;
 }
-bool CGenerator::imp_size(int& errorcode) {
-    bool success = true;
 
-    return success;
+bool CGenerator::imp_get_functions(int& errorcode)
+{
+    return getset_functions("get_c_str", "get_assignment_str", errorcode);
 }
-bool CGenerator::imp_get_functions(int& errorcode) {
-    bool success = true;
 
-    return success;
+bool CGenerator::imp_set_functions(int& errorcode)
+{
+    return getset_functions("set_c_str", "set_assignment_str", errorcode);
 }
-bool CGenerator::imp_set_functions(int& errorcode) {
-    bool success = true;
 
-    return success;
-}
-bool CGenerator::imp_equals_function(int& errorcode) {
-    bool success = true;
+bool CGenerator::getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode)
+{
+    const std::string type_substr = lang_stencil_.get_value_string("type_substr");
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string classname_substr = lang_stencil_.get_value_string("classname_substr");
+    const std::string null_check_str = lang_stencil_.get_value_string("struct_value_null_check_str");
 
-    return success;
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        errorcode = SW_LANGCPPNOMEMBERS;
+        return false;
+    }
+
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members[member.first] = mempair;
+    }
+
+    for (auto& member : ordered_members)
+    {
+        std::string template_str = lang_stencil_.get_value_string(fcn_key);
+        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_stencil_.get_value_string("classname"));
+
+        template_str = std::regex_replace(template_str, std::regex(type_substr), member.second.first);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        ss_ << template_str;
+
+        ss_ << " {" << std::endl;
+
+        insert_indents(1);
+        ss_ << null_check_str;
+
+        template_str = lang_stencil_.get_value_string(ass_key);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+
+        insert_indents(1);
+        ss_ << template_str << ";" << std::endl;
+
+        insert_indents(1);
+        ss_ << "return 0;" << std::endl;
+
+        ss_ << "}" << std::endl;
+    }
+
+    return true;
 }
 
 }

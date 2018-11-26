@@ -23,10 +23,14 @@
       "202":{  
          "type":"double",
          "name":"d_myDoubleBubble202"
-      }      
+      },
+      "301":{  
+         "type":"char",
+         "name":"c_charcoal"
+      },         
    },
    "includes":[  
-      "\"cstreamer.h\"",
+      "\"cstream.h\"",
       "<stdint.h>"
    ]
 }

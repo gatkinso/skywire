@@ -33,13 +33,19 @@ TEST_F(CResultsUnitTest, SerDes)
     structy.c_myint64_201 = 201;
     structy.d_myDoubleBubble202 = (double)202.2;
 
-    cstream_init(&cs, 1024 * 64);
+    cstream_init(&cs, 128);
 
-    StructyMcStructface_serialize(&structy, &cs);
+    for (uint32_t i = 0; i < 1000; i++)
+    {
+        StructyMcStructface_Serialize(&structy, &cs);
+    }
 
-    StructyMcStructface_deserialize(&structz, &cs);
+    for (uint32_t i = 0; i < 1000; i++)
+    {
+        StructyMcStructface_Deserialize(&structz, &cs);
 
-    ASSERT_EQ(1, StructyMcStructface_Equals(&structy, &structz));
+        ASSERT_EQ(1, StructyMcStructface_Equals(&structy, &structz));
+    }
 
     cstream_fini(&cs);
 }
@@ -53,5 +59,5 @@ TEST_F(CResultsUnitTest, Size)
     structy.c_myint64_201 = 201;
     structy.d_myDoubleBubble202 = 202.2;
 
-    ASSERT_EQ(StructyMcStructface_size(), 24);
+    ASSERT_EQ(StructyMcStructface_Size(), 25);
 }

@@ -55,9 +55,12 @@ protected:
     virtual bool imp_serialize(int& errorcode);
     virtual bool imp_deserialize(int& errorcode);
     virtual bool imp_size(int& errorcode);
+    virtual bool imp_equals_function(int& errorcode);
     virtual bool imp_get_functions(int& errorcode);
     virtual bool imp_set_functions(int& errorcode);
-    virtual bool imp_equals_function(int& errorcode);
+
+private:
+    virtual bool getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode);
 };
 
 }
