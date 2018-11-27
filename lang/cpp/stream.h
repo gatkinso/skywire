@@ -1,5 +1,5 @@
 //
-////  skyloupe - A library for cross platform development in C++
+////  Atkinet - A library for cross platform development in C++
 //
 //    (c)2003 - 2006 Geoffrey John Atkinson
 //
@@ -8,9 +8,10 @@
 
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
 #include <vector>
 #include <cstring>
+#include "endian.h"
 
 namespace skyloupe
 {
