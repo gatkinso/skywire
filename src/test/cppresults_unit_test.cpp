@@ -39,15 +39,6 @@ TEST_F(CppResultsUnitTest, Deserialize)
     testspace::ClassyMcClassface in, out;
     skyloupe::Stream stream;
 
-    if (SW_IS_BIG_ENDIAN)
-    {
-        std::cout << "BIG ENDIAN SYSTEM!" << std::endl;
-    }
-    else
-    {
-        std::cout << "LITTLE ENDIAN SYSTEM!" << std::endl;
-    }
-
     in.Set_a_myfloat100(10.0);
     in.Set_b_myuint32_200(200);
     in.Set_c_myint64_201(201);

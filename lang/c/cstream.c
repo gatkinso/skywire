@@ -92,3 +92,4 @@ void cstream_read(Cstream* streamer, void* d, size_t sz)
 
     streamer->head_ += sz;
 }
+

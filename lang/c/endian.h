@@ -18,10 +18,120 @@
 
 #include <stdint.h>
 
-//
-// Credit to Eric Raymond: http://http://esr.ibiblio.org/?p=5095
-//
-#define SW_IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
+#if defined APPLE
+    #include <endian.h>
+#else 
+
+#if defined LINUX || defined WIN32
+
+#if defined WIN32
+    #include <Winsock.h>
+#endif
+
+#define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+#define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+
+#if SW_LITTLE_ENDIAN  //Top level CMakeLists.txt
+    #ifndef htole16
+    #define htole16(x) (x)
+    #endif
+
+    #ifndef htole32
+    #define htole32(x) (x)
+    #endif
+
+    #ifndef htole64
+    #define htole64(x) (x)
+    #endif
+
+    #ifndef le16toh
+    #define le16toh(x) (x)
+    #endif
+
+    #ifndef le32toh
+    #define le32toh(x) (x)
+    #endif
+
+    #ifndef le64toh
+    #define le64toh(x) (x)
+    #endif
+
+    #ifndef htobe16
+    #define htobe16(x) htons(x)
+    #endif
+
+    #ifndef htobe32
+    #define htobe32(x) htonl(x)
+    #endif
+
+    #ifndef htobe64
+    #define htobe64(x) htonll(x)
+    #endif
+
+    #ifndef be16toh
+    #define be16toh(x) ntohs(x)
+    #endif
+
+    #ifndef be32toh
+    #define be32toh(x) ntohl(x)
+    #endif
+
+    #ifndef be64toh
+    #define be64toh(x) ntohll(x)
+    #endif
+#else
+    #ifndef htole16
+    #define htole16(x) htons(x)
+    #endif
+
+    #ifndef htole32
+    #define htole32(x) htonl(x)
+    #endif
+
+    #ifndef htole64
+    #define htole64(x) htonll(x)
+    #endif
+
+    #ifndef le16toh
+    #define le16toh(x) ntohs(x)
+    #endif
+
+    #ifndef le32toh
+    #define le32toh(x) ntohl(x)
+    #endif
+
+    #ifndef le64toh
+    #define le64toh(x) ntohll(x)
+    #endif
+
+    #ifndef htobe16
+    #define htobe16(x) (x)
+    #endif
+
+    #ifndef htobe32
+    #define htobe32(x) (x)
+    #endif
+
+    #ifndef htobe64
+    #define htobe64(x) (x)
+    #endif
+
+    #ifndef be16toh
+    #define be16toh(x) (x)
+    #endif
+
+    #ifndef be32toh
+    #define be32toh(x) (x)
+    #endif
+
+    #ifndef be64toh
+    #define be64toh(x) (x)
+    #endif
+#endif
+
+#endif
+
+#endif
 
 #endif // __wiregen_endian_h
 
