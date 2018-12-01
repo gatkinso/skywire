@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <map>
 #include "errorcodes.h"
 #include "stencil/stencil.h"
 
@@ -30,7 +31,7 @@ public:
     typedef std::vector<std::string> results_t;
 
     Generator() = delete;
-    Generator(Stencil& stencil) : msg_stencil_(stencil) {}
+    Generator(Stencil& stencil);
     virtual ~Generator() = default;
 
     virtual bool generate(int& errorcode) = 0;
@@ -45,6 +46,7 @@ protected:
     results_t results_;
     std::stringstream ss_;
     int errorcode_;
+    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members_;
 
     void cr();
     void insert_char(const char c);

@@ -215,14 +215,7 @@ bool CGenerator::imp_serialize(int& errorcode)
     insert_indents(1);
     ss_ << null_check_str;
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("write_template_str");
         insert_indents(1);
@@ -234,7 +227,6 @@ bool CGenerator::imp_serialize(int& errorcode)
 
     insert_indents(1);
     ss_ << "return 0;" << std::endl;
-
     ss_ << "}" << std::endl;
 
     return success;
@@ -251,14 +243,7 @@ bool CGenerator::imp_deserialize(int& errorcode)
     insert_indents(1);
     ss_ << null_check_str;
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("read_template_str");
         insert_indents(1);
@@ -283,20 +268,13 @@ bool CGenerator::imp_size(int& errorcode)
     insert_indents(1);
     ss_ << "return (" << std::endl;
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
     int i = 0;
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         insert_indents(2);
         ss_ << "sizeof(" << member.second.first << ")";
 
-        if (i++ < ordered_members.size() - 1)
+        if (i++ < ordered_members_.size() - 1)
         {
             ss_ << "+";
         }
@@ -322,18 +300,11 @@ bool CGenerator::imp_equals_function(int& errorcode)
     insert_indents(1);
     ss_ << null_check_str;
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
     insert_indents(1);
     ss_ << "if(" << std::endl;
 
     int i = 0;
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("equal_check_template_str");
         insert_indents(2);
@@ -341,7 +312,7 @@ bool CGenerator::imp_equals_function(int& errorcode)
 
         ss_ << template_str;
 
-        if (i++ < ordered_members.size() - 1)
+        if (i++ < ordered_members_.size() - 1)
         {
             ss_ << "&&";
         }
@@ -355,7 +326,6 @@ bool CGenerator::imp_equals_function(int& errorcode)
     ss_ << "return 1;" << std::endl;
     insert_indents(1);
     ss_ << "return 0;" << std::endl;
-
     ss_ << "}" << std::endl;
 
     return success;
@@ -384,14 +354,7 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string(fcn_key);
         template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_stencil_.get_value_string("classname"));
@@ -400,9 +363,7 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
 
         ss_ << template_str;
-
         ss_ << " {" << std::endl;
-
         insert_indents(1);
         ss_ << null_check_str;
 
@@ -411,10 +372,8 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
 
         insert_indents(1);
         ss_ << template_str << ";" << std::endl;
-
         insert_indents(1);
         ss_ << "return 0;" << std::endl;
-
         ss_ << "}" << std::endl;
     }
 

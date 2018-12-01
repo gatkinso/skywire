@@ -158,14 +158,7 @@ bool CppGenerator::hdr_serialize(int& errorcode)
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("serialize_mem_str");
         insert_indents(3);
@@ -193,14 +186,7 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("deserialize_mem_str");
         insert_indents(3);
@@ -231,22 +217,15 @@ bool CppGenerator::hdr_size(int& errorcode)
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
     int i = 0;
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string("size_mem_str");
         insert_indents(4);
         template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
         ss_ << template_str;
 
-        if (i++ < ordered_members.size() - 1)
+        if (i++ < ordered_members_.size() - 1)
         {
             ss_ << "+";
         }

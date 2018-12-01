@@ -19,6 +19,15 @@
 namespace skyloupe
 {
 
+Generator::Generator(Stencil& stencil) : msg_stencil_(stencil) 
+{
+    for (auto& member : msg_stencil_.get_proto().members())
+    {
+        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
+        ordered_members_[member.first] = mempair;
+    }
+}
+
 bool Generator::set_msg_settings(const std::string pathname)
 {
     msg_stencil_.clear();
@@ -89,14 +98,7 @@ bool Generator::inorder_members(int& errorcode, unsigned int indents)
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         insert_indents(indents);
         ss_ << member.second.first << " " << member.second.second << ";" << std::endl;
@@ -121,14 +123,7 @@ bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, 
         return false;
     }
 
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members;
-    for (auto& member : msg_stencil_.get_proto().members())
-    {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members[member.first] = mempair;
-    }
-
-    for (auto& member : ordered_members)
+    for (auto& member : ordered_members_)
     {
         std::string template_str = lang_stencil_.get_value_string(funct_str);
         insert_indents(indents);
