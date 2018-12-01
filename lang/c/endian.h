@@ -18,22 +18,18 @@
 
 #include <stdint.h>
 
-#if defined APPLE
-    #include <endian.h>
-#else 
-
-#if defined LINUX || defined WIN32
-
 #if defined WIN32
     #include <Winsock.h>
 #endif
 
-#if defined LINUX
+#if defined LINUX || defined APPLE
     #include <netinet/in.h>
 #endif
 
-#define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
-#define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#if defined LINUX || defined WIN32
+    #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
+    #define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
+#endif
 
 #if SW_LITTLE_ENDIAN  //Top level CMakeLists.txt
     #ifndef htole16
@@ -131,10 +127,6 @@
     #ifndef be64toh
     #define be64toh(x) (x)
     #endif
-#endif
-
-#endif
-
 #endif
 
 #endif // __wiregen_endian_h

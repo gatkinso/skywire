@@ -60,6 +60,7 @@ find_package(GTest REQUIRED)
 
 if(UNIX)
     add_compile_options(-fPIC -std=c++11)
+    add_definitions(-DAPPLE)
 endif(UNIX)
 
 if(UNIX AND NOT APPLE)
