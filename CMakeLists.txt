@@ -64,6 +64,7 @@ endif(UNIX)
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
+    add_definitions(-DLINUX)
 endif(UNIX AND NOT APPLE)
 
 add_subdirectory(3rd_party/qwikpirate)
