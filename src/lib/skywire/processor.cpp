@@ -45,7 +45,8 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     else if (lang == c_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
-        lang_file = msg_stencil_.get_value_string(language_file_key_, "lang.c.json");
+        lang_file.append(msg_stencil_.get_value_string(language_file_key_, "lang.c.json"));
+std::cout << "Using lang file: " << lang_file << std::endl;
         genny->set_lang_settings(lang_file);
         success = genny->generate(errorcode);
 
@@ -75,7 +76,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     else if (lang == cpp_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil_));
-        lang_file = msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json");
+        lang_file.append(msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json"));
         genny->set_lang_settings(lang_file);
         success = genny->generate(errorcode);
 

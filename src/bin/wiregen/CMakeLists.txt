@@ -21,8 +21,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 set(_SOURCES main.cpp)
 
 set(EXAMPLE_MESSAGE_JSON ${PROJECT_SOURCE_DIR}/cfg/cpp.testspace.MyTestClass.json)
-set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/cfg/lang.cpp.json
-                   ${PROJECT_SOURCE_DIR}/cfg/lang.c.json)
+set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/lang/lang.cpp.json
+                   ${PROJECT_SOURCE_DIR}/lang/lang.c.json)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
@@ -30,6 +30,7 @@ add_dependencies(${TARGETNAME} skywire skywireproto cli)
 
 target_link_libraries(${TARGETNAME} skywire skywireproto cli)
 
+install(TARGETS ${TARGETNAME} DESTINATION ${CMAKE_BINARY_DIR}/bin)
 install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_DIR}/bin)
 install(FILES ${LANGUAGE_JSONS} DESTINATION ${CMAKE_INSTALL_DIR})
 install(FILES ${EXAMPLE_MESSAGE_JSON} ${LANGUAGE_JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
