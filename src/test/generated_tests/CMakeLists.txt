@@ -81,7 +81,7 @@ set(GENERATED_CPP_FILES
                 )
 
 if(UNIX)
-    set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME}PROPERTIES COMPILE_FLAGS -std=c99)
+    set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME} PROPERTIES COMPILE_FLAGS -std=c99)
 endif(UNIX)
 
 set(UNIT_TESTS
