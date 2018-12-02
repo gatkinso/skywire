@@ -15,12 +15,6 @@
 
 set(TARGETNAME generated_tests)
 
-include_directories(
-                ${PROJECT_BINARY_DIR}/proto/cpp
-                ${PROJECT_SOURCE_DIR}/include
-                ${PROJECT_SOURCE_DIR}/lang/cpp
-                ${PROJECT_SOURCE_DIR}/lang/c)
-
 set(WG_C_FILES
     StructyMcStructface
 )
@@ -38,8 +32,16 @@ set(WG_CPP_DIR "${PROJECT_BINARY_DIR}/generated_cpp_wiregen")
 file(MAKE_DIRECTORY ${WG_C_DIR})
 file(MAKE_DIRECTORY ${WG_CPP_DIR})
 
+include_directories(
+                ${PROJECT_BINARY_DIR}/proto/cpp
+                ${PROJECT_SOURCE_DIR}/include
+                ${PROJECT_SOURCE_DIR}/lang/cpp
+                ${PROJECT_SOURCE_DIR}/lang/c
+                ${WG_C_DIR}
+                ${WG_CPP_DIR})
+
+# Generate C 
 foreach(WG_C ${WG_C_FILES})
-    #c
     add_custom_command(
         OUTPUT  ${WG_C_DIR}/${WG_C}.h
                 ${WG_C_DIR}/${WG_C}.c
@@ -53,16 +55,29 @@ foreach(WG_C ${WG_C_FILES})
         ${WG_C_DIR}/${WG_C}.h
         ${WG_C_DIR}/${WG_C}.c
     )
-endforeach(WG_C)               
+endforeach(WG_C)
 
-set(GENERATED_H_FILES
-                )
+# Generate Cpp
+foreach(WG_CPP ${WG_CPP_FILES})
+    add_custom_command(
+        OUTPUT  ${WG_CPP_DIR}/${WG_CPP}.h
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
+        COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
+        ARGS    --input ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
+                --outdir ${WG_CPP_DIR}
+                --langfiledir ${CMAKE_SOURCE_DIR}/lang/
+    )
+    set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
+        ${WG_CPP_DIR}/${WG_CPP}.h
+    )
+endforeach(WG_CPP)
 
 set(GENERATED_C_FILES
                 ${WG_C_RESULTS}
                 )                
 
 set(GENERATED_CPP_FILES
+                ${WG_CPP_RESULTS}
                 )
 
 if(UNIX)
@@ -81,6 +96,7 @@ add_executable(${TARGETNAME}
                 ${GENERATED_C_FILES}
                 ${GENERATED_CPP_FILES}
                 ${WG_C_RUMTIME}
+                ${WG_CPP_RUMTIME}
                 ${UNIT_TESTS})
 
 test_big_endian(IS_BIG_ENDIAN)

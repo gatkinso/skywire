@@ -36,8 +36,6 @@ endif(UNIX)
 set(UNIT_TESTS
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
-                cppresults_unit_test.cpp
-                cresults_unit_test.cpp
                 cstream_unit_test.cpp
                 endian_unit_test.cpp
                 filewriter_unit_test.cpp
