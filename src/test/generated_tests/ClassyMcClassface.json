@@ -19,10 +19,14 @@
          "type":"int64_t",
          "name":"c_myint64_201"
       },
-      "202":{  
-         "type":"double",
-         "name":"d_myDoubleBubble202"
-      }      
+      "202": {
+          "type": "double",
+          "name": "d_myDoubleBubble202"
+      },
+      "301":{  
+         "type":"char",
+         "name":"e_charcoal"
+      }
    },
    "includes":[  
       "\"streamable.h\"",

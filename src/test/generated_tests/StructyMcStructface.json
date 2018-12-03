@@ -26,7 +26,7 @@
       },
       "301":{  
          "type":"char",
-         "name":"c_charcoal"
+         "name":"e_charcoal"
       },         
    },
    "includes":[  

@@ -84,8 +84,8 @@ if(UNIX)
     set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME} PROPERTIES COMPILE_FLAGS -std=c99)
 endif(UNIX)
 
-set(UNIT_TESTS
-                c.cpp
+set(UNIT_TESTS  c.cpp
+                c_cpp.cpp 
                 cpp.cpp)
 
 set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)

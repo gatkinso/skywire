@@ -32,6 +32,7 @@ TEST_F(C, SerDes)
     structy.b_myuint32_200 = 200;
     structy.c_myint64_201 = 201;
     structy.d_myDoubleBubble202 = (double)202.2;
+    structy.e_charcoal = 30;
 
     cstream_init(&cs, 128);
 
@@ -58,6 +59,7 @@ TEST_F(C, Size)
     structy.b_myuint32_200 = 200;
     structy.c_myint64_201 = 201;
     structy.d_myDoubleBubble202 = 202.2;
+    structy.e_charcoal = 30;
 
     ASSERT_EQ(StructyMcStructface_Size(), 25);
 }

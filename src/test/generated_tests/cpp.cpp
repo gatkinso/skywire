@@ -41,6 +41,7 @@ TEST_F(Cpp, Deserialize)
     in.Set_b_myuint32_200(200);
     in.Set_c_myint64_201(201);
     in.Set_d_myDoubleBubble202(20.2);
+    in.Set_e_charcoal(30);
 
     bool success = in.serialize(stream);
     ASSERT_TRUE(success);
@@ -52,11 +53,12 @@ TEST_F(Cpp, Deserialize)
     ASSERT_EQ(in.Get_b_myuint32_200(), out.Get_b_myuint32_200());
     ASSERT_EQ(in.Get_c_myint64_201(), out.Get_c_myint64_201());
     ASSERT_EQ(in.Get_d_myDoubleBubble202(), out.Get_d_myDoubleBubble202());
+    ASSERT_EQ(in.Get_e_charcoal(), out.Get_e_charcoal());
 }
 
 TEST_F(Cpp, Size)
 {
     testspace::ClassyMcClassface classy;
 
-    ASSERT_EQ(classy.size(), sizeof(float) + sizeof(uint32_t) + sizeof(int64_t) + sizeof(double));
+    ASSERT_EQ(classy.size(), sizeof(float) + sizeof(uint32_t) + sizeof(int64_t) + sizeof(double) + sizeof(char));
 }
