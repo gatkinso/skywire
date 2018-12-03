@@ -46,14 +46,17 @@ TEST_F(CandCpp, SerDes)
     skyloupe::Stream str(cs.size_);
     str.write(cs.buffer_, cs.size_);
 
-    bool success = classy.deserialize(str);
-    ASSERT_TRUE(success);
+    for (uint32_t i = 0; i < 1000; i++)
+    {
+        bool success = classy.deserialize(str);
+        ASSERT_TRUE(success);
 
-    ASSERT_EQ(structy.a_myfloat100, classy.Get_a_myfloat100());
-    ASSERT_EQ(structy.b_myuint32_200, classy.Get_b_myuint32_200());
-    ASSERT_EQ(structy.c_myint64_201, classy.Get_c_myint64_201());
-    ASSERT_EQ(structy.d_myDoubleBubble202, classy.Get_d_myDoubleBubble202());
-    ASSERT_EQ(structy.e_charcoal, classy.Get_e_charcoal());
+        ASSERT_EQ(structy.a_myfloat100, classy.Get_a_myfloat100());
+        ASSERT_EQ(structy.b_myuint32_200, classy.Get_b_myuint32_200());
+        ASSERT_EQ(structy.c_myint64_201, classy.Get_c_myint64_201());
+        ASSERT_EQ(structy.d_myDoubleBubble202, classy.Get_d_myDoubleBubble202());
+        ASSERT_EQ(structy.e_charcoal, classy.Get_e_charcoal());
+    }
 
     cstream_fini(&cs);
 }
