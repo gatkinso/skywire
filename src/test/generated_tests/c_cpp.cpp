@@ -27,7 +27,6 @@ protected:
 TEST_F(CandCpp, SerDes)
 {
     StructyMcStructface structy;
-    testspace::ClassyMcClassface classy;
     Cstream cs;
 
     structy.a_myfloat100 = static_cast<float>(101.1);
@@ -48,6 +47,7 @@ TEST_F(CandCpp, SerDes)
 
     for (uint32_t i = 0; i < 1000; i++)
     {
+        testspace::ClassyMcClassface classy;
         bool success = classy.deserialize(str);
         ASSERT_TRUE(success);
 
