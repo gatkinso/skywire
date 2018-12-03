@@ -40,8 +40,6 @@ if(UNIX)
     set(DST_NAME ${CMAKE_BINARY_DIR}/bin/${TARGETNAME})
 endif(UNIX)
 
-message("***************** Tgt " ${TGT_NAME} "  Dst " ${DST_NAME}})
-
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy ${TGT_NAME} ${DST_NAME})
 

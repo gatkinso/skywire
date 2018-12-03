@@ -21,15 +21,15 @@ include(TestBigEndian)
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)
-add_definitions(-DSW_BIG_ENDIAN)
+    add_definitions(-DSW_BIG_ENDIAN)
 else()
-add_definitions(-DSW_LITTLE_ENDIAN)
+    add_definitions(-DSW_LITTLE_ENDIAN)
 endif()
 
 include (CTest)
 
 foreach(path ${CMAKE_PREFIX_PATH})
-  message("Path: " ${path})
+    message("Prefix Path: " ${path})
 endforeach(path)
 
 if(MSVC)
