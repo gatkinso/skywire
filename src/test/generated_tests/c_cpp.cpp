@@ -26,36 +26,36 @@ protected:
  
 TEST_F(CandCpp, SerDes)
 {
-    StructyMcStructface structy;
+    const int NUM = 1000;
+    StructyMcStructface structy[NUM];
     Cstream cs;
+    cstream_init(&cs, 1024);
 
-    structy.a_myfloat100 = static_cast<float>(101.1);
-    structy.b_myuint32_200 = 200;
-    structy.c_myint64_201 = 201;
-    structy.d_myDoubleBubble202 = (double)202.2;
-    structy.e_charcoal = 30;
-
-    cstream_init(&cs, 128);
-
-    for (uint32_t i = 0; i < 1000; i++)
+    for (uint32_t i = 0; i < NUM; i++)
     {
-        StructyMcStructface_Serialize(&structy, &cs);
+        structy[i].a_myfloat100 = static_cast<float>(i);
+        structy[i].b_myuint32_200 = i;
+        structy[i].c_myint64_201 = i;
+        structy[i].d_myDoubleBubble202 = (double)i;
+        structy[i].e_charcoal = i%256;
+
+        StructyMcStructface_Serialize(&structy[i], &cs);
     }
 
     skyloupe::Stream str(cs.size_);
     str.write(cs.buffer_, cs.size_);
 
-    for (uint32_t i = 0; i < 1000; i++)
+    testspace::ClassyMcClassface classy[NUM];
+    for (uint32_t i = 0; i < NUM; i++)
     {
-        testspace::ClassyMcClassface classy;
-        bool success = classy.deserialize(str);
+        bool success = classy[i].deserialize(str);
         ASSERT_TRUE(success);
 
-        ASSERT_EQ(structy.a_myfloat100, classy.Get_a_myfloat100());
-        ASSERT_EQ(structy.b_myuint32_200, classy.Get_b_myuint32_200());
-        ASSERT_EQ(structy.c_myint64_201, classy.Get_c_myint64_201());
-        ASSERT_EQ(structy.d_myDoubleBubble202, classy.Get_d_myDoubleBubble202());
-        ASSERT_EQ(structy.e_charcoal, classy.Get_e_charcoal());
+        ASSERT_EQ(structy[i].a_myfloat100, classy[i].Get_a_myfloat100());
+        ASSERT_EQ(structy[i].b_myuint32_200, classy[i].Get_b_myuint32_200());
+        ASSERT_EQ(structy[i].c_myint64_201, classy[i].Get_c_myint64_201());
+        ASSERT_EQ(structy[i].d_myDoubleBubble202, classy[i].Get_d_myDoubleBubble202());
+        ASSERT_EQ(structy[i].e_charcoal, classy[i].Get_e_charcoal());
     }
 
     cstream_fini(&cs);
