@@ -15,12 +15,67 @@
 
 #pragma once
 
-const int SW_SUCCESS = 0x00000000;
-const int SW_ERROR   = 0X00000001;
-const int SW_UNKNOWNLANG = 0X00000002;
+const unsigned int SW_SUCCESS                = 0x00000000;
+const unsigned int SW_ERROR                  = 0x00000001;
+const unsigned int SW_UNKNOWNLANG            = 0x00000002;
+const unsigned int SW_FILEREADERROR          = 0x00000004;
 
-const int SW_LANGCPPINCLUDES = 0X00000100;
-const int SW_LANGCPPNOMEMBERS = 0X00000200;
+const unsigned int SW_LANGINCLUDES           = 0x00000010;
+const unsigned int SW_LANGNOMEMBERS          = 0x00000020;
 
-const int SW_LANGCINCLUDES = 0X00000400;
-const int SW_LANGCNOMEMBERS = 0X00000800;
+const unsigned int SW_LANG_C_HEADER             = 0x00000100;
+const unsigned int SW_LANG_C_IMP                = 0x00000000;
+const unsigned int SW_LANG_CPP_HEADER = 0x00000100;
+const unsigned int SW_LANG_CPP_IMP = 0x00000000;
+
+const unsigned int SW_LANG_C_INCLUDES           = 0x00000200;
+const unsigned int SW_LANG_C_NOMEMBERS          = 0x00000400;
+const unsigned int SW_LANG_C_STRUCTNAME         = 0x00000800;
+const unsigned int SW_LANG_C_HDR_SERIALIZE      = 0x00001000;
+const unsigned int SW_LANG_C_HDR_DESERIALIZE    = 0x00002000;
+const unsigned int SW_LANG_C_HDR_SIZE           = 0x00004000;
+const unsigned int SW_LANG_C_HDR_GET            = 0x00008000;
+const unsigned int SW_LANG_C_HDR_SET            = 0x00000000;
+const unsigned int SW_LANG_C_HDR_EQUALS         = 0x00000200;
+const unsigned int SW_LANG_C_IMP_SERIALIZE      = 0x00000200;
+const unsigned int SW_LANG_C_IMP_DESERIALIZE    = 0x00000200;
+const unsigned int SW_LANG_C_IMP_SIZE           = 0x00000200;
+const unsigned int SW_LANG_C_IMP_GET            = 0x00000200;
+const unsigned int SW_LANG_C_IMP_SET            = 0x00000200;
+const unsigned int SW_LANG_C_IMP_EQUALS         = 0x00000200;
+
+
+const unsigned int SW_LANG_CPP_INCLUDES = 0x00000200;
+const unsigned int SW_LANG_CPP_NOMEMBERS = 0x00000400;
+const unsigned int SW_LANG_CPP_NAMESPACE = 0x00000800;
+const unsigned int SW_LANG_CPP_STRUCTNAME = 0x00000800;
+const unsigned int SW_LANG_CPP_PUBLIC = 0x00000800;
+const unsigned int SW_LANG_CPP_PRIVATE = 0x00000800;
+const unsigned int SW_LANG_CPP_CONSTRUCTOR = 0x00000800;
+const unsigned int SW_LANG_CPP_DESTRUCTOR = 0x00000800;
+const unsigned int SW_LANG_CPP_HDR_SERIALIZE = 0x00001000;
+const unsigned int SW_LANG_CPP_HDR_DESERIALIZE = 0x00002000;
+const unsigned int SW_LANG_CPP_HDR_SIZE = 0x00004000;
+const unsigned int SW_LANG_CPP_HDR_GET = 0x00008000;
+const unsigned int SW_LANG_CPP_HDR_SET = 0x00000000;
+const unsigned int SW_LANG_CPP_HDR_EQUALS = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_SERIALIZE = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_DESERIALIZE = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_SIZE = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_GET = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_SET = 0x00000200;
+const unsigned int SW_LANG_CPP_IMP_EQUALS = 0x00000200;
+
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+//const unsigned int SW_LANG_C_HDR_NOMEMBERS = 0x00000200;
+

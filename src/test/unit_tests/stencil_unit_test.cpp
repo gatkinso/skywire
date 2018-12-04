@@ -426,30 +426,3 @@ TEST_F(StencilUnitTest, clear_key_member)
 
     ASSERT_FALSE(rc);
 }
-
-/////////////////////////////////
-
-TEST_F(StencilUnitTest, GetString)
-{
-    skyloupe::Stencil stencil;
-    skyloupe::skywireproto::Member member;
-
-    member.set_type("my_uint32_1");
-    member.set_name("my_uint32_1");
-
-    stencil.set_value_string("language", "C++");
-    stencil.set_value_string("namespace", "testspace");
-    stencil.set_value_string("classname", "TestClass");
-    stencil.set_value("includes", "<header1.h>");
-    stencil.set_value("includes", "<header2.h>");
-    stencil.set_value("includes", "<header3.h>");
-
-    bool rc = stencil.set_value_member(100, "float", "m_myfloat");
-    rc = stencil.set_value_member(200, "int", "m_myint");
-    rc = stencil.set_value_member(201, "int", "m_myint2");
-    ASSERT_EQ(true, rc);
-
-    rc = stencil.write_file("stencil_unit_test_out.json");
-    ASSERT_EQ(true, rc);
-
-}

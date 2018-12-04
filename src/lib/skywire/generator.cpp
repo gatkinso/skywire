@@ -94,7 +94,7 @@ bool Generator::inorder_members(int& errorcode, unsigned int indents)
 {
     if (msg_stencil_.get_proto().members_size() == 0)
     {
-        errorcode = SW_LANGCPPNOMEMBERS;
+        errorcode |= SW_LANGNOMEMBERS;
         return false;
     }
 
@@ -119,7 +119,7 @@ bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, 
 
     if (msg_stencil_.get_proto().members_size() == 0)
     {
-        errorcode = SW_LANGCPPNOMEMBERS;
+        errorcode |= SW_LANGNOMEMBERS;
         return false;
     }
 

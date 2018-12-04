@@ -25,12 +25,21 @@ bool CGenerator::generate(int& errorcode)
     errorcode = 0;
 
     results_.clear();
+    ss_.str("");
+
+    if (false == do_header(errorcode))
+    {
+        errorcode |= SW_LANG_C_HEADER;
+        return false;
+    }
 
     ss_.str("");
-    if (false == do_header(errorcode)) return false;
 
-    ss_.str("");
-    if (false == do_implementation(errorcode)) return false;
+    if (false == do_implementation(errorcode))
+    {
+        errorcode |= SW_LANG_C_IMP;
+        return false;
+    }
 
     return true;
 }
@@ -97,7 +106,7 @@ bool CGenerator::hdr_includes(int& errorcode) {
 
     if (values[0] == "@NOTFOUND")
     {
-        errorcode = SW_LANGCPPINCLUDES;
+        errorcode = SW_LANG_C_INCLUDES;
         return false;
     }
 
@@ -127,46 +136,94 @@ bool CGenerator::hdr_members(int& errorcode)
 bool CGenerator::hdr_structtype(int& errorcode)
 {
     bool success = gen_one_line_subst("classname_bottom_str", "classname", "classname_substr", 1);
+
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_STRUCTNAME;
+        return success;
+    }
+
     return success;
 }
 
 bool CGenerator::hdr_serialize(int& errorcode)
 {
     bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 1);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_SERIALIZE;
+        return success;
+    }
+
     insert_char(';');
     cr();
+
     return success;
 }
 
 bool CGenerator::hdr_deserialize(int& errorcode)
 {
     bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 1);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
+        return success;
+    }
+
     insert_char(';');
     cr();
+
     return success;
 }
 
 bool CGenerator::hdr_size(int& errorcode)
 {
     bool success = gen_one_line_subst("size_str", "classname", "classname_substr", 1);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_SIZE;
+        return success;
+    }
+
     insert_char(';');
     cr();
+
     return success;
 }
 
 bool CGenerator::hdr_get_functions(int& errorcode)
 {
-    return inorder_functions("get_str", errorcode, 1, true);
+    bool success = inorder_functions("get_str", errorcode, 1, true);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_GET;
+        return success;
+    }
+
+    return success;
 }
 
 bool CGenerator::hdr_set_functions(int& errorcode)
 {
-    return inorder_functions("set_str", errorcode, 1, true);
+    bool success = inorder_functions("set_str", errorcode, 1, true);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_SET;
+        return success;
+    }
+
+    return success;
 }
 
 bool CGenerator::hdr_equals_function(int& errorcode)
 {
     bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 1);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_HDR_EQUALS;
+        return success;
+    }
+
     insert_char(';');
     cr();
     return success;
@@ -193,7 +250,7 @@ bool CGenerator::imp_includes(int& errorcode)
 
     if (value == "@NOTFOUND")
     {
-        errorcode = SW_LANGCINCLUDES;
+        errorcode = SW_LANG_C_INCLUDES;
         return false;
     }
 
@@ -209,7 +266,12 @@ bool CGenerator::imp_serialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
     bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 0);
-    
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_SERIALIZE;
+        return success;
+    }
+
     ss_ << " {" << std::endl;
     
     insert_indents(1);
@@ -237,6 +299,11 @@ bool CGenerator::imp_deserialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
     bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 0);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_DESERIALIZE;
+        return success;
+    }
 
     ss_ << " {" << std::endl;
 
@@ -263,6 +330,12 @@ bool CGenerator::imp_deserialize(int& errorcode)
 bool CGenerator::imp_size(int& errorcode)
 {
     bool success = gen_one_line_subst("size_str", "classname", "classname_substr", 0);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_SIZE;
+        return success;
+    }
+
     ss_ << " {" << std::endl;
 
     insert_indents(1);
@@ -295,6 +368,12 @@ bool CGenerator::imp_equals_function(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_equals_null_check_str");
     bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 0);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_EQUALS;
+        return success;
+    }
+
     ss_ << " {" << std::endl;
 
     insert_indents(1);
@@ -333,12 +412,26 @@ bool CGenerator::imp_equals_function(int& errorcode)
 
 bool CGenerator::imp_get_functions(int& errorcode)
 {
-    return getset_functions("get_c_str", "get_assignment_str", errorcode);
+    bool success = getset_functions("get_c_str", "get_assignment_str", errorcode);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_GET;
+        return success;
+    }
+
+    return success;
 }
 
 bool CGenerator::imp_set_functions(int& errorcode)
 {
-    return getset_functions("set_c_str", "set_assignment_str", errorcode);
+    bool success = getset_functions("set_c_str", "set_assignment_str", errorcode);
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_IMP_SET;
+        return success;
+    }
+
+    return success;
 }
 
 bool CGenerator::getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode)
@@ -350,7 +443,7 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
 
     if (msg_stencil_.get_proto().members_size() == 0)
     {
-        errorcode = SW_LANGCPPNOMEMBERS;
+        errorcode = SW_LANG_C_NOMEMBERS;
         return false;
     }
 

@@ -22,12 +22,9 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/lang/c)
 
 set(WIREGEN_C_FILES
-                ${PROJECT_SOURCE_DIR}/lang/c/cstream.c
-                StructyMcStructface.c
-                StructyMcStructface.h)
+                ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
 
-set(WIREGEN_CPP_FILES
-                ClassyMcClassface.h)
+set(WIREGEN_CPP_FILES)
 
 if(UNIX)
     set_source_files_properties(${WIREGEN_C_FILES} PROPERTIES COMPILE_FLAGS -std=c99)

@@ -25,6 +25,7 @@ std::string config_pathname = "settings.json";
 std::string message_pathname;
 std::string output_directory = ".";
 std::string langfile_directory = ".";
+bool silent = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
@@ -35,7 +36,8 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
             << "      wiregen --config filename            -- launches using fiename for configuration file" << std::endl
             << "      wiregen --input filename             -- launches using filename for input" << std::endl
             << "      wiregen --outdir directoryname       -- directory to write generated file(s) to" << std::endl
-            << "      wiregen --langfiledir directoryname  -- directory containing language file" << std::endl;
+            << "      wiregen --langfiledir directoryname  -- directory containing language file" << std::endl
+            << "      wiregen --silent                     -- no output displayed" << std::endl;
         exit(0);
     }
 
@@ -92,6 +94,18 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
             std::cout << "Need a valid language directory name" << std::endl;
         }
     }
+
+    if (flag.compare("--silent") == 0)
+    {
+        if (false == value.empty())
+        {
+            silent = true;
+        }
+        else
+        {
+            std::cout << "Need a valid language directory name" << std::endl;
+        }
+    }
 }
 
 bool process_cmd_line(int argc, const char* argv[])
@@ -104,6 +118,7 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--input", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
     cmdargs.setOption("--langfiledir", true, false, cli_callback);
+    cmdargs.setOption("--silent", true, true, cli_callback);
 
     bool ret = cmdargs.parse(argc, argv, cli_errors_);
 
@@ -120,20 +135,24 @@ int main(int argc, const char* argv[])
     success = process_cmd_line(argc, argv);
     if (false == success)
     {
-        std::cout << "Invalid parameters" << std::endl;
+        std::cout << "Invalid input parameters" << std::endl;
         return success;
     }
 
     success = process_file(message_pathname, output_directory, langfile_directory, errorcode);
     if (success == true)
     {
-        std::cout << "Successful process: " << message_pathname << std::endl;
+        if(!silent) 
+            std::cout << "Successful process: " << message_pathname << std::endl;
     }
     else
     {
-        std::cout << "Failure processing: " << message_pathname << std::endl;
-        std::cout << "Error number: " << errorcode << std::endl;
+        if (!silent)
+        {
+            std::cout << "Failure processing: " << message_pathname << std::endl;
+            std::cout << "Error number: " << errorcode << std::endl;
+        }
     }
 
-	return 0;
+	return errorcode;
 }

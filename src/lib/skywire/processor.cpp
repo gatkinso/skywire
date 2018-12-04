@@ -25,7 +25,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     bool success = false;
     if (false == msg_stencil_.read_file(pathname))
     {
-        errorcode = SW_ERROR;
+        errorcode |= SW_FILEREADERROR;
         std::cerr << "Error reading file: " << pathname << std::endl;
         return success;
     }
@@ -46,7 +46,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
         lang_file.append(msg_stencil_.get_value_string(language_file_key_, "lang.c.json"));
-std::cout << "Using lang file: " << lang_file << std::endl;
+
         genny->set_lang_settings(lang_file);
         success = genny->generate(errorcode);
 
@@ -107,7 +107,7 @@ std::cout << "Using lang file: " << lang_file << std::endl;
     }
     else
     {
-        errorcode = SW_UNKNOWNLANG;
+        errorcode |= SW_UNKNOWNLANG;
         std::cerr << "Unsupported language: " << lang << std::endl;
         return success;
     }
