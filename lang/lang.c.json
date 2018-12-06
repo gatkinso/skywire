@@ -43,6 +43,6 @@
         "set_assignment_str":"structure->__MEMBERNAME__ = *value",
         "write_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
         "read_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
-        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__",
+        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ ",
     }
 }

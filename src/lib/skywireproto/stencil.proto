@@ -19,10 +19,9 @@ package skyloupe.skywireproto;
 
 enum Endianness
 {
-    Network        =   0;
-    Little         =   1;
-    Big            =   2;
-    Native         =   3;
+    Little         =   0;
+    Big            =   1;
+    Native         =   2;
 }
 
 message Member

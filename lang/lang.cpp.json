@@ -15,6 +15,7 @@
         "serialize_mem_str": "str.serialize(__MEMBERNAME__);",
         "deserialize_mem_str": "str.deserialize(__MEMBERNAME__);",
         "size_mem_str":"sizeof(__MEMBERNAME__)",
+        "equals_str": "bool operator==(const __CLASSNAME__& other) const {\n",
         "endclass_str":"};\n",
         "endnamespace_str": "}\n",
         "endfunction_str":"}\n",

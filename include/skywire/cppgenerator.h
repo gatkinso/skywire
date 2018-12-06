@@ -48,6 +48,7 @@ protected:
     virtual bool hdr_serialize(int& errorcode);
     virtual bool hdr_deserialize(int& errorcode);
     virtual bool hdr_size(int& errorcode);
+    virtual bool hdr_equals(int& errorcode);
     virtual bool hdr_members(int& errorcode);
     virtual bool hdr_classend(int& errorcode);
     virtual bool hdr_namespaceend(int& errorcode);

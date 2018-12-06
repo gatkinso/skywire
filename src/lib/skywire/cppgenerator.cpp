@@ -34,7 +34,7 @@ bool CppGenerator::generate(int& errorcode)
 
     if (false == do_header(errorcode))
     {
-        errorcode |= SW_LANG_CPP_HEADER;
+        errorcode |= SW_FILE_HEADER;
         return false;
     }
 
@@ -42,7 +42,7 @@ bool CppGenerator::generate(int& errorcode)
 
     if (false == do_implementation(errorcode))
     {
-        errorcode |= SW_LANG_CPP_HEADER;
+        errorcode |= SW_FILE_IMP;
         return false;
     }
 
@@ -66,6 +66,7 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_serialize(errorcode);
     hdr_deserialize(errorcode);
     hdr_size(errorcode);
+    hdr_equals(errorcode);
     hdr_get_functions(errorcode);
     hdr_set_functions(errorcode);
     hdr_private(errorcode);
@@ -100,7 +101,7 @@ bool CppGenerator::hdr_includes(int& errorcode)
 
     if (values[0] == "@NOTFOUND")
     {
-        errorcode |= SW_LANG_CPP_INCLUDES;
+        errorcode |= SW_LANG_C_INCLUDES;
         return false;
     }
 
@@ -196,7 +197,7 @@ bool CppGenerator::hdr_get_functions(int& errorcode)
     
     if (false == success)
     {
-        errorcode |= SW_LANG_CPP_HDR_GET;
+        errorcode |= SW_LANG_C_HDR_GET;
         return success;
     }
 
@@ -209,7 +210,7 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
     
     if (false == success)
     {
-        errorcode |= SW_LANG_CPP_HDR_SET;
+        errorcode |= SW_LANG_C_HDR_SET;
         return success;
     }
 
@@ -218,9 +219,9 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
 
 bool CppGenerator::hdr_serialize(int& errorcode)
 {
-    if (gen_one_line("serialize_str", 2))
+    if (false == gen_one_line("serialize_str", 2))
     {
-        errorcode |= SW_LANG_CPP_HDR_SERIALIZE;
+        errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
     }
 
@@ -228,7 +229,7 @@ bool CppGenerator::hdr_serialize(int& errorcode)
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
-        errorcode |= SW_LANG_CPP_HDR_SERIALIZE;
+        errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
     }
 
@@ -250,9 +251,9 @@ bool CppGenerator::hdr_serialize(int& errorcode)
 
 bool CppGenerator::hdr_deserialize(int& errorcode)
 {
-    if(gen_one_line("deserialize_str", 2))
+    if(false == gen_one_line("deserialize_str", 2))
     {
-        errorcode |= SW_LANG_CPP_HDR_DESERIALIZE;
+        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
         return false;
     }
 
@@ -260,7 +261,7 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
-        errorcode = SW_LANG_CPP_HDR_DESERIALIZE;
+        errorcode = SW_LANG_C_HDR_DESERIALIZE;
         return false;
     }
 
@@ -280,11 +281,26 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     return true;
 }
 
+bool CppGenerator::hdr_equals(int& errorcode)
+{
+    if (false == gen_one_line_subst("equals_str", "classname", "classname_substr", 2))
+    {
+        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
+        return false;
+    }
+
+    insert_indents(3);
+    ss_ << "return true;" << std::endl;
+    insert_indents(2);
+    gen_one_line("endfunction_str");
+    return true;
+}
+
 bool CppGenerator::hdr_size(int& errorcode)
 {
     if (false == gen_one_line("size_str", 2))
     {
-        errorcode |= SW_LANG_CPP_HDR_SIZE;
+        errorcode |= SW_LANG_C_HDR_SIZE;
         return false;
     }
 
@@ -295,8 +311,8 @@ bool CppGenerator::hdr_size(int& errorcode)
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
-        errorcode |= SW_LANGNOMEMBERS;
-        errorcode |= SW_LANG_CPP_HDR_SIZE;
+        errorcode |= SW_LANG_NOMEMBERS;
+        errorcode |= SW_LANG_C_HDR_SIZE;
         return false;
     }
 

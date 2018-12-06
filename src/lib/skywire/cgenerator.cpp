@@ -29,7 +29,7 @@ bool CGenerator::generate(int& errorcode)
 
     if (false == do_header(errorcode))
     {
-        errorcode |= SW_LANG_C_HEADER;
+        errorcode |= SW_FILE_HEADER;
         return false;
     }
 
@@ -37,7 +37,7 @@ bool CGenerator::generate(int& errorcode)
 
     if (false == do_implementation(errorcode))
     {
-        errorcode |= SW_LANG_C_IMP;
+        errorcode |= SW_FILE_IMP;
         return false;
     }
 
@@ -443,7 +443,7 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
 
     if (msg_stencil_.get_proto().members_size() == 0)
     {
-        errorcode = SW_LANG_C_NOMEMBERS;
+        errorcode |= SW_LANG_NOMEMBERS;
         return false;
     }
 
