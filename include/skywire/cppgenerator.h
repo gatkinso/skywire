@@ -28,7 +28,7 @@ public:
     CppGenerator(Stencil& stencil);
     virtual ~CppGenerator() = default;
 
-    virtual bool generate(int& errorcode);
+    bool generate(int& errorcode) override;
 
 protected:
     virtual bool do_header(int& errorcode);

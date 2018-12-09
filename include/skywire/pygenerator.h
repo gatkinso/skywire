@@ -27,7 +27,7 @@ public:
     PyGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~PyGenerator() {}
 
-    virtual bool generate(int& errorcode);
+    bool generate(int& errorcode) override;
 };
 
 }

@@ -19,6 +19,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <tuple>
 #include "errorcodes.h"
 #include "stencil/stencil.h"
 
@@ -28,16 +29,18 @@ namespace skyloupe
 class Generator
 {
 public:
+    enum member_index { member_type = 0, member_name = 1, member_endianness = 2 };
     typedef std::vector<std::string> results_t;
+    typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
 
     Generator() = delete;
     Generator(Stencil& stencil);
     virtual ~Generator() = default;
 
     virtual bool generate(int& errorcode) = 0;
+    virtual bool is_native_type(const std::string& type);
     virtual bool set_lang_settings(const std::string pathname);
     virtual bool set_msg_settings(const std::string pathname);
-
     virtual results_t get_results() const { return results_; }
 
 protected:
@@ -46,7 +49,7 @@ protected:
     results_t results_;
     std::stringstream ss_;
     int errorcode_;
-    std::map< uint32_t, std::pair<std::string, std::string> > ordered_members_;
+    std::map< uint32_t, member_desc_t> ordered_members_;
 
     void cr();
     void insert_char(const char c);
@@ -55,6 +58,8 @@ protected:
     bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
     bool inorder_members(int& errorcode, unsigned int indents = 0);
     bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
+
+    std::set<std::string> native_types_;
 };
 
 }

@@ -27,7 +27,7 @@ public:
     AdaGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~AdaGenerator() {}
 
-    virtual bool generate(int& errorcode);
+    bool generate(int& errorcode) override;
 };
 
 }

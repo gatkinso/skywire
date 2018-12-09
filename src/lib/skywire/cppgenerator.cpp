@@ -235,9 +235,19 @@ bool CppGenerator::hdr_serialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("serialize_mem_str");
+        std::string template_str;
+
+        if (is_native_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_stencil_.get_value_string("serialize_native_mem_str");
+        }
+        else
+        {
+            template_str = lang_stencil_.get_value_string("serialize_user_mem_str");
+        }
+        
         insert_indents(3);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         ss_ << template_str << std::endl;
     }
 
@@ -251,9 +261,9 @@ bool CppGenerator::hdr_serialize(int& errorcode)
 
 bool CppGenerator::hdr_deserialize(int& errorcode)
 {
-    if(false == gen_one_line("deserialize_str", 2))
+    if (false == gen_one_line("deserialize_str", 2))
     {
-        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
+        errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
     }
 
@@ -261,15 +271,25 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
-        errorcode = SW_LANG_C_HDR_DESERIALIZE;
+        errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
     }
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("deserialize_mem_str");
+        std::string template_str;
+
+        if (is_native_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_stencil_.get_value_string("deserialize_native_mem_str");
+        }
+        else
+        {
+            template_str = lang_stencil_.get_value_string("deserialize_user_mem_str");
+        }
+
         insert_indents(3);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         ss_ << template_str << std::endl;
     }
 
@@ -319,9 +339,19 @@ bool CppGenerator::hdr_size(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("size_mem_str");
+        std::string template_str;
+
+        if (is_native_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_stencil_.get_value_string("size_native_mem_str");
+        }
+        else
+        {
+            template_str = lang_stencil_.get_value_string("size_user_mem_str");
+        }
+
         insert_indents(4);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_type>(member.second));
         ss_ << template_str;
 
         if (i++ < ordered_members_.size() - 1)

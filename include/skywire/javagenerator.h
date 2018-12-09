@@ -27,7 +27,7 @@ public:
     JavaGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~JavaGenerator() {}
 
-    virtual bool generate(int& errorcode);
+    bool generate(int& errorcode) override;
 };
 
 }

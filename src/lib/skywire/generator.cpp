@@ -23,9 +23,20 @@ Generator::Generator(Stencil& stencil) : msg_stencil_(stencil)
 {
     for (auto& member : msg_stencil_.get_proto().members())
     {
-        std::pair<std::string, std::string> mempair = std::make_pair(member.second.type(), member.second.name());
-        ordered_members_[member.first] = mempair;
+        member_desc_t memtuple = std::make_tuple(member.second.type(), member.second.name(), member.second.endian());
+        std::pair<uint32_t, member_desc_t> mempair = std::make_pair(member.first, memtuple);
+        ordered_members_.insert(mempair);
     }
+}
+
+bool Generator::is_native_type(const std::string& type)
+{
+    if (native_types_.end() == native_types_.find(type))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool Generator::set_msg_settings(const std::string pathname)
@@ -39,7 +50,18 @@ bool Generator::set_lang_settings(const std::string pathname)
 {
     lang_stencil_.clear();
 
-    return lang_stencil_.read_file(pathname);
+    bool success =  lang_stencil_.read_file(pathname);
+
+    std::vector<std::string> native_type = lang_stencil_.get_value("native_types");
+    if (native_type[0] != "@NOTFOUND")
+    {
+        for (const auto& item : native_type)
+        {
+            native_types_.insert(item);
+        }
+    }
+
+    return success;
 }
 
 void Generator::cr()
@@ -101,7 +123,7 @@ bool Generator::inorder_members(int& errorcode, unsigned int indents)
     for (auto& member : ordered_members_)
     {
         insert_indents(indents);
-        ss_ << member.second.first << " " << member.second.second << ";" << std::endl;
+        ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << ";" << std::endl;
     }
 
     return true;
@@ -132,8 +154,8 @@ bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, 
             template_str = 
                 std::regex_replace(template_str, std::regex(class_substr), msg_stencil_.get_value_string("classname"));
         }
-        template_str = std::regex_replace(template_str, std::regex(type_substr), member.second.first);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), member.second.second);
+        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
         ss_ << template_str;
     }

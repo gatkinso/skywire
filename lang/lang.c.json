@@ -9,23 +9,15 @@
         "extern_top_str":"\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n",
         "extern_bottom_str":"\n#ifdef __cplusplus\n}\n#endif\n\n",
         "indent_str":"    ",
-
         "classname_top_str":"typedef struct __CLASSNAME__Tag {\n",
         "classname_bottom_str":"} __CLASSNAME__;\n\n",
-      
-        
         "serialize_str": "int __CLASSNAME___Serialize(__CLASSNAME__ * structure, Cstream * str)",
-        "deserialize_str": "int __CLASSNAME___Deserialize(__CLASSNAME__ * structure, Cstream * str)",
+        "deserialize_str": "int __CLASSNAME___Deserialize(__CLASSNAME__ * structure, Cstream * str)",         
         "size_str": "size_t __CLASSNAME___Size()",
-        "serialize_mem_str": "str.serialize(__MEMBERNAME__);\n",
-        "deserialize_mem_str": "str.deserialize(__MEMBERNAME__);\n",
         "size_mem_str":"sizeof(__MEMBERNAME__)",
         "endclass_str":"};",
-
         "endfunction_str":"}\n",
-
         "semicolon_str":";",
-
         "classname_substr":"__CLASSNAME__",
         "type_substr":"__TYPE__",
         "member_substr":"__MEMBERNAME__",
@@ -35,14 +27,28 @@
         "get_c_str": "int Get___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * structure, __TYPE__ * value)",
         "set_c_str": "int Set___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * const structure, __TYPE__ * const value)",        
         "equals_str": "int __CLASSNAME___Equals(__CLASSNAME__ * const left, __CLASSNAME__ * const right)",
-
         "struct_str_null_check_str":"if (NULL == structure || NULL == str) return -1;\n",
         "struct_value_null_check_str":"if (NULL == structure || NULL == value) return -1;\n",
         "struct_equals_null_check_str":"if (NULL == left || NULL == right) return -1;\n",
         "get_assignment_str":"*value = structure->__MEMBERNAME__",
         "set_assignment_str":"structure->__MEMBERNAME__ = *value",
-        "write_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
-        "read_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
-        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ ",
-    }
+        "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
+        "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
+
+        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ "
+    },
+    "native_types":[
+        "char",
+        "unsigned char",
+        "uint8_t",
+        "int8_t",
+        "uint16_t",
+        "int16_t",
+        "uint32_t",
+        "int32_t",
+        "uint64_t",
+        "int64_t",
+        "float",
+        "double"
+    ]
 }

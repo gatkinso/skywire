@@ -28,7 +28,7 @@ public:
     CGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~CGenerator() {}
 
-    virtual bool generate(int& errorcode);
+    bool generate(int& errorcode) override;
 
 protected:
     virtual bool do_header(int& errorcode);

@@ -12,9 +12,12 @@
         "serialize_str": "bool serialize(skyloupe::Stream& str) const {\n",
         "deserialize_str": "bool deserialize(skyloupe::Stream& str) {\n",
         "size_str": "size_t size() const {\n",
-        "serialize_mem_str": "str.serialize(__MEMBERNAME__);",
-        "deserialize_mem_str": "str.deserialize(__MEMBERNAME__);",
-        "size_mem_str":"sizeof(__MEMBERNAME__)",
+        "serialize_native_mem_str": "str.serialize(__MEMBERNAME__);",
+        "deserialize_native_mem_str": "str.deserialize(__MEMBERNAME__);",
+        "serialize_user_mem_str": "__MEMBERNAME__.serialize(str);",
+        "deserialize_user_mem_str": "__MEMBERNAME__.deserialize(str);",        
+        "size_native_mem_str":"sizeof(__MEMBERNAME__)",
+        "size_user_mem_str":"__MEMBERNAME__.size()",
         "equals_str": "bool operator==(const __CLASSNAME__& other) const {\n",
         "endclass_str":"};\n",
         "endnamespace_str": "}\n",
@@ -26,5 +29,19 @@
         "indent_str":"    ",
         "get_str": "__TYPE__ Get___MEMBERNAME__() const { return __MEMBERNAME__; }\n",
         "set_str": "void Set___MEMBERNAME__(const __TYPE__ newval) { __MEMBERNAME__ = newval; }\n"
-    }
+    },
+    "native_types":[
+        "char",
+        "unsigned char",
+        "uint8_t",
+        "int8_t",
+        "uint16_t",
+        "int16_t",
+        "uint32_t",
+        "int32_t",
+        "uint64_t",
+        "int64_t",
+        "float",
+        "double"
+    ]
 }
