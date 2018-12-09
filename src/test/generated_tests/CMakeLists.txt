@@ -82,8 +82,6 @@ set(UNIT_TESTS  c.cpp
                 c_cpp.cpp 
                 cpp.cpp)
 
-set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
-
 add_executable(${TARGETNAME} 
                 main.cpp
                 ${GENERATED_H_FILES}
@@ -110,6 +108,4 @@ target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main ${P
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
 add_dependencies(${TARGETNAME} stencil skywire wiregen)
-
-install(FILES ${UNIT_TEST_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
