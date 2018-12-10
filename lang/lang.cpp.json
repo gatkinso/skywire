@@ -19,6 +19,7 @@
         "size_native_mem_str":"sizeof(__MEMBERNAME__)",
         "size_user_mem_str":"__MEMBERNAME__.size()",
         "equals_str": "bool operator==(const __CLASSNAME__& other) const {\n",
+        "equals_mem_str": "__MEMBERNAME__ == other.__MEMBERNAME__",
         "endclass_str":"};\n",
         "endnamespace_str": "}\n",
         "endfunction_str":"}\n",

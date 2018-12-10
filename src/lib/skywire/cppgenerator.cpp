@@ -301,21 +301,6 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     return true;
 }
 
-bool CppGenerator::hdr_equals(int& errorcode)
-{
-    if (false == gen_one_line_subst("equals_str", "classname", "classname_substr", 2))
-    {
-        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
-        return false;
-    }
-
-    insert_indents(3);
-    ss_ << "return true;" << std::endl;
-    insert_indents(2);
-    gen_one_line("endfunction_str");
-    return true;
-}
-
 bool CppGenerator::hdr_size(int& errorcode)
 {
     if (false == gen_one_line("size_str", 2))
@@ -356,7 +341,7 @@ bool CppGenerator::hdr_size(int& errorcode)
 
         if (i++ < ordered_members_.size() - 1)
         {
-            ss_ << "+";
+            ss_ << " +";
         }
 
         ss_ << std::endl;
@@ -367,6 +352,52 @@ bool CppGenerator::hdr_size(int& errorcode)
     insert_indents(2);
     gen_one_line("endfunction_str");
 
+    return true;
+}
+
+bool CppGenerator::hdr_equals(int& errorcode)
+{
+    if (false == gen_one_line_subst("equals_str", "classname", "classname_substr", 2))
+    {
+        errorcode |= SW_LANG_C_HDR_DESERIALIZE;
+        return false;
+    }
+
+    insert_indents(3);
+    ss_ << "if(this == &other) return true;" << std::endl;
+    insert_indents(3);
+    ss_ << "return(" << std::endl;
+
+    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
+    {
+        errorcode |= SW_LANG_NOMEMBERS;
+        errorcode |= SW_LANG_C_HDR_EQUALS;
+        return false;
+    }
+
+    int i = 0;
+    for (auto& member : ordered_members_)
+    {
+        std::string template_str = lang_stencil_.get_value_string("equals_mem_str");
+
+        insert_indents(4);
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        ss_ << template_str;
+
+        if (i++ < ordered_members_.size() - 1)
+        {
+            ss_ << " &&";
+        }
+
+        ss_ << std::endl;
+    }
+
+    insert_indents(3);
+    ss_ << ");" << std::endl;
+
+    insert_indents(2);
+    gen_one_line("endfunction_str");
     return true;
 }
 
