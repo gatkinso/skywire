@@ -28,104 +28,312 @@ public:
         buffer_.resize(size);
     }
 
-    void serialize(char d)
+    void serialize(char d, unsigned int = SW_BIG_ENDIAN_FLAG)
     {
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(int16_t d)
+    void serialize(int16_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe16(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone16(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole16(d);
+            break;
+        };
         write((char*)&d, sizeof(int16_t));
     }
 
-    void serialize(int32_t d)
+    void serialize(int32_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe32(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone32(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole32(d);
+            break;
+        };
         write((char*)&d, sizeof(int32_t));
     }
 
-    void serialize(int64_t d)
+    void serialize(int64_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe64(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone64(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole64(d);
+            break;
+        };
         write((char*)&d, sizeof(int64_t));
     }
 
-    void serialize(unsigned char d)
+    void serialize(unsigned char d, unsigned int = SW_BIG_ENDIAN_FLAG)
     {
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(uint16_t d)
+    void serialize(uint16_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe16(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone16(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole16(d);
+            break;
+        };
         write((char*)&d, sizeof(uint16_t));
     }
 
-    void serialize(uint32_t d)
+    void serialize(uint32_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe32(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone32(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole32(d);
+            break;
+        };
         write((char*)&d, sizeof(uint32_t));
     }
 
-    void serialize(uint64_t d)
+    void serialize(uint64_t d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = htobe64(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = htone64(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = htole64(d);
+            break;
+        };
         write((char*)&d, sizeof(uint64_t));
     }
 
-    void serialize(float d)
+    void serialize(float d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            hftobef(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            hftonef(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            hftolef(d);
+            break;
+        };
         write((char*)&d, sizeof(float));
     }
 
-    void serialize(double d)
+    void serialize(double d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            hdtobed(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            hdtoned(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            hdtoled(d);
+            break;
+        };
         write((char*)&d, sizeof(double));
     }
 
-    void deserialize(char& d)
+    void deserialize(char& d, unsigned int = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(int16_t& d)
+    void deserialize(int16_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(int16_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be16toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne16toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le16toh(d);
+            break;
+        };
     }
 
-    void deserialize(int32_t& d)
+    void deserialize(int32_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(int32_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be32toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne32toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le32toh(d);
+            break;
+        };
     }
 
-    void deserialize(int64_t& d)
+    void deserialize(int64_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(int64_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be64toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne64toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le64toh(d);
+            break;
+        };
     }
 
-    void deserialize(unsigned char& d)
+    void deserialize(unsigned char& d, unsigned int = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(uint16_t& d)
+    void deserialize(uint16_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(uint16_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be16toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne16toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le16toh(d);
+            break;
+        };
     }
 
-    void deserialize(uint32_t& d)
+    void deserialize(uint32_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(uint32_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be32toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne32toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le32toh(d);
+            break;
+        };
     }
 
-    void deserialize(uint64_t& d)
+    void deserialize(uint64_t& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(uint64_t));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            d = be64toh(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            d = ne64toh(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            d = le64toh(d);
+            break;
+        };
     }
 
-    void deserialize(float& d)
+    void deserialize(float& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(float));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            beftohf(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            neftohf(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            leftohf(d);
+            break;
+        };
     }
 
-    void deserialize(double& d)
+    void deserialize(double& d, unsigned int endian = SW_BIG_ENDIAN_FLAG)
     {
         read((char*)&d, sizeof(double));
+        switch (endian)
+        {
+        case SW_BIG_ENDIAN_FLAG:
+            bedtohd(d);
+            break;
+        case SW_NATIVE_ENDIAN_FLAG:
+            nedtohd(d);
+            break;
+        case SW_LITTLE_ENDIAN_FLAG:
+        default:
+            ledtohd(d);
+            break;
+        };
     }
 
     size_t write(const void* data, size_t len)

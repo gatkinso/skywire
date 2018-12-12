@@ -8,6 +8,32 @@
 #include <stdio.h>
 #include "cstream.h"
 
+
+void swap(char* l, char* r)
+{
+    char t = *l;
+    *l = *r;
+    *r = t;
+}
+
+void swap32(char* d)
+{
+    if (!d) return;
+
+    swap(&d[0], &d[3]);
+    swap(&d[1], &d[2]);
+}
+
+void swap64(char* d)
+{
+    if (!d) return;
+
+    swap(&d[0], &d[7]);
+    swap(&d[1], &d[6]);
+    swap(&d[2], &d[5]);
+    swap(&d[3], &d[4]);
+}
+
 void cstream_init(Cstream* streamer, size_t size)
 {
     streamer->buffer_ = (char*)malloc(size);
