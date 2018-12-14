@@ -265,6 +265,7 @@ bool CGenerator::imp_serialize(int& errorcode)
 {
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
+    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
     bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 0);
     if (false == success)
     {
@@ -283,6 +284,13 @@ bool CGenerator::imp_serialize(int& errorcode)
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
+        if (std::get<member_endianness>(member.second) == 0)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "0"); //TODO do not generate hardcode
+        else if (std::get<member_endianness>(member.second) == 1)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "1");
+        else
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "2");
+
         ss_ << template_str;
         ss_ << std::endl;
     }
@@ -298,6 +306,7 @@ bool CGenerator::imp_deserialize(int& errorcode)
 {
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
+    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
     bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 0);
     if (false == success)
     {
@@ -315,6 +324,13 @@ bool CGenerator::imp_deserialize(int& errorcode)
         std::string template_str = lang_stencil_.get_value_string("read_native_template_str");
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+
+        if (std::get<member_endianness>(member.second) == 0)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "0"); //TODO do not generate hardcode
+        else if (std::get<member_endianness>(member.second) == 1)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "1");
+        else
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "2");
 
         ss_ << template_str;
         ss_ << std::endl;

@@ -42,8 +42,8 @@ TEST_F(CStreamUnitTest, Write)
     std::memcpy(buffer+sizeof(ui32), &ui32, sizeof(ui32));
 
     cstream_init(&cs, strsize);
-    cstream_write(&cs, &ui32, sizeof(ui32));
-    cstream_write(&cs, &ui32, sizeof(ui32));
+    cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
+    cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
 
     ASSERT_EQ(0, std::memcmp(cs.buffer_, buffer, strsize));
 
@@ -63,11 +63,11 @@ TEST_F(CStreamUnitTest, Read)
     std::memcpy(buffer_in + sizeof(uint32_t), &ui32_2, sizeof(uint32_t));
 
     cstream_init(&cs, strsize);
-    cstream_write(&cs, &ui32_1, sizeof(uint32_t));
-    cstream_write(&cs, &ui32_2, sizeof(uint32_t));
+    cstream_write(&cs, &ui32_1, sizeof(uint32_t), SW_LITTLE_ENDIAN_FLAG);
+    cstream_write(&cs, &ui32_2, sizeof(uint32_t), SW_LITTLE_ENDIAN_FLAG);
 
-    cstream_read(&cs, buffer_out, sizeof(uint32_t));
-    cstream_read(&cs, buffer_out + sizeof(uint32_t), sizeof(uint32_t));
+    cstream_read(&cs, buffer_out, sizeof(uint32_t), SW_LITTLE_ENDIAN_FLAG);
+    cstream_read(&cs, buffer_out + sizeof(uint32_t), sizeof(uint32_t), SW_LITTLE_ENDIAN_FLAG);
 
     ASSERT_EQ(0, std::memcmp(buffer_in, buffer_out, strsize));
 
@@ -86,9 +86,9 @@ TEST_F(CStreamUnitTest, Grow)
     std::memcpy(buffer + sizeof(ui32)*2, &ui32, sizeof(ui32));
 
     cstream_init(&cs, strsize);
-    cstream_write(&cs, &ui32, sizeof(ui32));
-    cstream_write(&cs, &ui32, sizeof(ui32));
-    cstream_write(&cs, &ui32, sizeof(ui32));
+    cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
+    cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
+    cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
 
     ASSERT_EQ(0, std::memcmp(cs.buffer_, buffer, strsize));
 
@@ -112,7 +112,7 @@ TEST_F(CStreamUnitTest, ManyWrite)
 
     for (int i = 0; i < NUMITEMS; i++)
     {
-        cstream_write(&cs, &ui32, sizeof(ui32));
+        cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
     }
 
     ASSERT_EQ(0, std::memcmp(cs.buffer_, buffer, strsize));
@@ -138,12 +138,12 @@ TEST_F(CStreamUnitTest, ManyRead)
 
     for (int i = 0; i < NUMITEMS; i++)
     {
-        cstream_write(&cs, &ui32, sizeof(ui32));
+        cstream_write(&cs, &ui32, sizeof(ui32), SW_LITTLE_ENDIAN_FLAG);
     }
 
     for (int i = 0; i < NUMITEMS; i++)
     {
-        cstream_read(&cs, buffer_out + (sizeof(uint32_t)*i), sizeof(uint32_t));
+        cstream_read(&cs, buffer_out + (sizeof(uint32_t)*i), sizeof(uint32_t), SW_LITTLE_ENDIAN_FLAG);
     }
 
     ASSERT_EQ(0, std::memcmp(buffer_in, buffer_out, strsize));

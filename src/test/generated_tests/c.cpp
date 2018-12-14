@@ -25,7 +25,7 @@ protected:
  
 TEST_F(C, SerDes)
 {
-    StructyMcStructface structy, structz;
+    StructyMcStructface structy;
     Cstream cs;
 
     structy.a_myfloat100 = static_cast<float>(101.1);
@@ -43,6 +43,7 @@ TEST_F(C, SerDes)
 
     for (uint32_t i = 0; i < 1000; i++)
     {
+        StructyMcStructface structz;
         StructyMcStructface_Deserialize(&structz, &cs);
 
         ASSERT_EQ(1, StructyMcStructface_Equals(&structy, &structz));

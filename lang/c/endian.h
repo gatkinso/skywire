@@ -18,9 +18,12 @@
 
 #include <stdint.h>
 
-#define SW_LITTLE_ENDIAN_FLAG 0
-#define SW_BIG_ENDIAN_FLAG 1
+#define SW_BIG_ENDIAN_FLAG    0
+#define SW_LITTLE_ENDIAN_FLAG 1
 #define SW_NATIVE_ENDIAN_FLAG 2
+
+#define SW_INTEGER_TYPE 0
+#define SW_FLOATING_TYPE 1
 
 #if defined WIN32
     #include <Winsock.h>
@@ -35,9 +38,14 @@
     #define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
 #endif
 
-void swap(char* l, char* r);
-void swap32(char* d);
-void swap64(char* d);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void __swap(char* l, char* r);
+void __swap16(char* d);
+void __swap32(char* d);
+void __swap64(char* d);
 
 #if SW_LITTLE_ENDIAN  //Top level CMakeLists.txt
     #ifndef htole16
@@ -121,11 +129,11 @@ void swap64(char* d);
     #endif
 
     #ifndef beftohf
-    #define beftohf(x) (swap32((char*)&x))
+    #define beftohf(x) (__swap32((char*)&x))
     #endif
 
     #ifndef bedtohd
-    #define bedtohd(x) (swap64((char*)&x))
+    #define bedtohd(x) (__swap64((char*)&x))
     #endif
 
     #ifndef leftohf
@@ -145,11 +153,11 @@ void swap64(char* d);
     #endif
 
     #ifndef hftobef
-    #define hftobef(x) (swap32((char*)&x))
+    #define hftobef(x) (__swap32((char*)&x))
     #endif
 
     #ifndef hdtobed
-    #define hdtobed(x) (swap64((char*)&x))
+    #define hdtobed(x) (__swap64((char*)&x))
     #endif
 
     #ifndef hftolef
@@ -249,11 +257,11 @@ void swap64(char* d);
     #endif
 
     #ifndef leftohf
-    #define leftohf(x) (swap32(&x))
+    #define leftohf(x) (__swap32(&x))
     #endif
 
     #ifndef ledtohd
-    #define ledtohd(x) (swap64(&x))
+    #define ledtohd(x) (__swap64(&x))
     #endif
 
     #ifndef hftonef
@@ -273,12 +281,16 @@ void swap64(char* d);
     #endif
 
     #ifndef hftolef
-    #define hftolef(x) (swap32(&x))
+    #define hftolef(x) (__swap32(&x))
     #endif
 
     #ifndef hftoled
-    #define hftoled(x) (swap32(&x))
+    #define hftoled(x) (__swap32(&x))
     #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif // __wiregen_endian_h
