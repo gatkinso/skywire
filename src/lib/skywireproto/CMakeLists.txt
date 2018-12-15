@@ -58,4 +58,8 @@ endforeach(PROTO)
 
 add_library(${TARGETNAME} STATIC ${PROTOCPP_RESULTS})
 
+if(MSVC)
+    target_compile_options(${TARGETNAME} PRIVATE "/wd4800")
+endif(MSVC)
+
 target_link_libraries(${TARGETNAME} ${PROTOBUF_LIBRARIES})
