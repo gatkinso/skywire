@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
+#include "endian.h"
 
 #define DEF_CSTREAM_SIZE 1024
 
@@ -29,9 +30,9 @@ extern "C" {
 
     void cstream_fini(Cstream* streamer);
 
-    void cstream_write(Cstream* streamer, const void* d, size_t sz);
+    void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian);
 
-    void cstream_read(Cstream* streamer, void* d, size_t sz);
+    void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian);
 
 #ifdef __cplusplus
 }

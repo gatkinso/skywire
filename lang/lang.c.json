@@ -19,6 +19,7 @@
         "endfunction_str":"}\n",
         "semicolon_str":";",
         "classname_substr":"__CLASSNAME__",
+        "endian_substr":"__ENDIAN__",
         "type_substr":"__TYPE__",
         "member_substr":"__MEMBERNAME__",
         "include_substr":"__INCLUDEFILE__",
@@ -32,8 +33,8 @@
         "struct_equals_null_check_str":"if (NULL == left || NULL == right) return -1;\n",
         "get_assignment_str":"*value = structure->__MEMBERNAME__",
         "set_assignment_str":"structure->__MEMBERNAME__ = *value",
-        "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
-        "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__));",
+        "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
+        "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
 
         "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ "
     },
