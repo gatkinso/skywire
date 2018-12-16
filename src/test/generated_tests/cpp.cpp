@@ -17,13 +17,7 @@
 #include <gtest/gtest.h>
 #include "ClassyMcClassface.h"
 
-class Cpp : public ::testing::Test
-{
-protected:
-    Cpp() {}
-};
-
-TEST_F(Cpp, Serialize)
+TEST(Cpp, Serialize)
 {
     testspace::ClassyMcClassface classy;
     skyloupe::Stream stream;
@@ -32,7 +26,7 @@ TEST_F(Cpp, Serialize)
     ASSERT_TRUE(success);
 }
 
-TEST_F(Cpp, Deserialize)
+TEST(Cpp, Deserialize)
 {
     testspace::ClassyMcClassface in, out;
     skyloupe::Stream stream;
@@ -50,14 +44,14 @@ TEST_F(Cpp, Deserialize)
     ASSERT_TRUE(success);
 }
 
-TEST_F(Cpp, Size)
+TEST(Cpp, Size)
 {
     testspace::ClassyMcClassface classy;
 
     ASSERT_EQ(classy.size(), sizeof(float) + sizeof(uint32_t) + sizeof(int64_t) + sizeof(double) + sizeof(char));
 }
 
-TEST_F(Cpp, Equality)
+TEST(Cpp, Equality)
 {
     testspace::ClassyMcClassface in, out;
     skyloupe::Stream stream;

@@ -20,7 +20,6 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 set(_SOURCES main.cpp)
 
-set(EXAMPLE_MESSAGE_JSON ${PROJECT_SOURCE_DIR}/cfg/cpp.testspace.MyTestClass.json)
 set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/lang/lang.cpp.json
                    ${PROJECT_SOURCE_DIR}/lang/lang.c.json)
 
@@ -45,4 +44,3 @@ add_custom_command(TARGET ${TARGETNAME} POST_BUILD
 
 install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_DIR}/bin)
 install(FILES ${LANGUAGE_JSONS} DESTINATION ${CMAKE_INSTALL_DIR})
-install(FILES ${EXAMPLE_MESSAGE_JSON} ${LANGUAGE_JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

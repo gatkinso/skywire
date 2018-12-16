@@ -49,7 +49,7 @@ foreach(WG_C ${WG_C_FILES})
         COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
         ARGS    --input ${CMAKE_CURRENT_SOURCE_DIR}/${WG_C}.json
                 --outdir ${WG_C_DIR}
-                --langfiledir ${CMAKE_SOURCE_DIR}/lang/)
+                --langfile ${CMAKE_SOURCE_DIR}/lang/lang.c.json)
     set(WG_C_RESULTS ${WG_C_RESULTS}
         ${WG_C_DIR}/${WG_C}.h
         ${WG_C_DIR}/${WG_C}.c)
@@ -58,14 +58,15 @@ endforeach(WG_C)
 # Generate Cpp
 foreach(WG_CPP ${WG_CPP_FILES})
     add_custom_command(
-        OUTPUT  ${WG_CPP_DIR}/${WG_CPP}.h
+        OUTPUT  ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
         COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
         ARGS    --input ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
                 --outdir ${WG_CPP_DIR}
-                --langfiledir ${CMAKE_SOURCE_DIR}/lang/)
+                --langfile ${CMAKE_SOURCE_DIR}/lang/lang.cpp.json
+                --generate_tests)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
-        ${WG_CPP_DIR}/${WG_CPP}.h)
+        ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp)
 endforeach(WG_CPP)
 
 set(GENERATED_C_FILES
@@ -78,9 +79,7 @@ if(UNIX)
     set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME} PROPERTIES COMPILE_FLAGS -std=c99)
 endif(UNIX)
 
-set(UNIT_TESTS  c.cpp
-                c_cpp.cpp 
-                cpp.cpp)
+set(UNIT_TESTS  c.cpp)
 
 add_executable(${TARGETNAME} 
                 main.cpp
