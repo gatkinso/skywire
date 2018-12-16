@@ -24,20 +24,22 @@ qwikpirate::ArgVee cmdargs;
 std::string config_pathname = "settings.json";
 std::string message_pathname;
 std::string output_directory = ".";
-std::string langfile_directory = ".";
+std::string langfile;
 bool silent = false;
+bool generate_tests = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
     if (flag.compare("--help") == 0)
     {
         std::cout << "Use: wiregen  (no paramters)               -- defaults to using settings.json" << std::endl
-            << "      wiregen --version                    -- prints version and exits" << std::endl
-            << "      wiregen --config filename            -- launches using fiename for configuration file" << std::endl
-            << "      wiregen --input filename             -- launches using filename for input" << std::endl
-            << "      wiregen --outdir directoryname       -- directory to write generated file(s) to" << std::endl
-            << "      wiregen --langfiledir directoryname  -- directory containing language file" << std::endl
-            << "      wiregen --silent                     -- no output displayed" << std::endl;
+                  << "     wiregen --version                     -- prints version and exits" << std::endl
+                  << "     wiregen --config filename             -- launches using fiename for configuration file" << std::endl
+                  << "     wiregen --input filename              -- launches using filename for input" << std::endl
+                  << "     wiregen --outdir directoryname        -- directory to write generated file(s) to" << std::endl
+                  << "     wiregen --langfile language filename  -- language file to be used" << std::endl
+                  << "     wiregen --generate_tests              -- generate unit tests" << std::endl
+                  << "     wiregen --silent                      -- no output displayed" << std::endl;
         exit(0);
     }
 
@@ -83,15 +85,15 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    if (flag.compare("--langfiledir") == 0)
+    if (flag.compare("--langfile") == 0)
     {
         if (false == value.empty())
         {
-            langfile_directory = value;
+            langfile = value;
         }
         else
         {
-            std::cout << "Need a valid language directory name" << std::endl;
+            std::cout << "Need a valid language file name" << std::endl;
         }
     }
 
@@ -101,9 +103,13 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         {
             silent = true;
         }
-        else
+    }
+
+    if (flag.compare("--generate_tests") == 0)
+    {
+        if (false != value.empty())
         {
-            std::cout << "Need a valid language directory name" << std::endl;
+            generate_tests = true;
         }
     }
 }
@@ -117,7 +123,8 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--config", true, false, cli_callback);
     cmdargs.setOption("--input", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
-    cmdargs.setOption("--langfiledir", true, false, cli_callback);
+    cmdargs.setOption("--langfile", true, false, cli_callback);
+    cmdargs.setOption("--generate_tests", true, true, cli_callback);
     cmdargs.setOption("--silent", true, true, cli_callback);
 
     bool ret = cmdargs.parse(argc, argv, cli_errors_);
@@ -139,7 +146,7 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-    success = process_file(message_pathname, output_directory, langfile_directory, errorcode);
+    success = process_file(message_pathname, output_directory, langfile, errorcode, generate_tests);
     if (success == true)
     {
         if(!silent) 

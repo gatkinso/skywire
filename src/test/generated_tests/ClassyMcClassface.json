@@ -2,6 +2,7 @@
    "stringValues":{  
       "classname":"ClassyMcClassface",
       "outputheaderfilename":"ClassyMcClassface.h",
+      "outputtestfilename":"ClassyMcClassfaceTest.cpp",
       "namespace":"testspace",
       "language": "c++",
       "lang_file": "lang.cpp.json"

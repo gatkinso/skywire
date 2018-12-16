@@ -25,28 +25,30 @@ protected:
  
 TEST_F(C, SerDes)
 {
-    StructyMcStructface structy;
+    const int NUM = 1000;
+    StructyMcStructface structy[NUM];
     Cstream cs;
-
-    structy.a_myfloat100 = static_cast<float>(101.1);
-    structy.b_myuint32_200 = 200;
-    structy.c_myint64_201 = 201;
-    structy.d_myDoubleBubble202 = (double)202.2;
-    structy.e_charcoal = 30;
 
     cstream_init(&cs, 128);
 
-    for (uint32_t i = 0; i < 1000; i++)
+    int sign = 1;
+    for (uint32_t i = 0; i < NUM; i++)
     {
-        StructyMcStructface_Serialize(&structy, &cs);
+        sign *= -1;
+        structy[i].a_myfloat100 = static_cast<float>(101.1*i*sign);
+        structy[i].b_myuint32_200 = 200+i;
+        structy[i].c_myint64_201 = i-201;
+        structy[i].d_myDoubleBubble202 = static_cast<double>(202.2*i*sign);
+        structy[i].e_charcoal = 30;
+        StructyMcStructface_Serialize(&structy[i], &cs);
     }
 
-    for (uint32_t i = 0; i < 1000; i++)
+    for (uint32_t i = 0; i < NUM; i++)
     {
         StructyMcStructface structz;
         StructyMcStructface_Deserialize(&structz, &cs);
 
-        ASSERT_EQ(1, StructyMcStructface_Equals(&structy, &structz));
+        ASSERT_EQ(1, StructyMcStructface_Equals(&structy[i], &structz));
     }
 
     cstream_fini(&cs);
@@ -62,5 +64,5 @@ TEST_F(C, Size)
     structy.d_myDoubleBubble202 = 202.2;
     structy.e_charcoal = 30;
 
-    ASSERT_EQ(StructyMcStructface_Size(), 25);
+    ASSERT_EQ(StructyMcStructface_Size(), sizeof(float) + sizeof(uint32_t) + sizeof(int64_t) + sizeof(double) + sizeof(char));
 }

@@ -29,15 +29,15 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode);
+    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
 
-    void set_langfile_dir(const std::string& dir) { language_file_dir_ = dir; }
+    void set_langfile(const std::string& filename) { language_file_ = filename; }
 private:
     Stencil msg_stencil_;
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";
-    std::string language_file_dir_ = ".";
+    std::string language_file_ = ".";
 
     std::string ada_str_ = "ada";
     std::string c_str_ = "c";
