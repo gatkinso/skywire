@@ -27,7 +27,19 @@
       "301":{  
          "type":"char",
          "name":"e_charcoal"
-      }
+      },
+      "302":{  
+         "type":"uint16_t",
+         "name":"f_myuint16_302"
+      },
+      "303":{  
+         "type":"uint16_t",
+         "name":"f_myuint16_303"
+      },
+      "400":{  
+         "type":"float",
+         "name":"a_myfloat400"
+      },          
    },
    "includes":[  
       "\"streamable.h\"",
