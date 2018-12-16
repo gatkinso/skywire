@@ -30,6 +30,7 @@ public:
     virtual ~Processor() {}
 
     virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
+    virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
 
     void set_langfile(const std::string& filename) { language_file_ = filename; }
 private:
