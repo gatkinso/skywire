@@ -26,6 +26,7 @@ include_directories(${TARGETNAME} ${_INC_DIRS})
 set(_GENERATORS
              adagenerator.cpp
              cgenerator.cpp
+             ctestgenerator.cpp
              cppgenerator.cpp
              cpptestgenerator.cpp
              file_writer.cpp
@@ -33,6 +34,7 @@ set(_GENERATORS
              pygenerator.cpp
              ${TARGET_INC_DIR}/adagenerator.h
              ${TARGET_INC_DIR}/cgenerator.h
+             ${TARGET_INC_DIR}/ctestgenerator.h
              ${TARGET_INC_DIR}/cppgenerator.h
              ${TARGET_INC_DIR}/cpptestgenerator.h
              ${TARGET_INC_DIR}/javagenerator.h
