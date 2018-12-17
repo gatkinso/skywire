@@ -136,7 +136,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 
         if (true == generate_tests)
         {
-            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil_));
+            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
             success = do_tests(test_genny, outputdir, "lang.cpp.json", errorcode);
         }
     }
