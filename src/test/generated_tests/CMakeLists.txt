@@ -54,7 +54,8 @@ foreach(WG_C ${WG_C_FILES})
                 --generate_tests)
     set(WG_C_RESULTS ${WG_C_RESULTS}
         ${WG_C_DIR}/${WG_C}.h
-        ${WG_C_DIR}/${WG_C}.c
+        ${WG_C_DIR}/${WG_C}.c)
+    set(UNIT_TESTS ${UNIT_TESTS}
         ${WG_C_DIR}/${WG_C}Test.cpp)
 endforeach(WG_C)
 
@@ -81,8 +82,6 @@ set(GENERATED_CPP_FILES
 if(UNIX)
     set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME} PROPERTIES COMPILE_FLAGS -std=c99)
 endif(UNIX)
-
-set(UNIT_TESTS  )
 
 add_executable(${TARGETNAME} 
                 main.cpp
