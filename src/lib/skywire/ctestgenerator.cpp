@@ -15,7 +15,7 @@
 
 #include <regex>
 #include <map>
-#include "CTestGenerator.h"
+#include "ctestgenerator.h"
 
 namespace skyloupe
 {
