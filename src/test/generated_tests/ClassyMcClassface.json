@@ -10,7 +10,8 @@
    "members":{  
       "100":{  
          "type":"float",
-         "name":"a_myfloat100"
+         "name":"a_myfloat100",
+         "endian":1
       },    
       "200":{  
          "type":"uint32_t",
@@ -21,8 +22,8 @@
          "name":"c_myint64_201"
       },
       "202": {
-          "type": "double",
-          "name": "d_myDoubleBubble202"
+          "type":"double",
+          "name":"d_myDoubleBubble202"
       },
       "301":{  
          "type":"char",

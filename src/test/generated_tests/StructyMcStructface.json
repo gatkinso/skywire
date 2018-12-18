@@ -11,7 +11,8 @@
    "members":{  
       "100":{  
          "type":"float",
-         "name":"a_myfloat100"
+         "name":"a_myfloat100",
+         "endian":1
       },    
       "200":{  
          "type":"uint32_t",

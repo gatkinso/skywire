@@ -19,7 +19,8 @@ set(TARGET_INC_DIR ${PROJECT_SOURCE_DIR}/include/${TARGETNAME})
 
 set(_INC_DIRS ${TARGET_INC_DIR}
               ${PROJECT_SOURCE_DIR}/include
-              ${PROJECT_BINARY_DIR}/proto/cpp)
+              ${PROJECT_BINARY_DIR}/proto/cpp
+              ${PROJECT_SOURCE_DIR}/lang/c)
 
 include_directories(${TARGETNAME} ${_INC_DIRS})
 

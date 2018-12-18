@@ -22,6 +22,7 @@
 #include "stencil.pb.h"
 #pragma warning(default:4800) 
 #include "stencil/stencil.h"
+#include "endian.h"
 
 class StencilUnitTest : public ::testing::Test
 {
@@ -393,17 +394,19 @@ TEST_F(StencilUnitTest, set_get_value_member)
     bool rc = stencil.read_file("stencil_unit_test.json");
     ASSERT_EQ(true, rc);
 
-    rc = stencil.set_value_member(100, "float", "m_myfloat");
+    rc = stencil.set_value_member(100, "float", "m_myfloat", SW_BIG_ENDIAN_FLAG);
     ASSERT_EQ(true, rc);
 
     std::string type;
     std::string name;
-    rc = stencil.get_value_member(100, type, name);
+    uint32_t endian;
+    rc = stencil.get_value_member(100, type, name, endian);
 
     ASSERT_TRUE(rc);
 
     ASSERT_EQ(type, "float");
     ASSERT_EQ(name, "m_myfloat");
+    ASSERT_EQ(endian, SW_BIG_ENDIAN_FLAG);
 }
 
 TEST_F(StencilUnitTest, clear_key_member)
@@ -413,7 +416,7 @@ TEST_F(StencilUnitTest, clear_key_member)
     bool rc = stencil.read_file("stencil_unit_test.json");
     ASSERT_EQ(true, rc);
 
-    rc = stencil.set_value_member(100, "float", "m_myfloat");
+    rc = stencil.set_value_member(100, "float", "m_myfloat", SW_BIG_ENDIAN_FLAG);
     ASSERT_EQ(true, rc);
 
     rc = stencil.clear_key_member(100);
@@ -422,7 +425,26 @@ TEST_F(StencilUnitTest, clear_key_member)
 
     std::string type;
     std::string name;
-    rc = stencil.get_value_member(100, type, name);
+    uint32_t endian;
+    rc = stencil.get_value_member(100, type, name, endian);
 
     ASSERT_FALSE(rc);
 }
+
+//TEST_F(StencilUnitTest, GetString)
+//{
+//    skyloupe::Stencil stencil;
+//
+//    stencil.set_value_string("language", "C++");
+//    stencil.set_value_string("namespace", "testspace");
+//    stencil.set_value_string("classname", "TestClass");
+//    stencil.set_value("includes", "<header1.h>");
+//    stencil.set_value("includes", "<header2.h>");
+//    stencil.set_value("includes", "<header3.h>");
+//
+//    bool rc = stencil.set_value_member(100, "float", "m_myfloat", SW_LITTLE_ENDIAN_FLAG);
+//    rc = stencil.set_value_member(200, "int16_t", "m_myint", SW_LITTLE_ENDIAN_FLAG);
+//
+//    rc = stencil.write_file("stencil_unit_test_out.json");
+//    ASSERT_EQ(true, rc);
+//}

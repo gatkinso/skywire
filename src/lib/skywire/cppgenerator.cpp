@@ -16,6 +16,7 @@
 #include <regex>
 #include <map>
 #include "cppgenerator.h"
+#include "endian.h"
 
 namespace skyloupe
 {
@@ -225,7 +226,8 @@ bool CppGenerator::hdr_serialize(int& errorcode)
         return false;
     }
 
-    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
@@ -248,6 +250,14 @@ bool CppGenerator::hdr_serialize(int& errorcode)
         
         insert_indents(3);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+
+        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Big");
+        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Little");
+        else
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Native");
+
         ss_ << template_str << std::endl;
     }
 
@@ -267,7 +277,8 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         return false;
     }
 
-    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
@@ -290,6 +301,13 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
 
         insert_indents(3);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+
+        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Big");
+        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Little");
+        else
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Native");
         ss_ << template_str << std::endl;
     }
 
@@ -312,7 +330,7 @@ bool CppGenerator::hdr_size(int& errorcode)
     insert_indents(3);
     ss_ << "return(" << std::endl;
 
-    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
 
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
@@ -368,7 +386,7 @@ bool CppGenerator::hdr_equals(int& errorcode)
     insert_indents(3);
     ss_ << "return(" << std::endl;
 
-    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
     {
         errorcode |= SW_LANG_NOMEMBERS;

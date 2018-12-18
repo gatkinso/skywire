@@ -15,6 +15,7 @@
 
 #include <regex>
 #include "cgenerator.h"
+#include "endian.h"
 
 namespace skyloupe
 {
@@ -284,12 +285,12 @@ bool CGenerator::imp_serialize(int& errorcode)
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
-        if (std::get<member_endianness>(member.second) == 0)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "0"); //TODO do not generate hardcode
-        else if (std::get<member_endianness>(member.second) == 1)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "1");
+        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG"); 
+        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
         else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "2");
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
 
         ss_ << template_str;
         ss_ << std::endl;
@@ -325,12 +326,12 @@ bool CGenerator::imp_deserialize(int& errorcode)
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
-        if (std::get<member_endianness>(member.second) == 0)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "0"); //TODO do not generate hardcode
-        else if (std::get<member_endianness>(member.second) == 1)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "1");
+        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG");
+        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
         else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "2");
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
 
         ss_ << template_str;
         ss_ << std::endl;
