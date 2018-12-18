@@ -49,27 +49,27 @@ void __swap64(char* d);
 
 #if SW_LITTLE_ENDIAN  //Top level CMakeLists.txt
     #ifndef htole16
-    #define htole16(x) (x)
+    #define htole16(x) x
     #endif
 
     #ifndef htole32
-    #define htole32(x) (x)
+    #define htole32(x) x
     #endif
 
     #ifndef htole64
-    #define htole64(x) (x)
+    #define htole64(x) x
     #endif
 
     #ifndef le16toh
-    #define le16toh(x) (x)
+    #define le16toh(x) x
     #endif
 
     #ifndef le32toh
-    #define le32toh(x) (x)
+    #define le32toh(x) x
     #endif
 
     #ifndef le64toh
-    #define le64toh(x) (x)
+    #define le64toh(x) x
     #endif
 
     #ifndef htobe16
@@ -97,35 +97,35 @@ void __swap64(char* d);
     #endif
 
     #ifndef htone16
-    #define htone16(x) (x)
+    #define htone16(x) x
     #endif
 
     #ifndef htone32
-    #define htone32(x) (x)
+    #define htone32(x) x
     #endif
 
     #ifndef htone64
-    #define htone64(x) (x)
+    #define htone64(x) x
     #endif
 
     #ifndef ne16toh
-    #define ne16toh(x) (x)
+    #define ne16toh(x) x
     #endif
 
     #ifndef ne32toh
-    #define ne32toh(x) (x)
+    #define ne32toh(x) x
     #endif
 
     #ifndef ne64toh
-    #define ne64toh(x) (x)
+    #define ne64toh(x) x
     #endif
 
     #ifndef neftohf
-    #define neftohf(x) (x)
+    #define neftohf(x) x
     #endif
 
     #ifndef nedtohd
-    #define nedtohd(x) (x)
+    #define nedtohd(x) x
     #endif
 
     #ifndef beftohf
@@ -137,19 +137,19 @@ void __swap64(char* d);
     #endif
 
     #ifndef leftohf
-    #define leftohf(x) (x)
+    #define leftohf(x) x
     #endif
 
     #ifndef ledtohd
-    #define ledtohd(x) (x)
+    #define ledtohd(x) x
     #endif
 
     #ifndef hftonef
-    #define hftonef(x) (x)
+    #define hftonef(x) x
     #endif
 
     #ifndef hdtoned
-    #define hdtoned(x) (x)
+    #define hdtoned(x) x
     #endif
 
     #ifndef hftobef
@@ -161,11 +161,11 @@ void __swap64(char* d);
     #endif
 
     #ifndef hftolef
-    #define hftolef(x) (x)
+    #define hftolef(x) x
     #endif
 
     #ifndef hdtoled
-    #define hdtoled(x) (x)
+    #define hdtoled(x) x
     #endif
 #else
     #ifndef htole16
@@ -193,67 +193,67 @@ void __swap64(char* d);
     #endif
 
     #ifndef htobe16
-    #define htobe16(x) (x)
+    #define htobe16(x) x
     #endif
 
     #ifndef htobe32
-    #define htobe32(x) (x)
+    #define htobe32(x) x
     #endif
 
     #ifndef htobe64
-    #define htobe64(x) (x)
+    #define htobe64(x) x
     #endif
 
     #ifndef be16toh
-    #define be16toh(x) (x)
+    #define be16toh(x) x
     #endif
 
     #ifndef be32toh
-    #define be32toh(x) (x)
+    #define be32toh(x) x
     #endif
 
     #ifndef be64toh
-    #define be64toh(x) (x)
+    #define be64toh(x) x
     #endif
 
     #ifndef htone16
-    #define htone16(x) (x)
+    #define htone16(x) x
     #endif
 
     #ifndef htone32
-    #define htone32(x) (x)
+    #define htone32(x) x
     #endif
 
     #ifndef htone64
-    #define htone64(x) (x)
+    #define htone64(x) x
     #endif
 
     #ifndef ne16toh
-    #define ne16toh(x) (x)
+    #define ne16toh(x) x
     #endif
 
     #ifndef ne32toh
-    #define ne32toh(x) (x)
+    #define ne32toh(x) x
     #endif
 
     #ifndef ne64toh
-    #define ne64toh(x) (x)
+    #define ne64toh(x) x
     #endif
 
     #ifndef neftohf
-    #define neftohf(x) (x)
+    #define neftohf(x) x
     #endif
 
     #ifndef nedtohd
-    #define nedtohd(x) (x)
+    #define nedtohd(x) x
     #endif
 
     #ifndef beftohf
-    #define beftohf(x) (x)
+    #define beftohf(x) x
     #endif
 
     #ifndef bedtohd
-    #define bedtohd(x) (x)
+    #define bedtohd(x) x
     #endif
 
     #ifndef leftohf
@@ -265,19 +265,19 @@ void __swap64(char* d);
     #endif
 
     #ifndef hftonef
-    #define hftonef(x) (x)
+    #define hftonef(x) x
     #endif
 
     #ifndef hdtoned
-    #define hdtoned(x) (x)
+    #define hdtoned(x) x
     #endif
 
     #ifndef hftobef
-    #define hftobef(x) (x)
+    #define hftobef(x) x
     #endif
 
     #ifndef hdtobed
-    #define hdtobed(x) (x)
+    #define hdtobed(x) x
     #endif
 
     #ifndef hftolef
