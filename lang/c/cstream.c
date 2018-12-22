@@ -7,7 +7,6 @@
 //
 #include <stdio.h>
 #include "cstream.h"
-#include "endian.h"
 
 void __swap(char* l, char* r)
 {

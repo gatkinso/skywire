@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <vector>
 #include <cstring>
-#include "endian.h"
+#include "sw_endian.h"
 
 namespace skyloupe
 {

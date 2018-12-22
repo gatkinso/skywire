@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
-#include "endian.h"
+#include "sw_endian.h"
 
 #define DEF_CSTREAM_SIZE 1024
 
