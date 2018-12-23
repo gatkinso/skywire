@@ -16,7 +16,7 @@
 #include <regex>
 #include <map>
 #include "cppgenerator.h"
-#include "endian.h"
+#include "sw_endian.h"
 
 namespace skyloupe
 {

@@ -22,7 +22,7 @@
 #include "stencil.pb.h"
 #pragma warning(default:4800) 
 #include "stencil/stencil.h"
-#include "endian.h"
+#include "sw_endian.h"
 
 class StencilUnitTest : public ::testing::Test
 {
