@@ -31,7 +31,7 @@ bool FileWriter::present(int& errorcode)
 
 bool FileWriter::write_file(int& errorcode)
 {
-    std::ofstream out_file(pathname_, std::ofstream::out);
+    std::ofstream out_file(pathname_, std::ofstream::out | std::ofstream::trunc);
 
     out_file.write(result_string_.c_str(), result_string_.size());
 
