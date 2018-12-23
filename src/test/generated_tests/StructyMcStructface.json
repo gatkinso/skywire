@@ -3,6 +3,7 @@
       "classname":"StructyMcStructface",
       "outputheaderfilename":"StructyMcStructface.h",
       "outputcfilename":"StructyMcStructface.c",
+      "outputtestfilename":"StructyMcStructfaceTest.cpp",
       "namespace":"testspace",
       "language": "c",
       "lang_file": "lang.c.json"
@@ -10,7 +11,8 @@
    "members":{  
       "100":{  
          "type":"float",
-         "name":"a_myfloat100"
+         "name":"a_myfloat100",
+         "endian":1
       },    
       "200":{  
          "type":"uint32_t",
@@ -27,7 +29,23 @@
       "301":{  
          "type":"char",
          "name":"e_charcoal"
-      },         
+      },
+      "1000":{  
+         "type":"float",
+         "name":"f_myfloat1000"
+      },    
+      "2000":{  
+         "type":"uint32_t",
+         "name":"g_myuint32_2000"
+      },
+      "2010":{  
+         "type":"int64_t",
+         "name":"h_myint64_2010"
+      },
+      "2020":{  
+         "type":"double",
+         "name":"i_myDoubleBubble2020"
+      },
    },
    "includes":[  
       "\"cstream.h\"",

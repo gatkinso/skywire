@@ -17,18 +17,11 @@ syntax = "proto3";
 
 package skyloupe.skywireproto;
 
-enum Endianness
-{
-    Little         =   0;
-    Big            =   1;
-    Native         =   2;
-}
-
 message Member
 {
     string type       = 10;
     string name       = 20;
-    Endianness endian = 30;
+    uint32 endian     = 30;
 }
 
 message Stencil

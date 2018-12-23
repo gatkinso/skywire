@@ -16,7 +16,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <cstring>
-#include "endian.h"
+#include "sw_endian.h"
 
 class EndianUnitTest : public ::testing::Test
 {

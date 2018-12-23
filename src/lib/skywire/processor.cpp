@@ -19,7 +19,35 @@
 namespace skyloupe
 {
 
-bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode)
+bool Processor::do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode)
+{
+    if (language_file_.empty())
+    {
+        language_file_.append(msg_stencil_.get_value_string(language_file_key_, langfile));
+    }
+
+    genny->set_lang_settings(language_file_);
+    bool success = genny->generate(errorcode);
+
+    if (success)
+    {
+        Generator::results_t results = genny->get_results();
+        if (results.empty() == false)
+        {
+            std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
+            std::string pathname_str = outputdir + "/" + filename_str;
+            const std::string& contents_str = results[0];
+
+            std::unique_ptr<skyloupe::ResultPresenter> ressie;
+            ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
+            ressie->present(errorcode);
+        }
+    }
+
+    return success;
+}
+
+bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -31,8 +59,6 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     }
 
     std::string lang = msg_stencil_.get_value_string(language_key_);
-    std::string lang_file(language_file_dir_);
-    lang_file.append("/");
 
     std::unique_ptr<skyloupe::Generator> genny;
     // temporary - replace with factory, dynamic language definition via json
@@ -45,9 +71,12 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     else if (lang == c_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
-        lang_file.append(msg_stencil_.get_value_string(language_file_key_, "lang.c.json"));
+        if (language_file_.empty())
+        {
+            language_file_.append(msg_stencil_.get_value_string(language_file_key_, "lang.c.json"));
+        }
 
-        genny->set_lang_settings(lang_file);
+        genny->set_lang_settings(language_file_);
         success = genny->generate(errorcode);
 
         if (success)
@@ -72,12 +101,22 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
                 ressie_c->present(errorcode);
             }
         }
+
+        if (true == generate_tests)
+        {
+            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil_));
+            success = do_tests(test_genny, outputdir, "lang.c.json", errorcode);
+        }
     }
     else if (lang == cpp_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil_));
-        lang_file.append(msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json"));
-        genny->set_lang_settings(lang_file);
+        if (language_file_.empty())
+        {
+            language_file_.append(msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json"));
+        }
+
+        genny->set_lang_settings(language_file_);
         success = genny->generate(errorcode);
 
         if (success)
@@ -93,6 +132,12 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
                 ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
                 ressie->present(errorcode);
             }
+        }
+
+        if (true == generate_tests)
+        {
+            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
+            success = do_tests(test_genny, outputdir, "lang.cpp.json", errorcode);
         }
     }
     else if (lang == java_str_)

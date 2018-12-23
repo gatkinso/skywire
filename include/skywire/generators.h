@@ -16,6 +16,8 @@
 #include "generator.h"
 #include "adagenerator.h"
 #include "cgenerator.h"
+#include "ctestgenerator.h"
 #include "cppgenerator.h"
+#include "cpptestgenerator.h"
 #include "javagenerator.h"
 #include "pygenerator.h"

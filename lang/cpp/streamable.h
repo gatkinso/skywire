@@ -16,8 +16,8 @@ namespace skyloupe
 class Streamable
 {
 public:
-    virtual bool serialize(skyloupe::Stream& str) const = 0;
-    virtual bool deserialize(skyloupe::Stream& str) = 0;
+    virtual bool serialize(skyloupe::Stream& str, Endianness endian = Big) const = 0;
+    virtual bool deserialize(skyloupe::Stream& str, Endianness endian = Big) = 0;
     virtual size_t size() const = 0;
 };
 
