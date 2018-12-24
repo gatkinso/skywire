@@ -1,10 +1,3 @@
-//
-////  atkinet - A library for cross platform development in C++
-//
-//    (c)2003 - 2006 Geoffrey John Atkinson
-//
-//    This software is the property of Geoffrey John Atkinson.
-//
 #include <stdio.h>
 #include "cstream.h"
 
