@@ -63,6 +63,5 @@ gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
 add_dependencies(${TARGETNAME} stencil skywire wiregen)
 
-install(TARGETS ${TARGETNAME} DESTINATION ${CMAKE_INSTALL_DIR}/bin)
 install(FILES ${UNIT_TEST_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 

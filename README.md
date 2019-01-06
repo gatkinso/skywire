@@ -50,7 +50,7 @@ On Windows:
 
 	> cmake -G "Visual Studio 14 2015 Win64" /
 	-DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug / 
-	-DCMAKE_INSTALL_DIR=c:\Users\username\apps\skywire-debug /
+	-DCMAKE_INSTALL_PREFIX=c:\Users\username\apps\skywire-debug /
 	e:\source\skywire 
 
 	cmake --build . --target install --config Debug
@@ -59,7 +59,7 @@ On Linux:
 	> cmake -G "Unix Makefiles" /
 	-DCMAKE_BUILD_TYPE=Debug /
 	-DCMAKE_PREFIX_PATH=~/apps/protobuf-3.6.1-debug;~/apps/gtest-1.8.1-debug /
-	-DCMAKE_INSTALL_DIR=~/apps/skywire-debug /
+	-DCMAKE_INSTALL_PREFIX=~/apps/skywire-debug /
 	~/source/skywire
 
     cmake --build . --target install
@@ -68,7 +68,7 @@ On Mac (using Xcode):
 	> cmake -G "Xcode" /
 	-DCMAKE_BUILD_TYPE=Debug /
 	-DCMAKE_PREFIX_PATH=~/apps/protobuf-3.6.1-debug;~/apps/gtest-1.8.1-debug /
-	-DCMAKE_INSTALL_DIR=~/apps/skywire-debug /
+	-DCMAKE_INSTALL_PREFIX=~/apps/skywire-debug /
 	~/source/skywire
 
 You will have to modify the paths appropriately for your system.
