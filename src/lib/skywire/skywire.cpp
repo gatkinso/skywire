@@ -30,4 +30,9 @@ bool process_file(const std::string& pathname, const std::string& outdirname, co
     return success;
 }
 
+bool process_string(const std::string& msg_string, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests)
+{
+    return false;
+}
+
 }
