@@ -23,6 +23,7 @@ using namespace skyloupe;
 qwikpirate::ArgVee cmdargs;
 std::string config_pathname = "settings.json";
 std::string message_pathname;
+std::string message_string;
 std::string output_directory = ".";
 std::string langfile;
 bool silent = false;
@@ -35,7 +36,8 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         std::cout << "Use: wiregen  (no paramters)               -- defaults to using settings.json" << std::endl
                   << "     wiregen --version                     -- prints version and exits" << std::endl
                   << "     wiregen --config filename             -- launches using fiename for configuration file" << std::endl
-                  << "     wiregen --input filename              -- launches using filename for input" << std::endl
+                  << "     wiregen --input_file filename         -- launches using filename for input" << std::endl
+                  << "     wiregen --input_str json_msg_spec     -- launches using provided json string for input" << std::endl
                   << "     wiregen --outdir directoryname        -- directory to write generated file(s) to" << std::endl
                   << "     wiregen --langfile language filename  -- language file to be used" << std::endl
                   << "     wiregen --generate_tests              -- generate unit tests" << std::endl
@@ -61,15 +63,34 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    if (flag.compare("--input") == 0)
+    bool file_mode = false;
+    if (flag.compare("--input_file") == 0)
     {
+        file_mode = true;
         if (false == value.empty())
         {
             message_pathname = value;
         }
         else
         {
-            std::cout << "Need a file name for --input switch" << std::endl;
+            std::cout << "Need a file name for --input_file switch" << std::endl;
+        }
+    }
+
+    if (flag.compare("--input_string") == 0)
+    {
+        if (file_mode)
+        {
+            std::cout << "Cannot mix file and string input modes" << std::endl;
+        }
+
+        if (false == value.empty())
+        {
+            message_string = value;
+        }
+        else
+        {
+            std::cout << "Need a file name for --input_string switch" << std::endl;
         }
     }
 
@@ -121,7 +142,8 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--help", true, true, cli_callback);
     cmdargs.setOption("--version", true, true, cli_callback);
     cmdargs.setOption("--config", true, false, cli_callback);
-    cmdargs.setOption("--input", true, false, cli_callback);
+    cmdargs.setOption("--input_file", true, false, cli_callback);
+    cmdargs.setOption("--input_str", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
     cmdargs.setOption("--langfile", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);

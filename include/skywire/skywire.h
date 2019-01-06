@@ -20,5 +20,7 @@
 
 namespace skyloupe
 {
-    bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile_directory, int& errorcode, bool generate_tests = true);
+    bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests = true);
+
+    bool process_string(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests = true);
 }
