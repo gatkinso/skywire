@@ -61,6 +61,7 @@ endforeach(WG_C)
 
 # Generate Cpp
 foreach(WG_CPP ${WG_CPP_FILES})
+    file(REMOVE ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp)
     add_custom_command(
         OUTPUT  ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json

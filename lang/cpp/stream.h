@@ -30,12 +30,12 @@ public:
         buffer_.resize(size);
     }
 
-    void serialize(char d, Endianness = Big)
+    void serialize(char d, Endianness)
     {
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(int16_t d, Endianness endian = Big)
+    void serialize(int16_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -53,7 +53,7 @@ public:
         write((char*)&d, sizeof(int16_t));
     }
 
-    void serialize(int32_t d, Endianness endian = Big)
+    void serialize(int32_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -71,7 +71,7 @@ public:
         write((char*)&d, sizeof(int32_t));
     }
 
-    void serialize(int64_t d, Endianness endian = Big)
+    void serialize(int64_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -89,12 +89,12 @@ public:
         write((char*)&d, sizeof(int64_t));
     }
 
-    void serialize(unsigned char d, Endianness = Big)
+    void serialize(unsigned char d, Endianness)
     {
         write((char*)&d, sizeof(char));
     }
 
-    void serialize(uint16_t d, Endianness endian = Big)
+    void serialize(uint16_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -112,7 +112,7 @@ public:
         write((char*)&d, sizeof(uint16_t));
     }
 
-    void serialize(uint32_t d, Endianness endian = Big)
+    void serialize(uint32_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -130,7 +130,7 @@ public:
         write((char*)&d, sizeof(uint32_t));
     }
 
-    void serialize(uint64_t d, Endianness endian = Big)
+    void serialize(uint64_t d, Endianness endian)
     {
         switch (endian)
         {
@@ -148,7 +148,7 @@ public:
         write((char*)&d, sizeof(uint64_t));
     }
 
-    void serialize(float d, Endianness endian = Big)
+    void serialize(float d, Endianness endian)
     {
         switch (endian)
         {
@@ -166,7 +166,7 @@ public:
         write((char*)&d, sizeof(float));
     }
 
-    void serialize(double d, Endianness endian = Big)
+    void serialize(double d, Endianness endian)
     {
         switch (endian)
         {
@@ -184,12 +184,12 @@ public:
         write((char*)&d, sizeof(double));
     }
 
-    void deserialize(char& d, Endianness = Big)
+    void deserialize(char& d, Endianness)
     {
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(int16_t& d, Endianness endian = Big)
+    void deserialize(int16_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(int16_t));
         switch (endian)
@@ -207,7 +207,7 @@ public:
         };
     }
 
-    void deserialize(int32_t& d, Endianness endian = Big)
+    void deserialize(int32_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(int32_t));
         switch (endian)
@@ -225,7 +225,7 @@ public:
         };
     }
 
-    void deserialize(int64_t& d, Endianness endian = Big)
+    void deserialize(int64_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(int64_t));
         switch (endian)
@@ -243,12 +243,12 @@ public:
         };
     }
 
-    void deserialize(unsigned char& d, Endianness = Big)
+    void deserialize(unsigned char& d, Endianness)
     {
         read((char*)&d, sizeof(char));
     }
 
-    void deserialize(uint16_t& d, Endianness endian = Big)
+    void deserialize(uint16_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(uint16_t));
         switch (endian)
@@ -266,7 +266,7 @@ public:
         };
     }
 
-    void deserialize(uint32_t& d, Endianness endian = Big)
+    void deserialize(uint32_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(uint32_t));
         switch (endian)
@@ -284,7 +284,7 @@ public:
         };
     }
 
-    void deserialize(uint64_t& d, Endianness endian = Big)
+    void deserialize(uint64_t& d, Endianness endian)
     {
         read((char*)&d, sizeof(uint64_t));
         switch (endian)
@@ -302,7 +302,7 @@ public:
         };
     }
 
-    void deserialize(float& d, Endianness endian = Big)
+    void deserialize(float& d, Endianness endian)
     {
         read((char*)&d, sizeof(float));
         switch (endian)
@@ -320,7 +320,7 @@ public:
         };
     }
 
-    void deserialize(double& d, Endianness endian = Big)
+    void deserialize(double& d, Endianness endian)
     {
         read((char*)&d, sizeof(double));
         switch (endian)

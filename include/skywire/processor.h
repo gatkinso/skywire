@@ -38,7 +38,7 @@ private:
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";
-    std::string language_file_ = ".";
+    std::string language_file_;
 
     std::string ada_str_ = "ada";
     std::string c_str_ = "c";

@@ -37,10 +37,10 @@
          "type":"uint16_t",
          "name":"f_myuint16_303"
       },
-      "400":{  
-         "type":"float",
-         "name":"a_myfloat400"
-      },          
+    "400": {
+        "type": "float",
+        "name": "a_myfloat400"
+    }
    },
    "includes":[  
       "\"streamable.h\"",

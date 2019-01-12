@@ -22,7 +22,7 @@ using namespace skyloupe;
 
 qwikpirate::ArgVee cmdargs;
 std::string config_pathname = "settings.json";
-std::string message_pathname;
+std::string input_filename;
 std::string message_string;
 std::string output_directory = ".";
 std::string langfile;
@@ -69,7 +69,7 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         file_mode = true;
         if (false == value.empty())
         {
-            message_pathname = value;
+            input_filename = value;
         }
         else
         {
@@ -168,17 +168,17 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-    success = process_file(message_pathname, output_directory, langfile, errorcode, generate_tests);
+    success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
     if (success == true)
     {
         if(!silent) 
-            std::cout << "Successful process: " << message_pathname << std::endl;
+            std::cout << "Successful process: " << input_filename << std::endl;
     }
     else
     {
         if (!silent)
         {
-            std::cout << "Failure processing: " << message_pathname << std::endl;
+            std::cout << "Failure processing: " << input_filename << std::endl;
             std::cout << "Error number: " << errorcode << std::endl;
         }
     }
