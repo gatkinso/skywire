@@ -18,7 +18,8 @@
 const unsigned int SW_SUCCESS                   = 0x00000000;
 const unsigned int SW_ERROR                     = 0x00000001;
 const unsigned int SW_UNKNOWNLANG               = 0x00000002;
-const unsigned int SW_FILEREADERROR             = 0x00000004;
+const unsigned int SW_FILEREADERROR             = 0x00000003;
+const unsigned int SW_BLANKINPUTFILENAME        = 0x00000004;
 
 const unsigned int SW_LANG_C                    = 0x01000000;
 const unsigned int SW_LANG_CPP                  = 0x02000000;
@@ -48,3 +49,4 @@ const unsigned int SW_LANG_CPP_PUBLIC           = 0x00100000;
 const unsigned int SW_LANG_CPP_PRIVATE          = 0x00200000;
 const unsigned int SW_LANG_CPP_CONSTRUCTOR      = 0x00400000;
 const unsigned int SW_LANG_CPP_DESTRUCTOR       = 0x00800000;
+const unsigned int SW_LANG_CPP_INCLUDE          = 0x01000000;

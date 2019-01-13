@@ -29,8 +29,8 @@ TEST_F(StreamUnitTest, Serialize)
     uint32_t ui32 = 0xCAFEBABE;
     float floaty = static_cast<float>(123.456);
 
-    ss.serialize(ui32);
-    ss.serialize(floaty);
+    ss.serialize(ui32, skyloupe::Endianness::Native);
+    ss.serialize(floaty, skyloupe::Endianness::Native);
 
     ASSERT_EQ(ss.byte_size(), sizeof(ui32) + sizeof(floaty));
 }
@@ -48,17 +48,17 @@ TEST_F(StreamUnitTest, SerDes)
     float boaty_out = static_cast<float>(0);
     char coal_out = 0;
 
-    ss.serialize(ui32);
-    ss.serialize(floaty);
-    ss.serialize(boaty);
-    ss.serialize(coal);
+    ss.serialize(ui32, skyloupe::Endianness::Native);
+    ss.serialize(floaty, skyloupe::Endianness::Native);
+    ss.serialize(boaty, skyloupe::Endianness::Native);
+    ss.serialize(coal, skyloupe::Endianness::Native);
 
     ASSERT_EQ(ss.byte_size(), sizeof(ui32) + sizeof(floaty) + sizeof(boaty) + sizeof(coal));
 
-    ss.deserialize(ui32_out);
-    ss.deserialize(floaty_out);
-    ss.deserialize(boaty_out);
-    ss.deserialize(coal_out);
+    ss.deserialize(ui32_out, skyloupe::Endianness::Native);
+    ss.deserialize(floaty_out, skyloupe::Endianness::Native);
+    ss.deserialize(boaty_out, skyloupe::Endianness::Native);
+    ss.deserialize(coal_out, skyloupe::Endianness::Native);
 
     ASSERT_EQ(ss.byte_size(), 0);
 
@@ -183,15 +183,15 @@ TEST_F(StreamUnitTest, SequentialSerDes)
             float boaty_out = static_cast<float>(i+j);
             char coal_out = static_cast<char>(i+j);
 
-            ss.serialize(ui32);
-            ss.serialize(floaty);
-            ss.serialize(boaty);
-            ss.serialize(coal);
+            ss.serialize(ui32, skyloupe::Endianness::Native);
+            ss.serialize(floaty, skyloupe::Endianness::Native);
+            ss.serialize(boaty, skyloupe::Endianness::Native);
+            ss.serialize(coal, skyloupe::Endianness::Native);
 
-            ss.deserialize(ui32_out);
-            ss.deserialize(floaty_out);
-            ss.deserialize(boaty_out);
-            ss.deserialize(coal_out);
+            ss.deserialize(ui32_out, skyloupe::Endianness::Native);
+            ss.deserialize(floaty_out, skyloupe::Endianness::Native);
+            ss.deserialize(boaty_out, skyloupe::Endianness::Native);
+            ss.deserialize(coal_out, skyloupe::Endianness::Native);
 
             ASSERT_EQ(ss.byte_size(), 0);
             ASSERT_EQ(ui32, ui32_out);
@@ -216,10 +216,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty = static_cast<float>(i);
         char coal = static_cast<char>(i);
 
-        ss.serialize(ui32);
-        ss.serialize(floaty);
-        ss.serialize(boaty);
-        ss.serialize(coal);
+        ss.serialize(ui32, skyloupe::Endianness::Native);
+        ss.serialize(floaty, skyloupe::Endianness::Native);
+        ss.serialize(boaty, skyloupe::Endianness::Native);
+        ss.serialize(coal, skyloupe::Endianness::Native);
     }
 
     for (j = 0; j < total/4; j++) 
@@ -234,10 +234,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty_out = 0;
         char coal_out = 0;
 
-        ss.deserialize(ui32_out);
-        ss.deserialize(floaty_out);
-        ss.deserialize(boaty_out);
-        ss.deserialize(coal_out);
+        ss.deserialize(ui32_out, skyloupe::Endianness::Native);
+        ss.deserialize(floaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(boaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(coal_out, skyloupe::Endianness::Native);
 
         ASSERT_EQ(ui32, ui32_out);
         ASSERT_EQ(floaty, floaty_out);
@@ -252,10 +252,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty = static_cast<float>(i);
         char coal = static_cast<char>(i);
 
-        ss.serialize(ui32);
-        ss.serialize(floaty);
-        ss.serialize(boaty);
-        ss.serialize(coal);
+        ss.serialize(ui32, skyloupe::Endianness::Native);
+        ss.serialize(floaty, skyloupe::Endianness::Native);
+        ss.serialize(boaty, skyloupe::Endianness::Native);
+        ss.serialize(coal, skyloupe::Endianness::Native);
     }
 
     for (; j < i-2; j++)
@@ -270,10 +270,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty_out = 0;
         char coal_out = 0;
 
-        ss.deserialize(ui32_out);
-        ss.deserialize(floaty_out);
-        ss.deserialize(boaty_out);
-        ss.deserialize(coal_out);
+        ss.deserialize(ui32_out, skyloupe::Endianness::Native);
+        ss.deserialize(floaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(boaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(coal_out, skyloupe::Endianness::Native);
 
         ASSERT_EQ(ui32, ui32_out);
         ASSERT_EQ(floaty, floaty_out);
@@ -288,10 +288,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty = static_cast<float>(i);
         char coal = static_cast<char>(i);
 
-        ss.serialize(ui32);
-        ss.serialize(floaty);
-        ss.serialize(boaty);
-        ss.serialize(coal);
+        ss.serialize(ui32, skyloupe::Endianness::Native);
+        ss.serialize(floaty, skyloupe::Endianness::Native);
+        ss.serialize(boaty, skyloupe::Endianness::Native);
+        ss.serialize(coal, skyloupe::Endianness::Native);
     }
 
     for (; j < total; j++)
@@ -306,10 +306,10 @@ TEST_F(StreamUnitTest, InterleavedSerDes)
         float boaty_out = 0;
         char coal_out = 0;
 
-        ss.deserialize(ui32_out);
-        ss.deserialize(floaty_out);
-        ss.deserialize(boaty_out);
-        ss.deserialize(coal_out);
+        ss.deserialize(ui32_out, skyloupe::Endianness::Native);
+        ss.deserialize(floaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(boaty_out, skyloupe::Endianness::Native);
+        ss.deserialize(coal_out, skyloupe::Endianness::Native);
 
         ASSERT_EQ(ui32, ui32_out);
         ASSERT_EQ(floaty, floaty_out);

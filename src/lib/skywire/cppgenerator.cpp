@@ -98,7 +98,7 @@ bool CppGenerator::hdr_sentry(int& errorcode)
 
 bool CppGenerator::hdr_includes(int& errorcode)
 {
-    std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
+    const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
     {
@@ -108,7 +108,12 @@ bool CppGenerator::hdr_includes(int& errorcode)
 
     for (auto& item : values)
     {
-        ss_ << "#include " << item << std::endl;
+        std::string template_str = lang_stencil_.get_value_string("include_str");
+        std::string target_str = lang_stencil_.get_value_string("include_substr");
+
+        template_str = std::regex_replace(template_str, std::regex(target_str), item);
+
+        ss_ << template_str;
     }
 
     return true;
@@ -229,7 +234,7 @@ bool CppGenerator::hdr_serialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
+    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
@@ -280,7 +285,7 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
+    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
@@ -332,7 +337,7 @@ bool CppGenerator::hdr_size(int& errorcode)
 
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
+    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_SIZE;
@@ -381,13 +386,14 @@ bool CppGenerator::hdr_equals(int& errorcode)
         return false;
     }
 
+    const std::string equals_selfcheck_str = lang_stencil_.get_value_string("equals_selfcheck_str");
     insert_indents(3);
-    ss_ << "if(this == &other) return true;" << std::endl;
+    ss_ << equals_selfcheck_str;
     insert_indents(3);
     ss_ << "return(" << std::endl;
 
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOT FOUND")
+    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_EQUALS;
@@ -412,7 +418,7 @@ bool CppGenerator::hdr_equals(int& errorcode)
     }
 
     insert_indents(3);
-    ss_ << ");" << std::endl;
+    ss_ << ");\n";
 
     insert_indents(2);
     gen_one_line("endfunction_str");

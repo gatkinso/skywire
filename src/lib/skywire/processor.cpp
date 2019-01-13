@@ -51,6 +51,14 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 {
     errorcode = SW_SUCCESS;
     bool success = false;
+
+    if (pathname.empty())
+    {
+        errorcode |= SW_BLANKINPUTFILENAME;
+        std::cerr << "Blank input file name" << std::endl;
+        return success;
+    }
+
     if (false == msg_stencil_.read_file(pathname))
     {
         errorcode |= SW_FILEREADERROR;
@@ -105,7 +113,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         if (true == generate_tests)
         {
             std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, "lang.c.json", errorcode);
+            success = do_tests(test_genny, outputdir, language_file_, errorcode);
         }
     }
     else if (lang == cpp_str_)
@@ -137,7 +145,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         if (true == generate_tests)
         {
             std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, "lang.cpp.json", errorcode);
+            success = do_tests(test_genny, outputdir, language_file_, errorcode);
         }
     }
     else if (lang == java_str_)

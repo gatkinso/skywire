@@ -92,6 +92,12 @@ add_executable(${TARGETNAME}
                 ${WG_CPP_RUMTIME}
                 ${UNIT_TESTS})
 
+add_custom_command(
+    TARGET ${TARGETNAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove
+            ${WG_C_RESULTS}
+            ${WG_CPP_RESULTS})                
+
 test_big_endian(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)
