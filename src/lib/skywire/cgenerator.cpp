@@ -154,30 +154,24 @@ bool CGenerator::hdr_structtype(int& errorcode)
 
 bool CGenerator::hdr_serialize(int& errorcode)
 {
-    bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 1);
+    bool success = gen_one_line_subst("serialize_decl_str", "classname", "classname_substr", 1);
     if (false == success)
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return success;
     }
 
-    insert_char(';');
-    cr();
-
     return success;
 }
 
 bool CGenerator::hdr_deserialize(int& errorcode)
 {
-    bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 1);
+    bool success = gen_one_line_subst("deserialize_decl_str", "classname", "classname_substr", 1);
     if (false == success)
     {
         errorcode |= SW_LANG_C_HDR_DESERIALIZE;
         return success;
     }
-
-    insert_char(';');
-    cr();
 
     return success;
 }
@@ -191,8 +185,7 @@ bool CGenerator::hdr_size(int& errorcode)
         return success;
     }
 
-    insert_char(';');
-    cr();
+    ss_ << lang_stencil_.get_value_string("semicolon_str");
 
     return success;
 }
@@ -230,8 +223,8 @@ bool CGenerator::hdr_equals_function(int& errorcode)
         return success;
     }
 
-    insert_char(';');
-    cr();
+    ss_ << lang_stencil_.get_value_string("semicolon_str");
+
     return success;
 }
 
@@ -262,8 +255,6 @@ bool CGenerator::imp_includes(int& errorcode)
 
     bool success = gen_one_line_subst("include_c_str", "outputheaderfilename", "include_substr", 0);
 
-    cr();
-
     return success;
 }
 
@@ -272,15 +263,13 @@ bool CGenerator::imp_serialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
     const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
-    bool success = gen_one_line_subst("serialize_str", "classname", "classname_substr", 0);
+    bool success = gen_one_line_subst("serialize_impl_str", "classname", "classname_substr", 0);
     if (false == success)
     {
         errorcode |= SW_LANG_C_IMP_SERIALIZE;
         return success;
     }
-
-    ss_ << " {" << std::endl;
-    
+ 
     insert_indents(1);
     ss_ << null_check_str;
 
@@ -302,8 +291,7 @@ bool CGenerator::imp_serialize(int& errorcode)
     }
 
     insert_indents(1);
-    ss_ << "return 0;" << std::endl;
-    ss_ << "}" << std::endl;
+    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
 
     return success;
 }
@@ -313,14 +301,12 @@ bool CGenerator::imp_deserialize(int& errorcode)
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
     const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
-    bool success = gen_one_line_subst("deserialize_str", "classname", "classname_substr", 0);
+    bool success = gen_one_line_subst("deserialize_impl_str", "classname", "classname_substr", 0);
     if (false == success)
     {
         errorcode |= SW_LANG_C_IMP_DESERIALIZE;
         return success;
     }
-
-    ss_ << " {" << std::endl;
 
     insert_indents(1);
     ss_ << null_check_str;
@@ -343,8 +329,7 @@ bool CGenerator::imp_deserialize(int& errorcode)
     }
 
     insert_indents(1);
-    ss_ << "return 0;" << std::endl;
-    ss_ << "}" << std::endl;
+    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
 
     return success;
 }
@@ -424,10 +409,9 @@ bool CGenerator::imp_equals_function(int& errorcode)
     insert_indents(1);
     ss_ << ")" << std::endl;
     insert_indents(2);
-    ss_ << "return 1;" << std::endl;
+    ss_ << lang_stencil_.get_value_string("return_failure_str");
     insert_indents(1);
-    ss_ << "return 0;" << std::endl;
-    ss_ << "}" << std::endl;
+    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
 
     return success;
 }
@@ -488,8 +472,7 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         insert_indents(1);
         ss_ << template_str << ";" << std::endl;
         insert_indents(1);
-        ss_ << "return 0;" << std::endl;
-        ss_ << "}" << std::endl;
+        ss_ << lang_stencil_.get_value_string("endfunction_success_str");
     }
 
     return true;
