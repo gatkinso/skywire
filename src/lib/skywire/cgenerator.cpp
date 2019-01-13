@@ -409,6 +409,7 @@ bool CGenerator::imp_equals_function(int& errorcode)
     insert_indents(1);
     ss_ << ")" << std::endl;
     insert_indents(2);
+    //using the failure flag for success (and vice versa) in this case.
     ss_ << lang_stencil_.get_value_string("return_failure_str");
     insert_indents(1);
     ss_ << lang_stencil_.get_value_string("endfunction_success_str");
