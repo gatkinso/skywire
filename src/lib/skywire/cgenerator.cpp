@@ -103,17 +103,22 @@ bool CGenerator::hdr_sentry_top(int& errorcode)
 }
 
 bool CGenerator::hdr_includes(int& errorcode) {
-    std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
+    const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
     {
-        errorcode = SW_LANG_C_INCLUDES;
+        errorcode |= SW_LANG_C_INCLUDES;
         return false;
     }
 
     for (auto& item : values)
     {
-        ss_ << "#include " << item << std::endl;
+        std::string template_str = lang_stencil_.get_value_string("include_str");
+        std::string target_str = lang_stencil_.get_value_string("include_substr");
+
+        template_str = std::regex_replace(template_str, std::regex(target_str), item);
+
+        ss_ << template_str;
     }
 
     return true;
