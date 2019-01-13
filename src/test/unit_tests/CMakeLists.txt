@@ -41,7 +41,7 @@ set(UNIT_TESTS
                 stencil_unit_test.cpp
                 stream_unit_test.cpp)
 
-set(UNIT_TEST_JSON ${PROJECT_SOURCE_DIR}/cfg/stencil_unit_test.json)
+set(UNIT_TEST_JSON stencil_unit_test.json)
 
 add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
@@ -63,5 +63,9 @@ gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
 add_dependencies(${TARGETNAME} stencil skywire wiregen)
 
-install(FILES ${UNIT_TEST_JSON} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_command(
+        TARGET ${TARGETNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${PROJECT_SOURCE_DIR}/cfg/${UNIT_TEST_JSON}
+                ${CMAKE_CURRENT_BINARY_DIR}/${UNIT_TEST_JSON})
 

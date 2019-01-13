@@ -20,8 +20,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 set(_SOURCES main.cpp)
 
-set(LANGUAGE_JSONS ${PROJECT_SOURCE_DIR}/lang/lang.cpp.json
-                   ${PROJECT_SOURCE_DIR}/lang/lang.c.json)
+set(LANGUAGE_JSONS lang.cpp.json
+                   lang.c.json)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
@@ -42,6 +42,13 @@ endif(UNIX)
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy ${TGT_NAME} ${DST_NAME})
 
+foreach(LANG_FILE ${LANGUAGE_JSONS})
+add_custom_command(
+        TARGET ${TARGETNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
+                ${CMAKE_CURRENT_BINARY_DIR}/${LANG_FILE})
+endforeach(LANG_FILE)
+
 install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(FILES ${LANGUAGE_JSONS} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(FILES ${LANGUAGE_JSONS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+install(FILES ${PROJECT_SOURCE_DIR}/lang/${LANGUAGE_JSONS} DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

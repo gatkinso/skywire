@@ -61,7 +61,6 @@ endforeach(WG_C)
 
 # Generate Cpp
 foreach(WG_CPP ${WG_CPP_FILES})
-    file(REMOVE ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp)
     add_custom_command(
         OUTPUT  ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
@@ -92,6 +91,12 @@ add_executable(${TARGETNAME}
                 ${WG_C_RUMTIME}
                 ${WG_CPP_RUMTIME}
                 ${UNIT_TESTS})
+
+add_custom_command(
+    TARGET ${TARGETNAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E remove
+            ${WG_C_RESULTS}
+            ${WG_CPP_RESULTS})                
 
 test_big_endian(IS_BIG_ENDIAN)
 
