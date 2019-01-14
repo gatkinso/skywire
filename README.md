@@ -14,7 +14,49 @@ Skywire (c) 2014-2018 Skyloupe, LLC.  All rights reserved.
 
 # [1.0] Introduction
 
+Welcome to Skywire!
+
+In this repository you wil find a simple yet suprisingly versitile message 
+serialization generator for C and C++.
+
+Based on Google Protocol Buffer technology, Skywire takes protocol buffers to 
+a place it fears to tread:  namely, the ability to define a wire protocol.
+
+Yes, that's right.  Bits.  Endianness.  Terrible things to behold.  Oh my.
+
+Unlike generators like Protocol Buffers, the Skywire generator (known as 
+"wiregen") is asymmetric:  Skywire generated code only has to run on one 
+side of the connection:  if you have an ICD for the component or device you 
+are trying to communicate with, wiregen gives you the ability to define a 
+"stencil" for a C++ class (or C struct) that can be used to generate code 
+to interface with it.
+
+The stencil itself is defined using a JSON object which is in turn serialized
+into a Protocol Buffer message.  This message can be used as is in the
+traditional Protocol Buffer manner, or a new C++ class (or C struct!) can be
+generated that will give the developer the ability to serialize the message 
+data "natively" for the targeted ICD or device.
+
+The developer is given wide latitude in defining the manner and style of the 
+genrated code, so that the generated code can adhere to in-house naming and 
+style conventions to the greatest degree possible.
+
+In addition to this, wiregen can generate unit tests for the generated code.
+While these are not neccesary for generating messages using default settings,
+it comes in very handy when the wiregen generator has been customized.  All 
+unit tests are generated using the Google Test unit test framework.
+
 ## [1.1] A Note About Security
+
+Currently the generated code targets a fully Open Source runtime called "Redchip."
+Redchip is perfectly fine for most protypes.  It is pretty fast and stable.
+However Redchip is intended for protyping and internal IPC:  not a lot of work 
+has gone into Redchip to do things like check for errors, handle data corruption, 
+or prevent buffer overruns.
+
+To handle these more advanced conditions, a fee-based runtime called "Blackchip"
+is being developed.  Blackchip will also do things ike generate your Doxygen
+comments for you.
 
 ## [1.2] Source Code Repository
 
@@ -46,30 +88,36 @@ Skywire is heavily dependent on CMake.  No other build system is currently suppo
 That said, we'd be happy to integrate others should there be enough requests for 
 it.
 
-On Windows:
+## [3.1] Windows
 
-	> cmake -G "Visual Studio 14 2015 Win64" /
-	-DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug / 
-	-DCMAKE_INSTALL_PREFIX=c:\Users\username\apps\skywire-debug /
-	e:\source\skywire 
+	cmake -G "Visual Studio 14 2015 Win64" e:\source\skywire 
 
 	cmake --build . --target install --config Debug
 
+### [3.1.1] A note about building on Windows
+
+What is it with Windows?  Why must already complex tasks be futher muddied
+with needless complexity?  Sigh...  it is a mystery.
+
+That said, it is a mystery that we must embrace if we are to target the OS that
+runs 90% of the computers on the planet.  CMake handles most of this for us, but
+things become further muddled when another large company (that rhymes with "Google")
+decides to "simplify" things by forcing certain compiler switches in their 
+repositories... but by doing so in an inconsistent manner as is the case with 
+Protocol Buffers and GTest.
+
+Should you decide to buld against either of these locally the following definition
+should be invoked in CMake at build time:
+
+-DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug 
+
 On Linux:
-	> cmake -G "Unix Makefiles" /
-	-DCMAKE_BUILD_TYPE=Debug /
-	-DCMAKE_PREFIX_PATH=~/apps/protobuf-3.6.1-debug;~/apps/gtest-1.8.1-debug /
-	-DCMAKE_INSTALL_PREFIX=~/apps/skywire-debug /
-	~/source/skywire
+	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=[Debug | Release] ~/source/skywire
 
     cmake --build . --target install
 
 On Mac (using Xcode):
-	> cmake -G "Xcode" /
-	-DCMAKE_BUILD_TYPE=Debug /
-	-DCMAKE_PREFIX_PATH=~/apps/protobuf-3.6.1-debug;~/apps/gtest-1.8.1-debug /
-	-DCMAKE_INSTALL_PREFIX=~/apps/skywire-debug /
-	~/source/skywire
+	cmake -G "Xcode" -DCMAKE_BUILD_TYPE=[Debug | Release] ~/source/skywire
 
 You will have to modify the paths appropriately for your system.
 
@@ -85,17 +133,168 @@ The following cmake generators have been tested:
 The unit tests are written using Google Test and are managed with CTest.  After a successful build,
 type
 
-	> ctest
+	ctest
 
 to run them.
 
 # [5.0] Deploying and running
 
-    > wiregen.exe --input e:\some_directory\MyClass.json --outdir E:\some_other_directory
+    wiregen.exe --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory
 
 # [6.0] Configuration files 
 
-All configuration files are in JSON format.
+TODO
+
+# [7.0] Syntax Overview
+
+As stated above, the input to wiregen is a JSON file,  For example:
+
+Invoking wiregen like so:
+
+    wiregen.exe --generate_tests --input_file e:\example.json --outdir E:\
+
+with the file Example.json....
+
+```
+    {
+       "stringValues":{  
+          "classname":"Example",
+          "outputheaderfilename":"Example.h",
+          "outputtestfilename":"ExampleUnitTest.cpp",
+          "namespace":"SomeNamespace",
+          "language": "c++",
+          "lang_file": "lang.cpp.json"
+       },
+       "members":{  
+          "100":{  
+             "type":"float",
+             "name":"myfloat100",
+             "endian":1
+          },    
+          "200":{  
+             "type":"uint32_t",
+             "name":"myuint32_200",
+             "endian":0
+          },
+          "201":{  
+             "type":"int64_t",
+             "name":"myint64_201"
+          },        
+       },
+       "includes":[  
+          "\"cstream.h\"",
+          "<stdint.h>"
+       ]
+    }
+```
+
+...will generate the following code:
+
+```
+    // This is the generated file (Example .h)
+
+    #pragma once
+
+    #include "cstream.h"
+    #include <stdint.h>
+
+    namespace SomeNamespace {
+        class Example : public skyloupe::Streamable {
+        public:
+            Example() {}
+            virtual ~Example() {}
+            bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
+                str.serialize(myfloat100, skyloupe::Endianness::Little);
+                str.serialize(myuint32_200, skyloupe::Endianness::Big);
+                str.serialize(myint64_201, skyloupe::Endianness::Big);
+                return true;
+            }
+            bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
+                str.deserialize(myfloat100, skyloupe::Endianness::Little);
+                str.deserialize(myuint32_200, skyloupe::Endianness::Big);
+                str.deserialize(myint64_201, skyloupe::Endianness::Big);
+                return true;
+            }
+            size_t size() const {
+                return(
+                    sizeof(float) +
+                    sizeof(uint32_t) +
+                    sizeof(int64_t)
+                );
+            }
+            bool operator==(const Example& other) const {
+                if(this == &other) return true;
+                return(
+                    myfloat100 == other.myfloat100 &&
+                    myuint32_200 == other.myuint32_200 &&
+                    myint64_201 == other.myint64_201
+                );
+            }
+            float Get_myfloat100() const { return myfloat100; }
+            uint32_t Get_myuint32_200() const { return myuint32_200; }
+            int64_t Get_myint64_201() const { return myint64_201; }
+            void Set_myfloat100(const float newval) { myfloat100 = newval; }
+            void Set_myuint32_200(const uint32_t newval) { myuint32_200 = newval; }
+            void Set_myint64_201(const int64_t newval) { myint64_201 = newval; }
+        private:
+            float myfloat100;
+            uint32_t myuint32_200;
+            int64_t myint64_201;
+        };
+    }
+```
+
+...along with the generated unit test:
+
+```
+    // This is the generated file (ExampleUnitTest.cpp)
+
+    #include <gmock/gmock.h>
+    #include <gtest/gtest.h>
+    #include "Example.h"
+
+    TEST(ExampleTest, SerDes)
+    {
+        SomeNamespace::Example in, out;
+        skyloupe::Stream stream;
+
+        in.Set_myfloat100(11.1f);
+        in.Set_myuint32_200(14);
+        in.Set_myint64_201(-30);
+
+        bool success = in.serialize(stream);
+        ASSERT_TRUE(success);
+
+        success = out.deserialize(stream);
+        ASSERT_TRUE(success);
+    }
+
+    TEST(ExampleTest, Size)
+    {
+        SomeNamespace::Example msg;
+
+        ASSERT_EQ(msg.size(), sizeof(float)+sizeof(uint32_t)+sizeof(int64_t));
+    }
+
+    TEST(ExampleTest, EqualityOperator)
+    {
+        SomeNamespace::Example in, out;
+        skyloupe::Stream stream;
+
+        in.Set_myfloat100(11.1f);
+        in.Set_myuint32_200(14);
+        in.Set_myint64_201(-30);
+
+        bool success = in.serialize(stream);
+        ASSERT_TRUE(success);
+
+        success = out.deserialize(stream);
+        ASSERT_TRUE(success);
+
+        ASSERT_EQ(in, out);
+    }
+```
+
 
 # [Appendix] Credits
 
