@@ -346,9 +346,14 @@ Keep in mind the JSON values are case sensitive.  You should get the files:
 Note that the C and C++ generates equivalent code.  See the generated_tests in the
 source for verification of this.
 
-# [7.1] Lang(guage) Files
+# [7.1] Lang(uage) Files
 
 Customzation of generated code can be performed in the lang.xxx.json files.
+
+Note the to generate appropriate code, the proper language must be specified in
+the message JSON file.
+
+More detail on this to come.
 
 # [Appendix] Credits
 
