@@ -25,14 +25,19 @@ a place it fears to tread:  namely, the ability to define a wire protocol.
 Yes, that's right.  Bits.  Endianness.  Terrible things to behold.  Oh my.
 
 Unlike generators like Protocol Buffers, the Skywire generator (known as 
-"wiregen") is asymmetric:  Wiregen generated code only has to run on one 
+"wiregen") is asymmetric:  wiregen generated code only has to run on one 
 side of the connection:  if you have an ICD for the component or device you 
 are trying to communicate with, wiregen gives you the ability to define a 
 "stencil" for a C++ class (or C struct) that can be used to generate code 
 to interface with it.
 
+Eventually, wiregen will support generating messages in Ada, modern C++ variants,
+C#, Java, Javascript, and Python.
+
+Not so sure about the Ada.  However very large companies still use it, so maybe.
+
 The stencil itself is defined using a JSON object which is in turn serialized
-into a Protocol Buffer message.  This message can be used as is in the
+into a Protocol Buffer message.  This message can be used in the
 traditional Protocol Buffer manner, or a new C++ class (or C struct!) can be
 generated that will give the developer the ability to serialize the message 
 data "natively" for the targeted ICD or device.
