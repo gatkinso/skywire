@@ -301,7 +301,7 @@ with the file Example.json....
 Note the the runtime is located in <topsrc>/lang/cpp.  (This is where the skyloupe namespace 
 stuff is defined.)
 
-To generate c C code use this file:
+To generate the message in C use this file:
 
 ````
 {
@@ -341,7 +341,7 @@ To generate c C code use this file:
 Keep in mind the JSON values are case sensitive.  You should get the files:
     Example.c
     Example.h
-    and Example.cpp (note that the Google Test unit tests are always C++).
+    and ExampleUnitTest.cpp (note that the Google Test unit tests are always C++).
 
 Note that the C and C++ generates equivalent code.  See the generated_tests in the
 source for verification of this.
