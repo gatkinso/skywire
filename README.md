@@ -16,7 +16,7 @@ Skywire (c) 2014-2018 Skyloupe, LLC.  All rights reserved.
 
 Welcome to Skywire!
 
-In this repository you wil find a simple yet suprisingly versitile message 
+In this repository you will find a simple yet surprisingly versatile message 
 serialization generator for C and C++.
 
 Based on Google Protocol Buffer technology, Skywire takes protocol buffers to 
@@ -42,15 +42,15 @@ generated code, so that the generated code can adhere to in-house naming and
 style conventions to the greatest degree possible.
 
 In addition to this, wiregen can generate unit tests for the generated code.
-While these are not neccesary for generating messages using default settings,
+While these are not necessary for generating messages using default settings,
 it comes in very handy when the wiregen generator has been customized.  All 
 unit tests are generated using the Google Test unit test framework.
 
 ## [1.1] A Note About Security
 
 Currently the generated code targets a fully Open Source runtime called "Redchip."
-Redchip is perfectly fine for most protypes.  It is pretty fast and stable.
-However Redchip is intended for protyping and internal IPC:  not a lot of work 
+Redchip is perfectly fine for most prototypes.  It is pretty fast and stable.
+However Redchip is intended for prototyping and internal IPC:  not a lot of work 
 has gone into Redchip to do things like check for errors, handle data corruption, 
 or prevent buffer overruns.
 
@@ -96,7 +96,7 @@ it.
 
 ### [3.1.1] A note about building on Windows
 
-What is it with Windows?  Why must already complex tasks be futher muddied
+What is it with Windows?  Why must already complex tasks be further muddied
 with needless complexity?  Sigh...  it is a mystery.
 
 That said, it is a mystery that we must embrace if we are to target the OS that
@@ -106,7 +106,7 @@ decides to "simplify" things by forcing certain compiler switches in their
 repositories... but by doing so in an inconsistent manner as is the case with 
 Protocol Buffers and GTest.
 
-Should you decide to buld against either of these locally the following definition
+Should you decide to build against either of these locally the following definition
 should be invoked in CMake at build time:
 
 -DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug
@@ -348,7 +348,7 @@ source for verification of this.
 
 # [7.1] Lang(uage) Files
 
-Customzation of generated code can be performed in the lang.xxx.json files.
+Customization of generated code can be performed in the lang.xxx.json files.
 
 Note the to generate appropriate code, the proper language must be specified in
 the message JSON file.
@@ -376,7 +376,4 @@ Google Test - (Apache 2.0)
 https://github.com/google/googletest
 
 Qwikpirate - a command line parsing tool (LGPL)
-https://github.com/gatkinso/qwikpirate
-    
-
-
+https://github.com/skyloupe/qwikpirate
