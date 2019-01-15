@@ -25,7 +25,7 @@ a place it fears to tread:  namely, the ability to define a wire protocol.
 Yes, that's right.  Bits.  Endianness.  Terrible things to behold.  Oh my.
 
 Unlike generators like Protocol Buffers, the Skywire generator (known as 
-"wiregen") is asymmetric:  Skywire generated code only has to run on one 
+"wiregen") is asymmetric:  Wiregen generated code only has to run on one 
 side of the connection:  if you have an ICD for the component or device you 
 are trying to communicate with, wiregen gives you the ability to define a 
 "stencil" for a C++ class (or C struct) that can be used to generate code 
@@ -38,7 +38,7 @@ generated that will give the developer the ability to serialize the message
 data "natively" for the targeted ICD or device.
 
 The developer is given wide latitude in defining the manner and style of the 
-genrated code, so that the generated code can adhere to in-house naming and 
+generated code, so that the generated code can adhere to in-house naming and 
 style conventions to the greatest degree possible.
 
 In addition to this, wiregen can generate unit tests for the generated code.
@@ -55,8 +55,8 @@ has gone into Redchip to do things like check for errors, handle data corruption
 or prevent buffer overruns.
 
 To handle these more advanced conditions, a fee-based runtime called "Blackchip"
-is being developed.  Blackchip will also do things ike generate your Doxygen
-comments for you.
+is being developed.  Blackchip will also provide generators do things like 
+generate your Doxygen comments for you.
 
 ## [1.2] Source Code Repository
 
@@ -92,7 +92,7 @@ it.
 
 	cmake -G "Visual Studio 14 2015 Win64" e:\source\skywire 
 
-	cmake --build . --target install --config Debug
+	cmake --build . --target install --config [Debug|Release|DebWithRelInfo|MinRelSize]
 
 ### [3.1.1] A note about building on Windows
 
@@ -109,7 +109,10 @@ Protocol Buffers and GTest.
 Should you decide to buld against either of these locally the following definition
 should be invoked in CMake at build time:
 
--DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug 
+-DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug
+
+The paths of course must be craft to match your development harness.  Note that 
+this can also be done for Linux and Mac builds hf need be. 
 
 On Linux:
 	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=[Debug | Release] ~/source/skywire
@@ -149,9 +152,9 @@ TODO
 
 As stated above, the input to wiregen is a JSON file,  For example:
 
-Invoking wiregen like so:
+Invoking wiregen like so: (the example is Windows-centric)
 
-    wiregen.exe --generate_tests --input_file e:\example.json --outdir E:\
+    wiregen.exe --generate_tests --input_file e:\example.json --outdir e:\
 
 with the file Example.json....
 
@@ -191,7 +194,7 @@ with the file Example.json....
 ...will generate the following code:
 
 ```
-    // This is the generated file (Example .h)
+    // This is the generated file (e:\Example .h)
 
     #pragma once
 
@@ -247,7 +250,7 @@ with the file Example.json....
 ...along with the generated unit test:
 
 ```
-    // This is the generated file (ExampleUnitTest.cpp)
+    // This is the generated file (e:\ExampleUnitTest.cpp)
 
     #include <gmock/gmock.h>
     #include <gtest/gtest.h>
@@ -295,6 +298,57 @@ with the file Example.json....
     }
 ```
 
+Note the the runtime is located in <topsrc>/lang/cpp.  (This is where the skyloupe namespace 
+stuff is defined.)
+
+To generate c C code use this file:
+
+````
+{
+   "stringValues":{  
+      "classname":"Example",
+      "outputheaderfilename":"Example.h",
+      "outputcfilename":"Example.c",
+      "namespace":"SomeNamespace",
+      "language": "c",
+      "lang_file": "lang.c.json",
+      "outputtestfilename":"ExampleUnitTest.cpp"
+   },
+   "members":{  
+      "100":{  
+         "type":"float",
+         "name":"myfloat100",
+         "endian":1
+      },    
+      "200":{  
+         "type":"uint32_t",
+         "name":"myuint32_200",
+         "endian":0
+      },
+      "201":{  
+         "type":"int64_t",
+         "name":"myint64_201"
+      }
+   },
+   "includes":[  
+      "\"cstream.h\"",
+      "<stdint.h>"
+   ]
+}
+
+````
+
+Keep in mind the JSON values are case sensitive.  You should get the files:
+    Example.c
+    Example.h
+    and Example.cpp (note that the Google Test unit tests are always C++).
+
+Note that the C and C++ generates equivalent code.  See the generated_tests in the
+source for verification of this.
+
+# [7.1] Lang(guage) Files
+
+Customzation of generated code can be performed in the lang.xxx.json files.
 
 # [Appendix] Credits
 
