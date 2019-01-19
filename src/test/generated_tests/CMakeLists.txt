@@ -79,10 +79,6 @@ set(GENERATED_C_FILES
 set(GENERATED_CPP_FILES
                 ${WG_CPP_RESULTS})
 
-if(UNIX)
-    set_source_files_properties(${GENERATED_H_FILES} ${GENERATED_C_FILES} ${WG_C_RUMTIME} PROPERTIES COMPILE_FLAGS -std=c99)
-endif(UNIX)
-
 add_executable(${TARGETNAME} 
                 main.cpp
                 ${GENERATED_H_FILES}

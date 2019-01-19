@@ -17,6 +17,7 @@ cmake_minimum_required(VERSION 3.5)
 project(skywire)
 
 include(TestBigEndian)
+include (CTest)
 
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
@@ -26,7 +27,11 @@ else()
     add_definitions(-DSW_LITTLE_ENDIAN)
 endif()
 
-include (CTest)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 foreach(path ${CMAKE_PREFIX_PATH})
     message("Prefix Path: " ${path})
@@ -59,7 +64,6 @@ enable_testing()
 find_package(GTest REQUIRED)
 
 if(UNIX)
-    add_compile_options(-fPIC -std=c++11)
     add_definitions(-DAPPLE)
 endif(UNIX)
 
