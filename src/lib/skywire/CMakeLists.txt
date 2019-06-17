@@ -44,6 +44,7 @@ set(_GENERATORS
 
 set(_SOURCES ${TARGETNAME}.cpp
              generator.cpp
+             generator_factory.cpp
              processor.cpp)
 
 set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
@@ -51,6 +52,7 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
              ${TARGET_INC_DIR}/file_writer.h
              ${TARGET_INC_DIR}/generator.h
              ${TARGET_INC_DIR}/generators.h
+             ${TARGET_INC_DIR}/generator_factory.h
              ${TARGET_INC_DIR}/processor.h
              ${TARGET_INC_DIR}/protos.h
              ${TARGET_INC_DIR}/result_presenter.h)
