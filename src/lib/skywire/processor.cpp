@@ -20,7 +20,8 @@
 namespace skyloupe
 {
 
-bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests)
+bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode,
+                             const std::string& langfile_override_str, bool generate_tests)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -40,8 +41,14 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     }
 
     std::string language = msg_stencil_.get_value_string(language_key_);
-    std::string language_file = msg_stencil_.get_value_string(language_file_key_);
-
+    std::string language_file;
+    if (langfile_override_str.empty())
+        language_file = msg_stencil_.get_value_string(language_file_key_);
+    else
+    {
+        language_file = langfile_override_str;
+    }
+    
     std::unique_ptr<skyloupe::Generator> genny;
     if (false == GeneratorFactory::machine(genny, language, msg_stencil_))
     {
@@ -65,7 +72,8 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     return success;
 }
 
-bool Processor::process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode, bool generate_tests)
+bool Processor::process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode,
+                               const std::string& langfile_override_str, bool generate_tests)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -85,7 +93,13 @@ bool Processor::process_string(const std::string& msg_json, const std::string& o
     }
 
     std::string language = msg_stencil_.get_value_string(language_key_);
-    std::string language_file = msg_stencil_.get_value_string(language_file_key_);
+    std::string language_file;
+    if (langfile_override_str.empty())
+        language_file = msg_stencil_.get_value_string(language_file_key_);
+    else
+    {
+        language_file = langfile_override_str;
+    }
 
     std::unique_ptr<skyloupe::Generator> genny;
     if (false == GeneratorFactory::machine(genny, language, msg_stencil_))
