@@ -29,8 +29,8 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
-    virtual bool process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode, bool generate_tests = true);
+    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
+    virtual bool process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
 
     virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
     virtual bool do_code(std::unique_ptr<skyloupe::Generator>& genny, const std::string& langfile, int& errorcode);
