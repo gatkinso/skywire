@@ -30,10 +30,11 @@ public:
     Stencil() { };
 
     virtual bool read_file(const std::string& pathname);
+    virtual bool read_string(const std::string& pathname, std::string& json_str);
     virtual bool write_file(const std::string& pathname) const;
 
-    virtual bool read_string(const std::string& json_str);
-    virtual bool write_string(std::string& json_str) const;
+    virtual bool serialize_string(const std::string& json_str);
+    virtual bool deserialize_string(std::string& json_str) const;
 
     virtual std::vector<std::string> get_value(const::std::string& key, const std::string nomatch = "@NOTFOUND");
     virtual std::string get_value_string(const::std::string& key, const std::string nomatch = "@NOTFOUND");

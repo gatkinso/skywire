@@ -19,7 +19,7 @@
 namespace skyloupe
 {
 
-bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests)
+bool skywire_process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests)
 {
     skyloupe::Processor processor;
 
@@ -31,9 +31,16 @@ bool process_file(const std::string& pathname, const std::string& outdirname, co
     return success;
 }
 
-bool process_string(const std::string& msg_string, const std::string& outputstr, const std::string& langfile, int& errorcode, bool generate_tests)
+bool skywire_process_string(const std::string& msg_string, std::string& outputstr, const std::string& langfile, int& errorcode, bool generate_tests)
 {
-    return false;
+    skyloupe::Processor processor;
+
+    if(!langfile.empty())
+        processor.set_langfile(langfile);
+
+    bool success = processor.process_string(msg_string, outputstr, errorcode, generate_tests);
+
+    return success;
 }
 
 }

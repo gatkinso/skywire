@@ -86,28 +86,28 @@ TEST_F(StencilUnitTest, read_file)
     ASSERT_EQ(true, rc);
 }
 
-TEST_F(StencilUnitTest, read_string)
+TEST_F(StencilUnitTest, serialize_string)
 {
     std::string json_str = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
     skyloupe::Stencil stencil;
 
-    bool rc = stencil.read_string(json_str);
+    bool rc = stencil.serialize_string(json_str);
     ASSERT_EQ(true, rc);
 }
 
-TEST_F(StencilUnitTest, write_string)
+TEST_F(StencilUnitTest, deserialize_string)
 {
     std::string json_str_in = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
     std::string json_str_out;
     skyloupe::Stencil stencil_left, stencil_right;
 
-    bool rc = stencil_left.read_string(json_str_in);
+    bool rc = stencil_left.serialize_string(json_str_in);
     ASSERT_EQ(true, rc);
 
-    rc = stencil_left.write_string(json_str_out);
+    rc = stencil_left.deserialize_string(json_str_out);
     ASSERT_EQ(true, rc);
 
-    stencil_right.read_string(json_str_out);
+    stencil_right.serialize_string(json_str_out);
 
     ASSERT_TRUE(google::protobuf::util::MessageDifferencer::Equivalent(stencil_left.get_proto(), stencil_right.get_proto()));
 }

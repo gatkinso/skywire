@@ -22,6 +22,31 @@ namespace skyloupe
 
 bool Stencil::read_file(const std::string& pathname)
 {
+    bool ret = false;
+    if (pathname.length() == 0)
+    {
+        return false;
+    }
+
+    try
+    {
+        std::string json_str;
+        ret = read_string(pathname, json_str);
+        if (ret == false)
+            return false;
+
+        ret = serialize_string(json_str);
+    }
+    catch (std::exception& e)
+    {
+        return false;
+    }
+
+    return ret;
+}
+
+bool Stencil::read_string(const std::string& pathname, std::string& json_str)
+{
     if (pathname.length() == 0)
     {
         return false;
@@ -46,16 +71,10 @@ bool Stencil::read_file(const std::string& pathname)
         file.close();
 
         std::string str(memblock);
-
-        auto ret = read_string(str);
+        json_str = str;  //TODO:  eliminate this copy
 
         delete[] memblock;
-        
-        if (ret == false)
-        {
-            stencil_proto_.Clear();
-            return false;
-        }
+        return true;
     }
     catch (std::ifstream::failure e)
     {
@@ -75,7 +94,7 @@ bool Stencil::write_file(const std::string& pathname) const
     try
     {
         std::string json_str;
-        auto ret = write_string(json_str);
+        auto ret = deserialize_string(json_str);
 
         if (ret == false)
         {
@@ -101,7 +120,7 @@ bool Stencil::write_file(const std::string& pathname) const
     return true;
 }
 
-bool Stencil::read_string(const std::string& json_str)
+bool Stencil::serialize_string(const std::string& json_str)
 {
     if (json_str.length() == 0)
     {
@@ -126,7 +145,7 @@ bool Stencil::read_string(const std::string& json_str)
     return true;
 }
 
-bool Stencil::write_string(std::string& json_str) const
+bool Stencil::deserialize_string(std::string& json_str) const
 {
     if (stencil_proto_.IsInitialized() == false)
     {

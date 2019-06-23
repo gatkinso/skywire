@@ -59,10 +59,33 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         return success;
     }
 
-    if (false == msg_stencil_.read_file(pathname))
+    std::string json_str;
+    success = msg_stencil_.read_string(pathname, json_str);
+
+    if (success)
     {
-        errorcode |= SW_FILEREADERROR;
-        std::cerr << "Error reading file: " << pathname << std::endl;
+        success = process_string(json_str, outputdir, errorcode, generate_tests);
+    }
+
+    return success;
+}
+
+bool Processor::process_string(const std::string& msg_str, const std::string& outputdir, int& errorcode, bool generate_tests)
+{
+    errorcode = SW_SUCCESS;
+    bool success = false;
+
+    if (msg_str.empty())
+    {
+        errorcode |= SW_BLANKINPUTSTRING;
+        std::cerr << "Blank input file name" << std::endl;
+        return success;
+    }
+
+    if (false == msg_stencil_.serialize_string(msg_str))
+    {
+        errorcode |= SW_STRINGPROCESSERROR;
+        std::cerr << "Error seializing string: " << msg_str << std::endl;
         return success;
     }
 

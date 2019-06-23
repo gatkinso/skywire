@@ -25,9 +25,12 @@ std::string config_pathname = "settings.json";
 std::string input_filename;
 std::string message_string;
 std::string output_directory = ".";
+std::string output_string;
 std::string langfile;
 bool silent = false;
 bool generate_tests = false;
+bool file_mode = false;
+bool str_mode = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
@@ -63,10 +66,13 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    bool file_mode = false;
     if (flag.compare("--input_file") == 0)
     {
-        file_mode = true;
+        if (true == str_mode)
+        {
+            std::cout << "Cannot mix file and string input modes" << std::endl;
+        }
+
         if (false == value.empty())
         {
             input_filename = value;
@@ -75,15 +81,17 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         {
             std::cout << "Need a file name for --input_file switch" << std::endl;
         }
+
+        file_mode = true;
     }
 
     if (flag.compare("--input_string") == 0)
     {
-        if (file_mode)
+        if (true == file_mode)
         {
             std::cout << "Cannot mix file and string input modes" << std::endl;
         }
-
+        
         if (false == value.empty())
         {
             message_string = value;
@@ -92,6 +100,8 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         {
             std::cout << "Need a file name for --input_string switch" << std::endl;
         }
+
+        str_mode = true;        
     }
 
     if (flag.compare("--outdir") == 0)
@@ -127,12 +137,8 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
     }
 
     if (flag.compare("--generate_tests") == 0)
-    {
         if (false != value.empty())
-        {
             generate_tests = true;
-        }
-    }
 }
 
 bool process_cmd_line(int argc, const char* argv[])
@@ -168,7 +174,12 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-    success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
+    if (true == file_mode)
+        success = skywire_process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
+
+    if (true == str_mode)
+        success = skywire_process_string(message_string, output_string, langfile, errorcode, generate_tests);
+
     if (success == true)
     {
         if(!silent) 

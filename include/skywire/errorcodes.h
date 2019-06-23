@@ -20,6 +20,8 @@ const unsigned int SW_ERROR                     = 0x00000001;
 const unsigned int SW_UNKNOWNLANG               = 0x00000002;
 const unsigned int SW_FILEREADERROR             = 0x00000003;
 const unsigned int SW_BLANKINPUTFILENAME        = 0x00000004;
+const unsigned int SW_BLANKINPUTSTRING          = 0x00000005;
+const unsigned int SW_STRINGPROCESSERROR        = 0x00000006;
 
 const unsigned int SW_LANG_C                    = 0x01000000;
 const unsigned int SW_LANG_CPP                  = 0x02000000;
