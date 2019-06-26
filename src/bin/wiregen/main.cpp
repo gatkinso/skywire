@@ -36,15 +36,15 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
 {
     if (flag.compare("--help") == 0)
     {
-        std::cout << "Use: wiregen  (no paramters)               -- defaults to using settings.json" << std::endl
-                  << "     wiregen --version                     -- prints version and exits" << std::endl
-                  << "     wiregen --config filename             -- launches using fiename for configuration file" << std::endl
-                  << "     wiregen --input_file filename         -- launches using filename for input" << std::endl
-                  << "     wiregen --input_str json_msg_spec     -- launches using provided json string for input" << std::endl
-                  << "     wiregen --outdir directoryname        -- directory to write generated file(s) to" << std::endl
-                  << "     wiregen --langfile language filename  -- language file to be used" << std::endl
-                  << "     wiregen --generate_tests              -- generate unit tests" << std::endl
-                  << "     wiregen --silent                      -- no output displayed" << std::endl;
+        std::cout << "Use: wiregen  (no paramters)                 -- defaults to using settings.json" << std::endl
+                  << "     wiregen --version                       -- prints version and exits" << std::endl
+                  << "     wiregen --config filename               -- launches using fiename for configuration file" << std::endl
+                  << "     wiregen --input_file filename           -- launches using filename for input" << std::endl
+                  << "     wiregen --input_string json_msg_spec    -- launches using provided json string for input" << std::endl
+                  << "     wiregen --outdir directoryname          -- directory to write generated file(s) to" << std::endl
+                  << "     wiregen --langfile <language filename>  -- language file to be used" << std::endl
+                  << "     wiregen --generate_tests                -- generate unit tests" << std::endl
+                  << "     wiregen --silent                        -- no output displayed" << std::endl;
         exit(0);
     }
 
@@ -149,7 +149,7 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--version", true, true, cli_callback);
     cmdargs.setOption("--config", true, false, cli_callback);
     cmdargs.setOption("--input_file", true, false, cli_callback);
-    cmdargs.setOption("--input_str", true, false, cli_callback);
+    cmdargs.setOption("--input_string", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
     cmdargs.setOption("--langfile", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);
@@ -178,7 +178,7 @@ int main(int argc, const char* argv[])
         success = skywire_process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
 
     if (true == str_mode)
-        success = skywire_process_string(message_string, output_string, langfile, errorcode, generate_tests);
+        success = skywire_process_string(message_string, output_directory, langfile, errorcode, generate_tests);
 
     if (success == true)
     {
