@@ -15,18 +15,118 @@
 
 #include "file_writer.h"
 #include "processor.h"
+#include "generator_factory.h"
 
 namespace skyloupe
 {
 
-bool Processor::do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode)
+bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode,
+                             const std::string& langfile_override_str, bool generate_tests)
 {
-    if (language_file_.empty())
+    errorcode = SW_SUCCESS;
+    bool success = false;
+
+    if (pathname.empty())
     {
-        language_file_.append(msg_stencil_.get_value_string(language_file_key_, langfile));
+        errorcode |= SW_BLANKINPUTFILENAME;
+        std::cerr << "Blank input file name" << std::endl;
+        return success;
     }
 
-    genny->set_lang_settings(language_file_);
+    if (false == msg_stencil_.read_file(pathname))
+    {
+        errorcode |= SW_FILEREADERROR;
+        std::cerr << "Error reading file: " << pathname << std::endl;
+        return success;
+    }
+
+    std::string language = msg_stencil_.get_value_string(language_key_);
+    std::string language_file;
+    if (langfile_override_str.empty())
+        language_file = msg_stencil_.get_value_string(language_file_key_);
+    else
+    {
+        language_file = langfile_override_str;
+    }
+    
+    std::unique_ptr<skyloupe::Generator> genny;
+    if (false == GeneratorFactory::machine(genny, language, msg_stencil_))
+    {
+        errorcode = SW_ERROR;
+        return false;
+    }
+
+    success = do_code(genny, language_file, errorcode);
+    if (success && generate_tests)
+    {
+        std::unique_ptr<skyloupe::Generator> test_genny;
+        if (false == GeneratorFactory::machine(test_genny, language, msg_stencil_))
+        success = do_tests(test_genny, outputdir, language_file, errorcode);
+    }
+
+    if (success)
+    {
+        success = do_results(genny, outputdir, language, errorcode);
+    }
+
+    return success;
+}
+
+bool Processor::process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode,
+                               const std::string& langfile_override_str, bool generate_tests)
+{
+    errorcode = SW_SUCCESS;
+    bool success = false;
+
+    if (msg_json.empty())
+    {
+        errorcode |= SW_BLANKINPUTSTRING;
+        std::cerr << "Blank input string" << std::endl;
+        return success;
+    }
+
+    if (false == msg_stencil_.read_string(msg_json))
+    {
+        errorcode |= SW_FILEREADERROR;
+        std::cerr << "Error reading input string: " << msg_json << std::endl;
+        return success;
+    }
+
+    std::string language = msg_stencil_.get_value_string(language_key_);
+    std::string language_file;
+    if (langfile_override_str.empty())
+        language_file = msg_stencil_.get_value_string(language_file_key_);
+    else
+    {
+        language_file = langfile_override_str;
+    }
+
+    std::unique_ptr<skyloupe::Generator> genny;
+    if (false == GeneratorFactory::machine(genny, language, msg_stencil_))
+    {
+        errorcode = SW_ERROR;
+        return false;
+    }
+
+    success = do_code(genny, language_file, errorcode);
+    if (success && generate_tests)
+    {
+        std::unique_ptr<skyloupe::Generator> test_genny;
+        if (false == GeneratorFactory::machine(test_genny, language, msg_stencil_))
+        success = do_tests(test_genny, outputdir, language_file, errorcode);
+    }
+
+    if (success)
+    {
+        success = do_results(genny, outputdir, language, errorcode);
+    }
+
+    return success;
+}
+
+bool Processor::do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& language_file, int& errorcode)
+{
+    genny->set_lang_settings(language_file);
     bool success = genny->generate(errorcode);
 
     if (success)
@@ -47,124 +147,71 @@ bool Processor::do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std:
     return success;
 }
 
-bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests)
+bool Processor::do_code(std::unique_ptr<skyloupe::Generator>& genny, const std::string& language_file, int& errorcode)
 {
-    errorcode = SW_SUCCESS;
-    bool success = false;
+    bool success = genny->generate(errorcode);
 
-    if (pathname.empty())
+    return success;     
+}
+
+bool Processor::do_results(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& language, int& errorcode)
+{
+    bool success = true;
+
+    if (language == ada_str_)
     {
-        errorcode |= SW_BLANKINPUTFILENAME;
-        std::cerr << "Blank input file name" << std::endl;
-        return success;
+
     }
-
-    if (false == msg_stencil_.read_file(pathname))
+    else if (language == c_str_)
     {
-        errorcode |= SW_FILEREADERROR;
-        std::cerr << "Error reading file: " << pathname << std::endl;
-        return success;
-    }
-
-    std::string lang = msg_stencil_.get_value_string(language_key_);
-
-    std::unique_ptr<skyloupe::Generator> genny;
-    // temporary - replace with factory, dynamic language definition via json
-    //             maybe a plugin for each language?
-    if (lang == ada_str_)
-    {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_stencil_));
-        success = genny->generate(errorcode);
-    }
-    else if (lang == c_str_)
-    {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil_));
-        if (language_file_.empty())
+        Generator::results_t results = genny->get_results();
+        if (results.empty() == false)
         {
-            language_file_.append(msg_stencil_.get_value_string(language_file_key_, "lang.c.json"));
-        }
+            std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
+            std::string pathname_str = outputdir + "/" + filename_str;
+            const std::string& contents_h_str = results[0];
+            const std::string& contents_c_str = results[1];
 
-        genny->set_lang_settings(language_file_);
-        success = genny->generate(errorcode);
+            std::unique_ptr<skyloupe::ResultPresenter> ressie_h;
+            ressie_h = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_h_str));
+            ressie_h->present(errorcode);
 
-        if (success)
-        {
-            Generator::results_t results = genny->get_results();
-            if (results.empty() == false)
-            {
-                std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
-                std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_h_str = results[0];
-                const std::string& contents_c_str = results[1];
+            filename_str = msg_stencil_.get_value_string("outputcfilename");
+            pathname_str = outputdir + "/" + filename_str;
 
-                std::unique_ptr<skyloupe::ResultPresenter> ressie_h;
-                ressie_h = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_h_str));
-                ressie_h->present(errorcode);
-
-                filename_str = msg_stencil_.get_value_string("outputcfilename");
-                pathname_str = outputdir + "/" + filename_str;
-
-                std::unique_ptr<skyloupe::ResultPresenter> ressie_c;
-                ressie_c = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_c_str));
-                ressie_c->present(errorcode);
-            }
-        }
-
-        if (true == generate_tests)
-        {
-            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, language_file_, errorcode);
+            std::unique_ptr<skyloupe::ResultPresenter> ressie_c;
+            ressie_c = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_c_str));
+            ressie_c->present(errorcode);
         }
     }
-    else if (lang == cpp_str_)
+    else if (language == cpp_str_)
     {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil_));
-        if (language_file_.empty())
+        Generator::results_t results = genny->get_results();
+        if (results.empty() == false)
         {
-            language_file_.append(msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json"));
-        }
+            std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
+            std::string pathname_str = outputdir + "/" + filename_str;
+            const std::string& contents_str = results[0];
 
-        genny->set_lang_settings(language_file_);
-        success = genny->generate(errorcode);
-
-        if (success)
-        {
-            Generator::results_t results = genny->get_results();
-            if (results.empty() == false)
-            {
-                std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
-                std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_str = results[0];
-
-                std::unique_ptr<skyloupe::ResultPresenter> ressie;
-                ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
-                ressie->present(errorcode);
-            }
-        }
-
-        if (true == generate_tests)
-        {
-            std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, language_file_, errorcode);
+            std::unique_ptr<skyloupe::ResultPresenter> ressie;
+            ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
+            ressie->present(errorcode);
         }
     }
-    else if (lang == java_str_)
+    else if (language == java_str_)
     {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_stencil_));
-        success = genny->generate(errorcode);
+
     }
-    else if (lang == py_str_)
+    else if (language == py_str_)
     {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::PyGenerator(msg_stencil_));
-        success = genny->generate(errorcode);
+
     }
     else
     {
         errorcode |= SW_UNKNOWNLANG;
-        std::cerr << "Unsupported language: " << lang << std::endl;
-        return success;
+        std::cerr << "Unsupported language: " << language << std::endl;
+        return false;
     }
-    // end temporary
 
     return success;
 }

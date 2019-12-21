@@ -29,20 +29,24 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
-    virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
+    virtual bool process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
 
-    void set_langfile(const std::string& filename) { language_file_ = filename; }
+    virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool do_code(std::unique_ptr<skyloupe::Generator>& genny, const std::string& langfile, int& errorcode);
+    virtual bool do_results(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+
 private:
     Stencil msg_stencil_;
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";
-    std::string language_file_;
 
     std::string ada_str_ = "ada";
     std::string c_str_ = "c";
+    std::string cs_str_ = "c#";
     std::string cpp_str_ = "c++";
+    std::string go_str_ = "golang";
     std::string java_str_ = "java";
     std::string py_str_ = "python";
 };
