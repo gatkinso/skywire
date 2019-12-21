@@ -53,3 +53,21 @@ static PyObject* libgenerator_setcfg(PyObject *self, PyObject *args)
 
     Py_RETURN_NONE;
 }
+
+// static PyObject* libgenerator_generate(PyObject *self, PyObject *args)
+// {
+//     std::lock_guard<std::mutex> lock(mtx_in);
+//     position_t position;
+
+//     if (last_image.empty())
+//     {
+//         Py_RETURN_NONE;
+//     }
+
+//     PyObject *val = Py_BuildValue("s",
+//         last_image.c_str());
+
+//     last_image.clear();
+
+//     return val;
+// }

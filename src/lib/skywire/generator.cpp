@@ -19,6 +19,16 @@
 namespace skyloupe
 {
 
+const std::multimap<std::string, std::string> Generator::GeneratorTypes {      
+    {"ada", "ada"},
+    {"c", "c"},
+    {"c#", "c#"},
+    {"c++", "c++"},
+    {"goloang", "golang"},
+    {"java", "java"},
+    {"python", "python"}
+};
+
 Generator::Generator(Stencil& stencil) : msg_stencil_(stencil) 
 {
     for (auto& member : msg_stencil_.get_proto().members())
