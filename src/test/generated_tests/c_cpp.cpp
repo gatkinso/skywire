@@ -31,13 +31,19 @@ TEST_F(CandCpp, SerDes)
     Cstream cs;
     cstream_init(&cs, 1024);
 
+    int sign = -1;
     for (uint32_t i = 0; i < NUM; i++)
     {
+        sign *= -1;
         structy[i].a_myfloat100 = static_cast<float>(i);
         structy[i].b_myuint32_200 = i;
         structy[i].c_myint64_201 = i;
         structy[i].d_myDoubleBubble202 = (double)i;
         structy[i].e_charcoal = i%256;
+        structy[i].f_myfloat1000 = sign*i*66.6f;
+        structy[i].g_myuint32_2000 = i*49;
+        structy[i].h_myint64_2010 = sign*i*-80;
+        structy[i].i_myDoubleBubble2020 = sign*i*109.8;
 
         StructyMcStructface_Serialize(&structy[i], &cs);
     }
@@ -56,6 +62,10 @@ TEST_F(CandCpp, SerDes)
         ASSERT_EQ(structy[i].c_myint64_201, classy[i].Get_c_myint64_201());
         ASSERT_EQ(structy[i].d_myDoubleBubble202, classy[i].Get_d_myDoubleBubble202());
         ASSERT_EQ(structy[i].e_charcoal, classy[i].Get_e_charcoal());
+        ASSERT_EQ(structy[i].f_myfloat1000, classy[i].Get_f_myfloat1000());
+        ASSERT_EQ(structy[i].g_myuint32_2000, classy[i].Get_g_myuint32_2000());
+        ASSERT_EQ(structy[i].h_myint64_2010, classy[i].Get_h_myint64_2010());
+        ASSERT_EQ(structy[i].i_myDoubleBubble2020, classy[i].Get_i_myDoubleBubble2020());
     }
 
     cstream_fini(&cs);
