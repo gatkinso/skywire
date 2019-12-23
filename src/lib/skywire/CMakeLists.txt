@@ -30,6 +30,7 @@ set(_GENERATORS
              ctestgenerator.cpp
              cppgenerator.cpp
              cpptestgenerator.cpp
+             gogenerator.cpp
              file_writer.cpp
              javagenerator.cpp
              pygenerator.cpp
@@ -38,6 +39,7 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/ctestgenerator.h
              ${TARGET_INC_DIR}/cppgenerator.h
              ${TARGET_INC_DIR}/cpptestgenerator.h
+             ${TARGET_INC_DIR}/gogenerator.h
              ${TARGET_INC_DIR}/javagenerator.h
              ${TARGET_INC_DIR}/pygenerator.h
 )
