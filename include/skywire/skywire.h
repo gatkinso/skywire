@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include "errorcodes.h"
 
@@ -22,5 +23,5 @@ namespace skyloupe
 {
     bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests = true);
 
-    bool process_string(const std::string& pathname, const std::string& outputstr, const std::string& langfile, int& errorcode, bool generate_tests = true);
+    bool process_string(const std::string& input_str, std::map<std::string,std::string>& output_str_map, const std::string& langfile, int& errorcode, bool generate_tests = true);
 }

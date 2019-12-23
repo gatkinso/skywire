@@ -31,9 +31,16 @@ bool process_file(const std::string& pathname, const std::string& outdirname, co
     return success;
 }
 
-bool process_string(const std::string& msg_string, const std::string& outputstr, const std::string& langfile, int& errorcode, bool generate_tests)
+bool process_string(const std::string& input_str, std::map<std::string,std::string>& output_str_map, const std::string& langfile, int& errorcode, bool generate_tests)
 {
-    return false;
+    skyloupe::Processor processor;
+
+    if(!langfile.empty())
+        processor.set_langfile(langfile);
+            
+    bool success = processor.process_string(input_str, output_str_map, errorcode, generate_tests);
+
+    return success;
 }
 
 }

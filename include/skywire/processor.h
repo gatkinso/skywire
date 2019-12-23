@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include "stencil/stencil.h"
 #include "generators.h"
@@ -30,7 +31,9 @@ public:
     virtual ~Processor() {}
 
     virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
-    virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool process_string(const std::string& input_str, std::map<std::string,std::string>& output_str_map, int& errorcode, bool generate_tests = true);
+    virtual bool do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, std::map<std::string,std::string>& output_str_map, const std::string& langfile, int& errorcode);
 
     void set_langfile(const std::string& filename) { language_file_ = filename; }
 private:

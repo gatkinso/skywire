@@ -19,32 +19,9 @@
 namespace skyloupe
 {
 
-bool Processor::do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode)
+bool Processor::process_string(const std::string& input_str, std::map<std::string,std::string>& output_str_map, int& errorcode, bool generate_tests)
 {
-    if (language_file_.empty())
-    {
-        language_file_.append(msg_stencil_.get_value_string(language_file_key_, langfile));
-    }
-
-    genny->set_lang_settings(language_file_);
-    bool success = genny->generate(errorcode);
-
-    if (success)
-    {
-        Generator::results_t results = genny->get_results();
-        if (results.empty() == false)
-        {
-            std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
-            std::string pathname_str = outputdir + "/" + filename_str;
-            const std::string& contents_str = results[0];
-
-            std::unique_ptr<skyloupe::ResultPresenter> ressie;
-            ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
-            ressie->present(errorcode);
-        }
-    }
-
-    return success;
+    return false;
 }
 
 bool Processor::process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests)
@@ -113,7 +90,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         if (true == generate_tests)
         {
             std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, language_file_, errorcode);
+            success = do_tests_file(test_genny, outputdir, language_file_, errorcode);
         }
     }
     else if (lang == cpp_str_)
@@ -145,7 +122,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
         if (true == generate_tests)
         {
             std::unique_ptr<skyloupe::Generator> test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
-            success = do_tests(test_genny, outputdir, language_file_, errorcode);
+            success = do_tests_file(test_genny, outputdir, language_file_, errorcode);
         }
     }
     else if (lang == java_str_)
@@ -167,6 +144,39 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
     // end temporary
 
     return success;
+}
+
+bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode)
+{
+    if (language_file_.empty())
+    {
+        language_file_.append(msg_stencil_.get_value_string(language_file_key_, langfile));
+    }
+
+    genny->set_lang_settings(language_file_);
+    bool success = genny->generate(errorcode);
+
+    if (success)
+    {
+        Generator::results_t results = genny->get_results();
+        if (results.empty() == false)
+        {
+            std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
+            std::string pathname_str = outputdir + "/" + filename_str;
+            const std::string& contents_str = results[0];
+
+            std::unique_ptr<skyloupe::ResultPresenter> ressie;
+            ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
+            ressie->present(errorcode);
+        }
+    }
+
+    return success;
+}
+
+bool Processor::do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, std::map<std::string,std::string>& output_str_map, const std::string& langfile, int& errorcode)
+{
+    return false;
 }
 
 }
