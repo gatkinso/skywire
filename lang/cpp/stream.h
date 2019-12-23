@@ -386,6 +386,11 @@ public:
         buffer_.clear();
     }
 
+    const char* data() const
+    {
+        return buffer_.data();
+    }
+
     void set_expand_size(size_t expand_size)
     {
         if (expand_size_ == 0) return;

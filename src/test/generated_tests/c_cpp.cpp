@@ -22,12 +22,14 @@ class CandCpp : public ::testing::Test
 {
 protected:
     CandCpp() {}
+
+    static const int NUM = 1000;
+    StructyMcStructface structy[NUM] = {};
+    testspace::ClassyMcClassface classy[NUM] = {};
 };
  
 TEST_F(CandCpp, SerDes)
 {
-    const int NUM = 1000;
-    StructyMcStructface structy[NUM];
     Cstream cs;
     cstream_init(&cs, 1024);
 
@@ -45,13 +47,12 @@ TEST_F(CandCpp, SerDes)
         structy[i].h_myint64_2010 = sign*i*-80;
         structy[i].i_myDoubleBubble2020 = sign*i*109.8;
 
-        StructyMcStructface_Serialize(&structy[i], &cs);
+        ASSERT_EQ(0, StructyMcStructface_Serialize(&structy[i], &cs));
     }
 
     skyloupe::Stream str(cs.size_);
     str.write(cs.buffer_, cs.size_);
 
-    testspace::ClassyMcClassface classy[NUM];
     for (uint32_t i = 0; i < NUM; i++)
     {
         bool success = classy[i].deserialize(str);
@@ -67,6 +68,26 @@ TEST_F(CandCpp, SerDes)
         ASSERT_EQ(structy[i].h_myint64_2010, classy[i].Get_h_myint64_2010());
         ASSERT_EQ(structy[i].i_myDoubleBubble2020, classy[i].Get_i_myDoubleBubble2020());
     }
+
+    cstream_fini(&cs);
+}
+
+TEST_F(CandCpp, SizeTest)
+{
+    ASSERT_EQ(StructyMcStructface_Size(), testspace::ClassyMcClassface::size());
+}
+
+TEST_F(CandCpp, StreamCompare)
+{
+    Cstream cs;
+    cstream_init(&cs, StructyMcStructface_Size());
+    skyloupe::Stream str(cs.size_);
+
+    ASSERT_EQ(0, StructyMcStructface_Serialize(&structy[0], &cs));
+    ASSERT_EQ(true, classy[0].serialize(str));
+    ASSERT_EQ(str.byte_size(), StructyMcStructface_Size());
+    ASSERT_EQ(str.byte_size(), testspace::ClassyMcClassface::size());
+    ASSERT_EQ(0, std::memcmp(cs.buffer_, str.data(), str.byte_size()));
 
     cstream_fini(&cs);
 }

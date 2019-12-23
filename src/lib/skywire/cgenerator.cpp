@@ -185,7 +185,7 @@ bool CGenerator::hdr_size(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str");
+    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
@@ -223,7 +223,7 @@ bool CGenerator::hdr_equals_function(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str");
+    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
