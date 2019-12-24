@@ -97,15 +97,15 @@ TEST_F(CandCpp, StreamCompare)
     structy.h_myint64_2010 = i*-80;
     structy.i_myDoubleBubble2020 = i*109.8;
 
-    classy.Set_a_myfloat100(static_cast<float>(i));
-    classy.Set_b_myuint32_200(i);
-    classy.Set_c_myint64_201(i);
-    classy.Set_d_myDoubleBubble202((double)i);
-    classy.Set_e_charcoal(i % 256);
-    classy.Set_f_myfloat1000(i*66.6f);
-    classy.Set_g_myuint32_2000(i * 49);
-    classy.Set_h_myint64_2010(i*-80);
-    classy.Set_i_myDoubleBubble2020(i*109.8);
+    classy.Set_a_myfloat100(static_cast<float>(structy.a_myfloat100));
+    classy.Set_b_myuint32_200(structy.b_myuint32_200);
+    classy.Set_c_myint64_201(structy.c_myint64_201);
+    classy.Set_d_myDoubleBubble202(static_cast<double>(structy.d_myDoubleBubble202));
+    classy.Set_e_charcoal(structy.e_charcoal);
+    classy.Set_f_myfloat1000(structy.f_myfloat1000);
+    classy.Set_g_myuint32_2000(structy.g_myuint32_2000);
+    classy.Set_h_myint64_2010(structy.h_myint64_2010);
+    classy.Set_i_myDoubleBubble2020(structy.i_myDoubleBubble2020);
 
     ASSERT_EQ(0, StructyMcStructface_Serialize(&structy, &cs));
     ASSERT_EQ(true, classy.serialize(str));
