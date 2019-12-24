@@ -40,6 +40,8 @@ include_directories(
                 ${WG_C_DIR}
                 ${WG_CPP_DIR})
 
+set(UNIT_TESTS c_cpp.cpp)
+
 # Generate C 
 foreach(WG_C ${WG_C_FILES})
     add_custom_command(
@@ -70,7 +72,9 @@ foreach(WG_CPP ${WG_CPP_FILES})
                 --langfile ${CMAKE_SOURCE_DIR}/lang/lang.cpp.json
                 --generate_tests)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
-        ${WG_CPP_DIR}/${WG_CPP}.h ${WG_CPP_DIR}/${WG_CPP}Test.cpp)
+        ${WG_CPP_DIR}/${WG_CPP}.h)
+    set(UNIT_TESTS ${UNIT_TESTS}
+        ${WG_CPP_DIR}/${WG_CPP}Test.cpp)    
 endforeach(WG_CPP)
 
 set(GENERATED_C_FILES
@@ -88,11 +92,11 @@ add_executable(${TARGETNAME}
                 ${WG_CPP_RUMTIME}
                 ${UNIT_TESTS})
 
-add_custom_command(
-    TARGET ${TARGETNAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E remove
-            ${WG_C_RESULTS}
-            ${WG_CPP_RESULTS})                
+#add_custom_command(
+#    TARGET ${TARGETNAME} PRE_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E remove
+#            ${WG_C_RESULTS}
+#            ${WG_CPP_RESULTS})                
 
 test_big_endian(IS_BIG_ENDIAN)
 

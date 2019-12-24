@@ -21,26 +21,30 @@
          "type":"int64_t",
          "name":"c_myint64_201"
       },
-      "202": {
-          "type":"double",
-          "name":"d_myDoubleBubble202"
+      "202":{  
+         "type":"double",
+         "name":"d_myDoubleBubble202"
       },
       "301":{  
          "type":"char",
          "name":"e_charcoal"
       },
-      "302":{  
-         "type":"uint16_t",
-         "name":"f_myuint16_302"
+      "1000":{  
+         "type":"float",
+         "name":"f_myfloat1000"
+      },    
+      "2000":{  
+         "type":"uint32_t",
+         "name":"g_myuint32_2000"
       },
-      "303":{  
-         "type":"uint16_t",
-         "name":"f_myuint16_303"
+      "2010":{  
+         "type":"int64_t",
+         "name":"h_myint64_2010"
       },
-    "400": {
-        "type": "float",
-        "name": "a_myfloat400"
-    }
+      "2020":{  
+         "type":"double",
+         "name":"i_myDoubleBubble2020"
+      },
    },
    "includes":[  
       "\"streamable.h\"",

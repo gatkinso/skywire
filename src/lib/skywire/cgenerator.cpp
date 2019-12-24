@@ -47,9 +47,7 @@ bool CGenerator::generate(int& errorcode)
 
 bool CGenerator::do_header(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& header_string = results_[0];
+    std::string& header_string = results_["header"];
 
     hdr_banner(errorcode);
     hdr_sentry_top(errorcode);
@@ -74,9 +72,7 @@ bool CGenerator::do_header(int& errorcode)
 
 bool CGenerator::do_implementation(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& imp_string = results_[1];
+    std::string& imp_string = results_["implementation"];
 
     imp_banner(errorcode);
     imp_includes(errorcode);
@@ -185,7 +181,7 @@ bool CGenerator::hdr_size(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str");
+    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
@@ -223,7 +219,7 @@ bool CGenerator::hdr_equals_function(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str");
+    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
