@@ -71,8 +71,8 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
                 std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_h_str = results[0];
-                const std::string& contents_c_str = results[1];
+                const std::string& contents_h_str = results["chearder"];
+                const std::string& contents_c_str = results["cimplementation"];
 
                 std::unique_ptr<skyloupe::ResultPresenter> ressie_h;
                 ressie_h = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_h_str));
@@ -111,7 +111,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
                 std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_str = results[0];
+                const std::string& contents_str = results["cppheader"];
 
                 std::unique_ptr<skyloupe::ResultPresenter> ressie;
                 ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
@@ -163,7 +163,7 @@ bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const
         {
             std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
             std::string pathname_str = outputdir + "/" + filename_str;
-            const std::string& contents_str = results[0];
+            const std::string& contents_str = results["unittest"];
 
             std::unique_ptr<skyloupe::ResultPresenter> ressie;
             ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));

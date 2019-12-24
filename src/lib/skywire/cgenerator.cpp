@@ -47,9 +47,7 @@ bool CGenerator::generate(int& errorcode)
 
 bool CGenerator::do_header(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& header_string = results_[0];
+    std::string& header_string = results_["cheader"];
 
     hdr_banner(errorcode);
     hdr_sentry_top(errorcode);
@@ -74,9 +72,7 @@ bool CGenerator::do_header(int& errorcode)
 
 bool CGenerator::do_implementation(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& imp_string = results_[1];
+    std::string& imp_string = results_["cimplementation"];
 
     imp_banner(errorcode);
     imp_includes(errorcode);

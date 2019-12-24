@@ -16,9 +16,8 @@
 #pragma once
 
 #include <string>
-#include <vector>
-#include <sstream>
 #include <map>
+#include <sstream>
 #include <tuple>
 #include "errorcodes.h"
 #include "stencil/stencil.h"
@@ -30,7 +29,7 @@ class Generator
 {
 public:
     enum member_index { member_type = 0, member_name = 1, member_endianness = 2 };
-    typedef std::vector<std::string> results_t;
+    typedef std::map<std::string, std::string> results_t;
     typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
 
     Generator() = delete;
