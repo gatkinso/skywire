@@ -23,10 +23,7 @@ bool process_file(const std::string& pathname, const std::string& outdirname, co
 {
     skyloupe::Processor processor;
 
-    if(!langfile.empty())
-        processor.set_langfile(langfile);
-
-    bool success = processor.process_file(pathname, outdirname, errorcode, generate_tests);
+    bool success = processor.process_file(pathname, outdirname, errorcode, langfile, generate_tests);
 
     return success;
 }

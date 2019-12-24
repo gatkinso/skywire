@@ -36,17 +36,17 @@ public:
     virtual bool do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
     virtual bool do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, results_t& output_str_map, const std::string& langfile, int& errorcode);
 
-    void set_langfile(const std::string& filename) { language_file_ = filename; }
 private:
     Stencil msg_stencil_;
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";
-    std::string language_file_;
 
     std::string ada_str_ = "ada";
     std::string c_str_ = "c";
+    std::string cs_str_ = "c#";
     std::string cpp_str_ = "c++";
+    std::string go_str_ = "golang";
     std::string java_str_ = "java";
     std::string py_str_ = "python";
 };
