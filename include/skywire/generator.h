@@ -16,11 +16,11 @@
 #pragma once
 
 #include <string>
-#include <vector>
-#include <sstream>
 #include <map>
+#include <sstream>
 #include <tuple>
 #include "errorcodes.h"
+#include "types.h"
 #include "stencil/stencil.h"
 
 namespace skyloupe 
@@ -31,7 +31,6 @@ class Generator
 public:
     static const std::multimap<std::string, std::string> GeneratorTypes;
     enum member_index { member_type = 0, member_name = 1, member_endianness = 2 };
-    typedef std::vector<std::string> results_t;
     typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
 
     Generator() = delete;
@@ -42,7 +41,7 @@ public:
     virtual bool is_native_type(const std::string& type);
     virtual bool set_lang_settings(const std::string pathname);
     virtual bool set_msg_settings(const std::string pathname);
-    virtual results_t get_results() const { return results_; }
+    virtual results_t get_results() const { return results_; }  //copy???
 
 protected:
     Stencil lang_stencil_;

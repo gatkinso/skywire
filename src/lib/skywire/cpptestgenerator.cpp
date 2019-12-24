@@ -43,9 +43,7 @@ bool CppTestGenerator::generate(int& errorcode)
 
 bool CppTestGenerator::do_test_implementation(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& header_string = results_[0];
+    std::string& header_string = results_["unittest"];
 
     test_banner(errorcode);
     test_includes(errorcode);

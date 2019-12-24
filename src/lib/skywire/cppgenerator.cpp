@@ -52,9 +52,7 @@ bool CppGenerator::generate(int& errorcode)
 
 bool CppGenerator::do_header(int& errorcode)
 {
-    results_.push_back("");
-
-    std::string& header_string = results_[0];
+    std::string& header_string = results_["header"];
 
     hdr_banner(errorcode);
     hdr_sentry(errorcode);

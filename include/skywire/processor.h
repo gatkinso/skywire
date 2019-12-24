@@ -15,10 +15,12 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include "stencil/stencil.h"
 #include "generators.h"
 #include "errorcodes.h"
+#include "types.h"
 
 namespace skyloupe 
 {
@@ -29,12 +31,10 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
-    virtual bool process_string(const std::string& msg_json, const std::string& outputdir, int& errorcode, const std::string& langfile_override_str = "", bool generate_tests = true);
-
-    virtual bool do_tests(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
-    virtual bool do_code(std::unique_ptr<skyloupe::Generator>& genny, const std::string& langfile, int& errorcode);
-    virtual bool do_results(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
+    virtual bool process_string(const std::string& input_str, results_t& output_str_map, int& errorcode, bool generate_tests = true);
+    virtual bool do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const std::string& outputdir, const std::string& langfile, int& errorcode);
+    virtual bool do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, results_t& output_str_map, const std::string& langfile, int& errorcode);
 
 private:
     Stencil msg_stencil_;

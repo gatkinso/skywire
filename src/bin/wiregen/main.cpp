@@ -23,11 +23,13 @@ using namespace skyloupe;
 qwikpirate::ArgVee cmdargs;
 std::string config_pathname = "settings.json";
 std::string input_filename;
-std::string message_string;
+std::string input_str;
 std::string output_directory = ".";
+results_t output_str_map;
 std::string langfile;
 bool silent = false;
 bool generate_tests = false;
+bool file_mode = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
@@ -63,7 +65,6 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    bool file_mode = false;
     if (flag.compare("--input_file") == 0)
     {
         file_mode = true;
@@ -81,16 +82,17 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
     {
         if (file_mode)
         {
-            std::cout << "Cannot mix file and string input modes" << std::endl;
+            std::cout << "Cannot mix file and string input modes. Exiting." << std::endl;
+            exit(1);
         }
 
         if (false == value.empty())
         {
-            message_string = value;
+            input_str = value;
         }
         else
         {
-            std::cout << "Need a file name for --input_string switch" << std::endl;
+            std::cout << "Need a message for --input_string switch" << std::endl;
         }
     }
 
@@ -168,7 +170,15 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-    success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
+    if (true == file_mode)
+    {
+        success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
+    } 
+    else
+    {
+        success = process_string(input_str, output_str_map, langfile, errorcode, generate_tests);
+    }
+
     if (success == true)
     {
         if(!silent) 
