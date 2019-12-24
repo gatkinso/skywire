@@ -20,6 +20,7 @@
 #include <sstream>
 #include <tuple>
 #include "errorcodes.h"
+#include "types.h"
 #include "stencil/stencil.h"
 
 namespace skyloupe 
@@ -39,12 +40,12 @@ public:
     virtual bool is_native_type(const std::string& type);
     virtual bool set_lang_settings(const std::string pathname);
     virtual bool set_msg_settings(const std::string pathname);
-    virtual std::map<std::string, std::string> get_results() const { return results_; }
+    virtual results_t get_results() const { return results_; }  //copy???
 
 protected:
     Stencil lang_stencil_;
     Stencil msg_stencil_;
-    std::map<std::string, std::string> results_;
+    results_t results_;
     std::stringstream ss_;
     int errorcode_;
     std::map< uint32_t, member_desc_t> ordered_members_;

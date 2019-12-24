@@ -19,7 +19,9 @@
 namespace skyloupe
 {
 
-Generator::Generator(Stencil& stencil) : msg_stencil_(stencil) 
+Generator::Generator(Stencil& stencil) 
+: msg_stencil_(stencil) 
+, results_()
 {
     for (auto& member : msg_stencil_.get_proto().members())
     {

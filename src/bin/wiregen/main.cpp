@@ -25,7 +25,7 @@ std::string config_pathname = "settings.json";
 std::string input_filename;
 std::string input_str;
 std::string output_directory = ".";
-std::map<std::string, std::string> output_str_map;
+results_t output_str_map;
 std::string langfile;
 bool silent = false;
 bool generate_tests = false;

@@ -19,7 +19,7 @@
 namespace skyloupe
 {
 
-bool Processor::process_string(const std::string& input_str, std::map<std::string, std::string>& output_str_map, int& errorcode, bool generate_tests)
+bool Processor::process_string(const std::string& input_str, results_t& output_str_map, int& errorcode, bool generate_tests)
 {
     return false;
 }
@@ -66,7 +66,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 
         if (success)
         {
-            std::map<std::string, std::string> results = genny->get_results();
+            results_t results = genny->get_results();
             if (results.empty() == false)
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
@@ -106,7 +106,7 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 
         if (success)
         {
-            std::map<std::string, std::string> results = genny->get_results();
+            results_t results = genny->get_results();
             if (results.empty() == false)
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
@@ -158,7 +158,7 @@ bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const
 
     if (success)
     {
-        std::map<std::string, std::string> results = genny->get_results();
+        results_t results = genny->get_results();
         if (results.empty() == false)
         {
             std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
@@ -174,7 +174,7 @@ bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const
     return success;
 }
 
-bool Processor::do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, std::map<std::string, std::string>& output_str_map, const std::string& langfile, int& errorcode)
+bool Processor::do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, results_t& output_str_map, const std::string& langfile, int& errorcode)
 {
     return false;
 }
