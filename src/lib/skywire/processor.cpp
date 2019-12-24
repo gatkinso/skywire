@@ -19,7 +19,7 @@
 namespace skyloupe
 {
 
-bool Processor::process_string(const std::string& input_str, std::map<std::string,std::string>& output_str_map, int& errorcode, bool generate_tests)
+bool Processor::process_string(const std::string& input_str, std::map<std::string, std::string>& output_str_map, int& errorcode, bool generate_tests)
 {
     return false;
 }
@@ -66,13 +66,13 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 
         if (success)
         {
-            Generator::results_t results = genny->get_results();
+            std::map<std::string, std::string> results = genny->get_results();
             if (results.empty() == false)
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
                 std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_h_str = results["chearder"];
-                const std::string& contents_c_str = results["cimplementation"];
+                const std::string& contents_h_str = results["header"];
+                const std::string& contents_c_str = results["implementation"];
 
                 std::unique_ptr<skyloupe::ResultPresenter> ressie_h;
                 ressie_h = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_h_str));
@@ -106,12 +106,12 @@ bool Processor::process_file(const std::string& pathname, const std::string& out
 
         if (success)
         {
-            Generator::results_t results = genny->get_results();
+            std::map<std::string, std::string> results = genny->get_results();
             if (results.empty() == false)
             {
                 std::string filename_str = msg_stencil_.get_value_string("outputheaderfilename");
                 std::string pathname_str = outputdir + "/" + filename_str;
-                const std::string& contents_str = results["cppheader"];
+                const std::string& contents_str = results["header"];
 
                 std::unique_ptr<skyloupe::ResultPresenter> ressie;
                 ressie = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, contents_str));
@@ -158,7 +158,7 @@ bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const
 
     if (success)
     {
-        Generator::results_t results = genny->get_results();
+        std::map<std::string, std::string> results = genny->get_results();
         if (results.empty() == false)
         {
             std::string filename_str = msg_stencil_.get_value_string("outputtestfilename");
@@ -174,7 +174,7 @@ bool Processor::do_tests_file(std::unique_ptr<skyloupe::Generator>& genny, const
     return success;
 }
 
-bool Processor::do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, std::map<std::string,std::string>& output_str_map, const std::string& langfile, int& errorcode)
+bool Processor::do_tests_string(std::unique_ptr<skyloupe::Generator>& genny, std::map<std::string, std::string>& output_str_map, const std::string& langfile, int& errorcode)
 {
     return false;
 }
