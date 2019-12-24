@@ -83,8 +83,32 @@ TEST_F(CandCpp, StreamCompare)
     cstream_init(&cs, StructyMcStructface_Size());
     skyloupe::Stream str(cs.size_);
 
-    ASSERT_EQ(0, StructyMcStructface_Serialize(&structy[0], &cs));
-    ASSERT_EQ(true, classy[0].serialize(str));
+    const int i = 107;
+    StructyMcStructface structy;
+    testspace::ClassyMcClassface classy;
+
+    structy.a_myfloat100 = static_cast<float>(i);
+    structy.b_myuint32_200 = i;
+    structy.c_myint64_201 = i;
+    structy.d_myDoubleBubble202 = (double)i;
+    structy.e_charcoal = i % 256;
+    structy.f_myfloat1000 = i*66.6f;
+    structy.g_myuint32_2000 = i * 49;
+    structy.h_myint64_2010 = i*-80;
+    structy.i_myDoubleBubble2020 = i*109.8;
+
+    classy.Set_a_myfloat100(static_cast<float>(i));
+    classy.Set_b_myuint32_200(i);
+    classy.Set_c_myint64_201(i);
+    classy.Set_d_myDoubleBubble202((double)i);
+    classy.Set_e_charcoal(i % 256);
+    classy.Set_f_myfloat1000(i*66.6f);
+    classy.Set_g_myuint32_2000(i * 49);
+    classy.Set_h_myint64_2010(i*-80);
+    classy.Set_i_myDoubleBubble2020(i*109.8);
+
+    ASSERT_EQ(0, StructyMcStructface_Serialize(&structy, &cs));
+    ASSERT_EQ(true, classy.serialize(str));
     ASSERT_EQ(str.byte_size(), StructyMcStructface_Size());
     ASSERT_EQ(str.byte_size(), testspace::ClassyMcClassface::size());
     ASSERT_EQ(0, std::memcmp(cs.buffer_, str.data(), str.byte_size()));
