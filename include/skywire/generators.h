@@ -19,5 +19,6 @@
 #include "ctestgenerator.h"
 #include "cppgenerator.h"
 #include "cpptestgenerator.h"
+#include "gogenerator.h"
 #include "javagenerator.h"
 #include "pygenerator.h"
