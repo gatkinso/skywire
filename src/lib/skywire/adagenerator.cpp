@@ -20,7 +20,6 @@ namespace skyloupe
 
 bool AdaGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating Ada" << std::endl;
     errorcode = 0;
 
     return true;

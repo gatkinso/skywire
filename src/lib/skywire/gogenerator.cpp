@@ -20,7 +20,6 @@ namespace skyloupe
 
 bool GoGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating Go" << std::endl;
     errorcode = 0;
 
     return true;

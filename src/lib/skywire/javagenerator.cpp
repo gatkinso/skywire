@@ -20,7 +20,6 @@ namespace skyloupe
 
 bool JavaGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating Java" << std::endl;
     errorcode = 0;
 
     return true;
