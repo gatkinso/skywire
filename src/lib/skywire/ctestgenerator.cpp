@@ -27,7 +27,6 @@ CTestGenerator::CTestGenerator(Stencil& stencil) : Generator(stencil)
 
 bool CTestGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating C Unit Tests" << std::endl;
     errorcode = 0;
 
     results_.clear();

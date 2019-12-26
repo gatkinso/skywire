@@ -78,7 +78,7 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    if (flag.compare("--input_string") == 0)
+    if (flag.compare("--input_str") == 0)
     {
         if (file_mode)
         {
@@ -177,6 +177,11 @@ int main(int argc, const char* argv[])
     else
     {
         success = process_string(input_str, output_str_map, langfile, errorcode, generate_tests);
+
+        //for (auto item : output_str_map)
+        //{
+        //    std::cout << item.second << std::endl << "/******************/"<< std::endl;
+        //}
     }
 
     if (success == true)
@@ -195,3 +200,5 @@ int main(int argc, const char* argv[])
 
 	return errorcode;
 }
+
+//bin/wiregen --langfile ../lang/lang.cpp.json --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\",\"language\":\"c++\",\"lang_file\":\"lang.cpp.json\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"
