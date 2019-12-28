@@ -132,8 +132,6 @@ TEST_F(StencilUnitTest, get_value_string)
 
     ASSERT_EQ(google::protobuf::util::Status::OK, ret);
 
-    std::cout << json_str << std::endl;
-
     std::string values = stencil.get_value_string("namespace", "NOT FOUND");
 
     ASSERT_TRUE(values == "testspace");

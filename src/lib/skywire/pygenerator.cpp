@@ -20,7 +20,6 @@ namespace skyloupe
 
 bool PyGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating Python" << std::endl;
     errorcode = 0;
 
     return true;

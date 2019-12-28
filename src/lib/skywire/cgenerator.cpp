@@ -22,7 +22,6 @@ namespace skyloupe
 
 bool CGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating C" << std::endl;
     errorcode = 0;
 
     results_.clear();

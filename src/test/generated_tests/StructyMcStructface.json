@@ -2,7 +2,7 @@
    "stringValues":{  
       "classname":"StructyMcStructface",
       "outputheaderfilename":"StructyMcStructface.h",
-      "outputcfilename":"StructyMcStructface.c",
+      "outputimplfilename":"StructyMcStructface.c",
       "outputtestfilename":"StructyMcStructfaceTest.cpp",
       "namespace":"testspace",
       "language": "c",
