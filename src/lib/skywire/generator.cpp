@@ -164,4 +164,5 @@ bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, 
 
     return true;
 }
+
 }

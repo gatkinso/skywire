@@ -28,7 +28,6 @@ CppGenerator::CppGenerator(Stencil& stencil) : Generator(stencil)
 
 bool CppGenerator::generate(int& errorcode)
 {
-    std::cout << "Generating C++" << std::endl;
     errorcode = 0;
 
     results_.clear();
