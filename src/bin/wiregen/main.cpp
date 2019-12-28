@@ -178,10 +178,10 @@ int main(int argc, const char* argv[])
     {
         success = process_string(input_str, output_str_map, langfile, errorcode, generate_tests);
 
-        //for (auto item : output_str_map)
-        //{
-        //    std::cout << item.second << std::endl << "/******************/"<< std::endl;
-        //}
+        for (auto item : output_str_map)
+        {
+            std::cout << item.second << std::endl << "/******************/"<< std::endl;
+        }
     }
 
     if (success == true)
