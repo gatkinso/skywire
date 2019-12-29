@@ -22,9 +22,6 @@
 #define SW_LITTLE_ENDIAN_FLAG 1
 #define SW_NATIVE_ENDIAN_FLAG 2
 
-#define SW_INTEGER_TYPE 0
-#define SW_FLOATING_TYPE 1
-
 #if defined WIN32
     #include <Winsock.h>
 #endif

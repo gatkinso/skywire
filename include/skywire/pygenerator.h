@@ -24,10 +24,31 @@ namespace skyloupe
 class PyGenerator : public Generator
 {
 public:
+    PyGenerator() = delete;
     PyGenerator(Stencil& stencil) : Generator(stencil) {}
     virtual ~PyGenerator() {}
 
     bool generate(int& errorcode) override;
-};
 
+protected:
+    virtual bool do_header(int& errorcode);
+    virtual bool do_implementation(int& errorcode);
+
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_sentry(int& errorcode);
+    virtual bool imp_includes(int& errorcode);
+    virtual bool imp_namespace(int& errorcode);
+    virtual bool imp_classname(int& errorcode);
+    virtual bool imp_public(int& errorcode);
+    virtual bool imp_private(int& errorcode);
+    virtual bool imp_cons(int& errorcode);
+    virtual bool imp_des(int& errorcode);
+    virtual bool imp_get_functions(int& errorcode);
+    virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_serialize(int& errorcode);
+    virtual bool imp_deserialize(int& errorcode);
+    virtual bool imp_size(int& errorcode);
+    virtual bool imp_equals(int& errorcode);
+    virtual bool imp_print(int& errorcode);
+};
 }

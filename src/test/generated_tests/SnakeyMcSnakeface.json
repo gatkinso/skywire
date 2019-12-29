@@ -1,16 +1,16 @@
 {
    "stringValues":{  
-      "classname":"SnakeyMcSnakeface",
-      "outputimplfilename":"SnakeyMcSnakeface.py",
-      "outputtestfilename":"SnakeyMcSnakefaceTest.py",
+      "classname":"SnakeyMcSnakeFace",
+      "outputimplfilename":"SnakeyMcSnakeFace.py",
+      "outputtestfilename":"SnakeyMcSnakeFaceTest.py",
       "namespace":"testspace",
       "language": "python",
       "lang_file": "lang.python.json"
    },
    "members":{  
       "100":{  
-         "type":"float",
-         "name":"a_myfloat100",
+         "type":"double",
+         "name":"a_mydouble100",
          "endian":1
       },    
       "200":{  

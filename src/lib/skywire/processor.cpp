@@ -138,7 +138,19 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     else if (lang == py_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::PyGenerator(msg_stencil_));
+        if (language_file_.empty())
+        {
+            language_file_.append(msg_stencil_.get_value_string(language_file_key_, "lang.cpp.json"));
+        }
+
+        genny->set_lang_settings(language_file_);
         success = genny->generate(errorcode);
+        if (true == generate_tests && success)
+        {
+            //test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil_));
+            //test_genny->set_lang_settings(language_file_);
+            //success = test_genny->generate(errorcode);
+        }
     }
     else
     {

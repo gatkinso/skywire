@@ -59,6 +59,8 @@ protected:
     bool inorder_members(int& errorcode, unsigned int indents = 0);
     bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
 
+    bool inorder_member_names(int& errorcode, unsigned int indents = 0);
+
     std::set<std::string> native_types_;
 };
 
