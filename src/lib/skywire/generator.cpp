@@ -131,6 +131,23 @@ bool Generator::inorder_members(int& errorcode, unsigned int indents)
     return true;
 }
 
+bool Generator::inorder_member_names(int& errorcode, unsigned int indents)
+{
+    if (msg_stencil_.get_proto().members_size() == 0)
+    {
+        errorcode |= SW_LANG_NOMEMBERS;
+        return false;
+    }
+
+    for (auto& member : ordered_members_)
+    {
+        insert_indents(indents);
+        ss_ << std::get<member_name>(member.second) << std::endl;
+    }
+
+    return true;
+}
+
 bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents, bool prepend_classname)
 {
     std::string type_substr = lang_stencil_.get_value_string("type_substr");

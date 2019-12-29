@@ -15,7 +15,7 @@
         "serialize_native_mem_str": "str.serialize(__MEMBERNAME__, __ENDIAN__);",
         "deserialize_native_mem_str": "str.deserialize(__MEMBERNAME__, __ENDIAN__);",
         "serialize_user_mem_str": "__MEMBERNAME__.serialize(str);",
-        "deserialize_user_mem_str": "__MEMBERNAME__.deserialize(str);",        
+        "deserialize_user_mem_str": "__MEMBERNAME__.deserialize(str);",
         "size_native_mem_str":"sizeof(__MEMBERNAME__)",
         "size_user_mem_str":"__MEMBERNAME__.size()",
         "equals_str": "bool operator==(const __CLASSNAME__& other) const {\n",
