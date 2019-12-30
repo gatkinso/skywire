@@ -21,12 +21,12 @@
 namespace skyloupe 
 {
 
-class PyGenerator : public Generator
+class Py3Generator : public Generator
 {
 public:
-    PyGenerator() = delete;
-    PyGenerator(Stencil& stencil) : Generator(stencil) {}
-    virtual ~PyGenerator() {}
+    Py3Generator() = delete;
+    Py3Generator(Stencil& stencil) : Generator(stencil) {}
+    virtual ~Py3Generator() {}
 
     bool generate(int& errorcode) override;
 
