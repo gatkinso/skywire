@@ -53,3 +53,7 @@ const unsigned int SW_LANG_CPP_PRIVATE          = 0x00200000;
 const unsigned int SW_LANG_CPP_CONSTRUCTOR      = 0x00400000;
 const unsigned int SW_LANG_CPP_DESTRUCTOR       = 0x00800000;
 const unsigned int SW_LANG_CPP_INCLUDE          = 0x01000000;
+
+const unsigned int SW_LANG_IMP_CONS      = 0x00000001;
+const unsigned int SW_LANG_IMP_PRINT     = 0x00000002;
+const unsigned int SW_LANG_RUNTIME       = 0x00000003;

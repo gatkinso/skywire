@@ -21,4 +21,4 @@
 #include "cpptestgenerator.h"
 #include "gogenerator.h"
 #include "javagenerator.h"
-#include "pygenerator.h"
+#include "py3generator.h"
