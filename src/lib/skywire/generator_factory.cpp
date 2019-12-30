@@ -48,9 +48,9 @@ bool GeneratorFactory::machine(std::unique_ptr<Generator>& gen_ptr,
     {
         gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_stencil));
     }
-    else if (lang->second == "python")
+    else if (lang->second == "python3")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::PyGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3Generator(msg_stencil));
     }
     else
     {
