@@ -16,12 +16,12 @@
 #include <regex>
 #include <map>
 #include <string>
-#include "pygenerator.h"
+#include "py3generator.h"
 
 namespace skyloupe
 {
 
-bool PyGenerator::generate(int& errorcode)
+bool Py3Generator::generate(int& errorcode)
 {
     errorcode = 0;
 
@@ -44,12 +44,12 @@ bool PyGenerator::generate(int& errorcode)
     return true;
 }
 
-bool PyGenerator::do_header(int& errorcode)
+bool Py3Generator::do_header(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::do_implementation(int& errorcode)
+bool Py3Generator::do_implementation(int& errorcode)
 {
     std::string& header_string = results_["implementation"];
 
@@ -72,17 +72,17 @@ bool PyGenerator::do_implementation(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_banner(int& errorcode)
+bool Py3Generator::imp_banner(int& errorcode)
 {
     return gen_one_line("banner_str");
 }
 
-bool PyGenerator::imp_sentry(int& errorcode)
+bool Py3Generator::imp_sentry(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_includes(int& errorcode)
+bool Py3Generator::imp_includes(int& errorcode)
 {
     const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
 
@@ -107,7 +107,7 @@ bool PyGenerator::imp_includes(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_namespace(int& errorcode)
+bool Py3Generator::imp_namespace(int& errorcode)
 {
     bool success = gen_one_line("size_dict");
     if (false == success)
@@ -120,7 +120,7 @@ bool PyGenerator::imp_namespace(int& errorcode)
     return success;
 }
 
-bool PyGenerator::imp_classname(int& errorcode)
+bool Py3Generator::imp_classname(int& errorcode)
 {
     bool success = gen_one_line_subst("classname_str", "classname", "classname_substr", 0);
 
@@ -133,17 +133,17 @@ bool PyGenerator::imp_classname(int& errorcode)
     return success;
 }
 
-bool PyGenerator::imp_public(int& errorcode)
+bool Py3Generator::imp_public(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_private(int& errorcode)
+bool Py3Generator::imp_private(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_cons(int& errorcode)
+bool Py3Generator::imp_cons(int& errorcode)
 {
     bool success = gen_one_line("cons_str", 1);
 
@@ -178,22 +178,22 @@ bool PyGenerator::imp_cons(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_des(int& errorcode)
+bool Py3Generator::imp_des(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_get_functions(int& errorcode)
+bool Py3Generator::imp_get_functions(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_set_functions(int& errorcode)
+bool Py3Generator::imp_set_functions(int& errorcode)
 {
     return true;
 }
 
-bool PyGenerator::imp_serialize(int& errorcode)
+bool Py3Generator::imp_serialize(int& errorcode)
 {
     if (false == gen_one_line("serialize_fcn_str", 1))
     {
@@ -242,7 +242,7 @@ bool PyGenerator::imp_serialize(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_deserialize(int& errorcode)
+bool Py3Generator::imp_deserialize(int& errorcode)
 {
     if (false == gen_one_line("deserialize_fcn_str", 1))
     {
@@ -291,7 +291,7 @@ bool PyGenerator::imp_deserialize(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_size(int& errorcode)
+bool Py3Generator::imp_size(int& errorcode)
 {
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
     const std::string type_substr = lang_stencil_.get_value_string("type_substr");
@@ -335,7 +335,7 @@ bool PyGenerator::imp_size(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_equals(int& errorcode)
+bool Py3Generator::imp_equals(int& errorcode)
 {
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
 
@@ -377,7 +377,7 @@ bool PyGenerator::imp_equals(int& errorcode)
     return true;
 }
 
-bool PyGenerator::imp_print(int& errorcode)
+bool Py3Generator::imp_print(int& errorcode)
 {
     const std::string member_substr = lang_stencil_.get_value_string("member_substr");
 

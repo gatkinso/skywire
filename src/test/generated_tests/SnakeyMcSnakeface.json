@@ -4,8 +4,8 @@
       "outputimplfilename":"SnakeyMcSnakeFace.py",
       "outputtestfilename":"SnakeyMcSnakeFaceTest.py",
       "namespace":"testspace",
-      "language": "python",
-      "lang_file": "lang.python.json"
+      "language": "python3",
+      "lang_file": "lang.python3.json"
    },
    "members":{  
       "100":{  
