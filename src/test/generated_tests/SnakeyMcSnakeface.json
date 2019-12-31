@@ -1,8 +1,8 @@
 {
    "stringValues":{  
-      "classname":"SnakeyMcSnakeFace",
-      "outputimplfilename":"SnakeyMcSnakeFace.py",
-      "outputtestfilename":"SnakeyMcSnakeFaceTest.py",
+      "classname":"SnakeyMcSnakeface",
+      "outputimplfilename":"SnakeyMcSnakeface.py",
+      "outputtestfilename":"SnakeyMcSnakefaceTest.py",
       "namespace":"testspace",
       "language": "python3",
       "lang_file": "lang.python3.json"
