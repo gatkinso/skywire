@@ -6,7 +6,7 @@
         "namespace_str":"\nnamespace __NAMESPACE__ {\n",
         "classname_str":"class __CLASSNAME__ : public skyloupe::Streamable {\n",
         "public_str"   :"public:\n",
-        "private_str"  :"private:\n",        
+        "private_str"  :"private:\n",
         "cons_str":"__CLASSNAME__() {}\n",
         "des_str":"virtual ~__CLASSNAME__() {}\n",
         "serialize_str": "bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {\n",
