@@ -57,3 +57,4 @@ const unsigned int SW_LANG_CPP_INCLUDE          = 0x01000000;
 const unsigned int SW_LANG_IMP_CONS      = 0x00000001;
 const unsigned int SW_LANG_IMP_PRINT     = 0x00000002;
 const unsigned int SW_LANG_RUNTIME       = 0x00000003;
+const unsigned int SW_LANG_STRUCTBLOCK   = 0x00000004;

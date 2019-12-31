@@ -13,6 +13,9 @@
 //   permissions and limitations under the License.
 //
 
+#include <regex>
+#include <map>
+#include <string>
 #include "gogenerator.h"
 
 namespace skyloupe
@@ -22,7 +25,153 @@ bool GoGenerator::generate(int& errorcode)
 {
     errorcode = 0;
 
+    results_.clear();
+
+    classname_ = msg_stencil_.get_value_string("classname", "@NOTFOUND");
+
+    if (false == do_header(errorcode))
+    {
+        errorcode |= SW_FILE_HEADER;
+        return false;
+    }
+
+    ss_.str("");
+
+    if (false == do_implementation(errorcode))
+    {
+        errorcode |= SW_FILE_IMP;
+        return false;
+    }
+
     return true;
+}
+
+bool GoGenerator::do_header(int& errorcode)
+{
+    return true;
+}
+
+bool GoGenerator::do_implementation(int& errorcode)
+{
+    std::string& imp_string = results_["implementation"];
+    imp_b0(errorcode);
+    imp_b1(errorcode);
+    imp_b2(errorcode);
+    imp_b3(errorcode);
+    imp_b4(errorcode);
+    imp_b5(errorcode);
+    imp_b6(errorcode);
+    imp_b7(errorcode);
+    imp_b8(errorcode);
+    imp_string.append(ss_.str());
+
+    return true;
+}
+
+bool GoGenerator::imp_b0(int& errorcode)
+{
+    bool success =  gen_one_line("banner_str");
+
+    ss_ << msg_stencil_.get_value_string("block_separator_str", "\n");
+
+    return success;
+}
+
+bool GoGenerator::imp_b1(int& errorcode)
+{
+    bool success = gen_one_line_subst("namespace_block", "namespace", "namespace_substr", 0);
+
+    if (false == success)
+    {
+        errorcode |= SW_LANG_C_STRUCTNAME;
+        return success;
+    }
+
+    ss_ << msg_stencil_.get_value_string("block_separator_str", "\n");
+
+    return success;
+}
+
+bool GoGenerator::imp_b2(int& errorcode)
+{
+    return do_block("import_block", [this]()->std::string {
+        return "\n";
+    });
+}
+
+bool GoGenerator::imp_b3(int& errorcode)
+{
+    return do_block("var_block", []()->std::string {
+        return "\n";  //TODO build this string
+    });
+}
+
+bool GoGenerator::imp_b4(int& errorcode)
+{
+    return do_block("struct_block", [this]()->std::string {
+        std::string member_substr = lang_stencil_.get_value_string("member_substr");
+        std::string type_substr = lang_stencil_.get_value_string("type_substr");
+
+        unsigned int i = 0;
+        std::string body;
+        for (auto& member : ordered_members_)
+        {
+            std::string template_str;
+
+            template_str = lang_stencil_.get_value_string("member_decl_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+
+            body += template_str;
+        }
+
+        return body;
+    });
+}
+
+bool GoGenerator::imp_b5(int& errorcode)
+{
+    return do_block("serialize_fcn_block", [this]()->std::string {
+        return "\n";  //TODO build this string
+    });
+}
+
+bool GoGenerator::imp_b6(int& errorcode)
+{
+    return do_block("deserialize_fcn_block", []()->std::string {
+        return "\n";  //TODO build this string
+    });
+}
+
+bool GoGenerator::imp_b7(int& errorcode)
+{
+    return do_block("equals_fcn_block", []()->std::string {
+        return "\n";  //TODO build this string
+    });
+}
+
+bool GoGenerator::imp_b8(int& errorcode)
+{
+    return do_block("size_fcn_block", []()->std::string {
+        return "\n";  //TODO build this string
+    });
+}
+
+bool GoGenerator::do_block(const std::string block_id, std::function<std::string()> builder)
+{
+    bool success = true;
+    std::string block_str = lang_stencil_.get_value_string(block_id);
+    std::string structname_substr = lang_stencil_.get_value_string("structname_substr");
+    std::string body_token_str = lang_stencil_.get_value_string("body_token");
+
+    std::string new_body_str = builder();
+
+    block_str = std::regex_replace(block_str, std::regex(structname_substr), classname_);
+    block_str = std::regex_replace(block_str, std::regex(body_token_str), new_body_str);
+
+    ss_ << block_str << msg_stencil_.get_value_string("block_separator_str", "\n");
+
+    return success;
 }
 
 }
