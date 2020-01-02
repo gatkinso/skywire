@@ -28,6 +28,25 @@ public:
     virtual ~GoGenerator() {}
 
     bool generate(int& errorcode) override;
+
+ protected:
+    virtual bool do_header(int& errorcode);
+    virtual bool do_implementation(int& errorcode);
+
+    virtual bool imp_b0(int& errorcode);
+    virtual bool imp_b1(int& errorcode);
+    virtual bool imp_b2(int& errorcode);
+    virtual bool imp_b3(int& errorcode);
+    virtual bool imp_b4(int& errorcode);
+    virtual bool imp_b5(int& errorcode);
+    virtual bool imp_b6(int& errorcode);
+    virtual bool imp_b7(int& errorcode);
+    virtual bool imp_b8(int& errorcode);
+
+private:
+    std::string classname_;
+
+    bool do_block(const std::string block_id, std::function<std::string()> builder);
 };
 
 }
