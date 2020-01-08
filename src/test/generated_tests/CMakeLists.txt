@@ -33,7 +33,7 @@ file(MAKE_DIRECTORY ${WG_C_DIR})
 file(MAKE_DIRECTORY ${WG_CPP_DIR})
 
 include_directories(
-                ${PROJECT_BINARY_DIR}/proto/cpp
+                ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c
