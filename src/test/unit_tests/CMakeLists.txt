@@ -16,7 +16,7 @@
 set(TARGETNAME unit_tests)
 
 include_directories(
-                ${PROJECT_BINARY_DIR}/proto/cpp
+                ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c)

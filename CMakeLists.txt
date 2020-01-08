@@ -73,4 +73,5 @@ if(UNIX AND NOT APPLE)
 endif(UNIX AND NOT APPLE)
 
 add_subdirectory(3rd_party/qwikpirate)
+add_subdirectory(3rd_party/skyproto)
 add_subdirectory(src)
