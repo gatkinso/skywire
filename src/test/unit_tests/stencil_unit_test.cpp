@@ -15,12 +15,13 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "google/protobuf/reflection.h"
 #include <google/protobuf/util/json_util.h>
 #include "google/protobuf/util/message_differencer.h"
 #include <string>
-#pragma warning(disable:4800)  
+#pragma warning(disable:4800)
 #include "stencil.pb.h"
-#pragma warning(default:4800) 
+#pragma warning(default:4800)
 #include "stencil/stencil.h"
 #include "sw_endian.h"
 
@@ -50,8 +51,8 @@ TEST_F(StencilUnitTest, ReflectionByName)
     const google::protobuf::FieldDescriptor* paFieldDescriptorByName = paMessage->GetDescriptor()->FindFieldByName("includes");
     const google::protobuf::Reflection* pReflection = paMessage->GetReflection();
 
-    google::protobuf::RepeatedPtrField<google::protobuf::string> ref =
-        pReflection->GetRepeatedPtrField<google::protobuf::string>(*paMessage, paFieldDescriptorByName);
+    google::protobuf::RepeatedFieldRef<std::string> ref =
+        pReflection->GetRepeatedFieldRef<std::string>(*paMessage, paFieldDescriptorByName);
 
     for (int i = 0; i < ref.size(); i++)
     {
@@ -67,8 +68,8 @@ TEST_F(StencilUnitTest, ReflectionByNumber)
     const google::protobuf::FieldDescriptor* paFieldDescriptorByNum = paMessage->GetDescriptor()->FindFieldByNumber(1000);
     const google::protobuf::Reflection* pReflection = paMessage->GetReflection();
 
-    google::protobuf::RepeatedPtrField<google::protobuf::string> ref =
-        pReflection->GetRepeatedPtrField<google::protobuf::string>(*paMessage, paFieldDescriptorByNum);
+    google::protobuf::RepeatedFieldRef<std::string> ref =
+        pReflection->GetRepeatedFieldRef<std::string>(*paMessage, paFieldDescriptorByNum);
 
     for (int i = 0; i < ref.size(); i++)
     {

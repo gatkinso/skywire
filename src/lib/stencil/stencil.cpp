@@ -16,6 +16,7 @@
 #include <fstream>
 #include "stencil.h"
 #include "google/protobuf/util/json_util.h"
+#include "google/protobuf/reflection.h"
 
 namespace skyloupe
 {
@@ -182,8 +183,8 @@ std::vector<std::string> Stencil::get_value(const::std::string& key, const std::
 
         if (true == pFieldDescriptor->is_repeated())
         {
-            google::protobuf::RepeatedPtrField<google::protobuf::string> ref =
-                pReflection->GetRepeatedPtrField<std::string>(*pMessage, pFieldDescriptor);
+            google::protobuf::RepeatedFieldRef<std::string> ref =
+                pReflection->GetRepeatedFieldRef<std::string>(*pMessage, pFieldDescriptor);
 
             for (int i = 0; i < ref.size(); i++)
             {
