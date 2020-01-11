@@ -69,6 +69,12 @@ At the time of this writing, the Skywire source code can be found at:
 
 https://github.com/skyloupe/skywire
 
+## [1.2] Dependencies
+
+Google Protocol Buffers - v3.11.2
+
+GRPC - v1.25.0
+
 # [2.0] Build Requirements
 
 cmake version 3.6 or higher

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include <functional>
 #include "generator.h"
 
 namespace skyloupe 
