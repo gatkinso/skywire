@@ -25,7 +25,7 @@ class Py3Generator : public Generator
 {
 public:
     Py3Generator() = delete;
-    Py3Generator(Stencil& stencil) : Generator(stencil) {}
+    Py3Generator(Specification& specification) : Generator(specification) {}
     virtual ~Py3Generator() {}
 
     bool generate(int& errorcode) override;
@@ -51,4 +51,5 @@ protected:
     virtual bool imp_equals(int& errorcode);
     virtual bool imp_print(int& errorcode);
 };
+
 }

@@ -25,7 +25,7 @@ namespace skyloupe
 class GoGenerator : public Generator
 {
 public:
-    GoGenerator(Stencil& stencil) : Generator(stencil) {}
+    GoGenerator(Specification& specification) : Generator(specification) {}
     virtual ~GoGenerator() {}
 
     bool generate(int& errorcode) override;

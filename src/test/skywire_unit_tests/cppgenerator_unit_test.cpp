@@ -13,4 +13,23 @@
 //   permissions and limitations under the License.
 //
 
-#pragma once
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include "skywire/generators.h"
+
+class CPPGeneratorUnitTest : public ::testing::Test
+{
+protected:
+    CPPGeneratorUnitTest() {}
+    skyloupe::Specification specification_;
+};
+
+TEST_F(CPPGeneratorUnitTest, Instantiate)
+{
+    ASSERT_NO_THROW(skyloupe::CppGenerator unit(specification_));
+}
+
+TEST_F(CPPGeneratorUnitTest, generatecpp)
+{
+    skyloupe::CppGenerator unit(specification_);
+}

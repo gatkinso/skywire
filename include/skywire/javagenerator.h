@@ -24,7 +24,7 @@ namespace skyloupe
 class JavaGenerator : public Generator
 {
 public:
-    JavaGenerator(Stencil& stencil) : Generator(stencil) {}
+    JavaGenerator(Specification& spec) : Generator(spec) {}
     virtual ~JavaGenerator() {}
 
     bool generate(int& errorcode) override;

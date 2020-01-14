@@ -16,8 +16,7 @@
 set(TARGETNAME wiregen)
 
 include_directories(${PROJECT_SOURCE_DIR}/include
-                    ${PROJECT_SOURCE_DIR}/3rd_party/qwikpirate/include
-                    ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto)
+                    ${PROJECT_SOURCE_DIR}/3rd_party/qwikpirate/include)
 
 set(_SOURCES main.cpp)
 
@@ -26,9 +25,9 @@ set(LANGUAGE_JSONS lang.cpp.json
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
-add_dependencies(${TARGETNAME} skywire skyproto cli)
+add_dependencies(${TARGETNAME} skywire specification cli)
 
-target_link_libraries(${TARGETNAME} skywire skyproto cli)
+target_link_libraries(${TARGETNAME} skywire specification cli)
 
 if(MSVC)
     set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${TARGETNAME}.exe)

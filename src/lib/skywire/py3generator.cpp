@@ -84,7 +84,7 @@ bool Py3Generator::imp_sentry(int& errorcode)
 
 bool Py3Generator::imp_includes(int& errorcode)
 {
-    const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
+    const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
     {
@@ -94,8 +94,8 @@ bool Py3Generator::imp_includes(int& errorcode)
 
     for (auto& item : values)
     {
-        std::string template_str = lang_stencil_.get_value_string("include_str");
-        std::string target_str = lang_stencil_.get_value_string("include_substr");
+        std::string template_str = lang_spec_.get_value_string("include_str");
+        std::string target_str = lang_spec_.get_value_string("include_substr");
 
         template_str = std::regex_replace(template_str, std::regex(target_str), item);
 
@@ -153,9 +153,9 @@ bool Py3Generator::imp_cons(int& errorcode)
         return success;
     }
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_IMP_CONS;
         return false;
@@ -165,7 +165,7 @@ bool Py3Generator::imp_cons(int& errorcode)
     {
         std::string template_str;
 
-        template_str = lang_stencil_.get_value_string("cons_member_init_str");
+        template_str = lang_spec_.get_value_string("cons_member_init_str");
         
         insert_indents(2);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
@@ -207,9 +207,9 @@ bool Py3Generator::imp_serialize(int& errorcode)
         return false;
     }
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_IMP_SERIALIZE;
         return false;
@@ -218,7 +218,7 @@ bool Py3Generator::imp_serialize(int& errorcode)
     std::string format_str("\"");
     for (auto& member : ordered_members_)
     {
-        format_str.append(lang_stencil_.get_value_string(std::get<member_type>(member.second)));
+        format_str.append(lang_spec_.get_value_string(std::get<member_type>(member.second)));
     }
     format_str.append("\", \\\n");
     ss_ << format_str;
@@ -227,7 +227,7 @@ bool Py3Generator::imp_serialize(int& errorcode)
     {
         std::string template_str;
 
-        template_str = lang_stencil_.get_value_string("serialize_member_str");
+        template_str = lang_spec_.get_value_string("serialize_member_str");
         insert_indents(2);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
@@ -250,11 +250,11 @@ bool Py3Generator::imp_deserialize(int& errorcode)
         return false;
     }
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string index_substr = lang_stencil_.get_value_string("index_substr");
-    const std::string format_substr = lang_stencil_.get_value_string("format_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string index_substr = lang_spec_.get_value_string("index_substr");
+    const std::string format_substr = lang_spec_.get_value_string("format_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || 
+    if (msg_spec_.get_proto().members_size() == 0 || 
         index_substr == "@NOTFOUND" ||
         format_substr == "@NOTFOUND")
     {
@@ -265,12 +265,12 @@ bool Py3Generator::imp_deserialize(int& errorcode)
     std::string format_str("\"");
     for (auto& member : ordered_members_)
     {
-        format_str.append(lang_stencil_.get_value_string(std::get<member_type>(member.second)));
+        format_str.append(lang_spec_.get_value_string(std::get<member_type>(member.second)));
     }
     format_str.append("\"");
 
     std::string template_str;
-    template_str = lang_stencil_.get_value_string("deserialize_start");
+    template_str = lang_spec_.get_value_string("deserialize_start");
     insert_indents(2);
     template_str = std::regex_replace(template_str, std::regex(format_substr), format_str);
     ss_ << template_str;
@@ -278,7 +278,7 @@ bool Py3Generator::imp_deserialize(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        template_str = lang_stencil_.get_value_string("deserialize_member_str");
+        template_str = lang_spec_.get_value_string("deserialize_member_str");
         insert_indents(2);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         template_str = std::regex_replace(template_str, std::regex(index_substr), std::to_string(i++));
@@ -293,10 +293,10 @@ bool Py3Generator::imp_deserialize(int& errorcode)
 
 bool Py3Generator::imp_size(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string type_substr = lang_stencil_.get_value_string("type_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || 
+    if (msg_spec_.get_proto().members_size() == 0 || 
         member_substr == "@NOTFOUND" ||
         type_substr == "@NOTFOUND")
     {
@@ -311,14 +311,14 @@ bool Py3Generator::imp_size(int& errorcode)
     }
 
     std::string template_str;
-    template_str = lang_stencil_.get_value_string("size_start");
+    template_str = lang_spec_.get_value_string("size_start");
     insert_indents(2);
     ss_ << template_str;
 
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        template_str = lang_stencil_.get_value_string("size_mem_str");
+        template_str = lang_spec_.get_value_string("size_mem_str");
         template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
         ss_ << template_str;
 
@@ -337,9 +337,9 @@ bool Py3Generator::imp_size(int& errorcode)
 
 bool Py3Generator::imp_equals(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || 
+    if (msg_spec_.get_proto().members_size() == 0 || 
         member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_IMP_EQUALS;
@@ -353,14 +353,14 @@ bool Py3Generator::imp_equals(int& errorcode)
     }
 
     std::string template_str;
-    template_str = lang_stencil_.get_value_string("equals_start");
+    template_str = lang_spec_.get_value_string("equals_start");
     insert_indents(2);
     ss_ << template_str;
 
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        template_str = lang_stencil_.get_value_string("equals_mem_str");
+        template_str = lang_spec_.get_value_string("equals_mem_str");
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         ss_ << template_str;
 
@@ -379,9 +379,9 @@ bool Py3Generator::imp_equals(int& errorcode)
 
 bool Py3Generator::imp_print(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || 
+    if (msg_spec_.get_proto().members_size() == 0 || 
         member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_IMP_PRINT;
@@ -397,7 +397,7 @@ bool Py3Generator::imp_print(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("print_mem_str");
+        std::string template_str = lang_spec_.get_value_string("print_mem_str");
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         insert_indents(2);
         ss_ << template_str;

@@ -25,7 +25,7 @@ class CppTestGenerator : public Generator
 {
 public:
     CppTestGenerator() = delete;
-    CppTestGenerator(Stencil& stencil);
+    CppTestGenerator(Specification& specification);
     virtual ~CppTestGenerator() = default;
 
     bool generate(int& errorcode) override;

@@ -4,15 +4,9 @@
         "classname": "MyTestClass",
         "language": "c++"
     },
-    "intValues":{
-        "index":2
-    },
-    "boolValues":{
-        "generate":true
-    },
     "includes":[
         "<string>",
         "<list>",
         "<map>"
-    ]
+     ]
 }
