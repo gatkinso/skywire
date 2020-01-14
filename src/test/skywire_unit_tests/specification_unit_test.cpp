@@ -65,7 +65,7 @@ TEST_F(SpecificationUnitTest, ReflectionByName)
 TEST_F(SpecificationUnitTest, ReflectionByNumber)
 {
     google::protobuf::Message* paMessage = &spec_proto_;
-    const google::protobuf::FieldDescriptor* paFieldDescriptorByNum = paMessage->GetDescriptor()->FindFieldByNumber(1000);
+    const google::protobuf::FieldDescriptor* paFieldDescriptorByNum = paMessage->GetDescriptor()->FindFieldByNumber(100);
     const google::protobuf::Reflection* pReflection = paMessage->GetReflection();
 
     google::protobuf::RepeatedFieldRef<std::string> ref =

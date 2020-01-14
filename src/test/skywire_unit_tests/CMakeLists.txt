@@ -41,6 +41,8 @@ set(UNIT_TESTS
                 specification_unit_test.cpp
                 stream_unit_test.cpp)
 
+set(UNIT_TEST_JSON specification_unit_test.json)
+
 add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
 test_big_endian(IS_BIG_ENDIAN)
@@ -60,5 +62,11 @@ target_link_libraries(${TARGETNAME} skywire skywireproto specification GTest::GT
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
 add_dependencies(${TARGETNAME} wiregen)
+
+add_custom_command(
+    TARGET ${TARGETNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${PROJECT_SOURCE_DIR}/cfg/${UNIT_TEST_JSON}
+        ${CMAKE_CURRENT_BINARY_DIR}/${UNIT_TEST_JSON})
 
 
