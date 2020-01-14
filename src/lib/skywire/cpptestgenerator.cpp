@@ -20,7 +20,7 @@
 namespace skyloupe
 {
 
-CppTestGenerator::CppTestGenerator(Stencil& stencil) : Generator(stencil)
+CppTestGenerator::CppTestGenerator(Specification& specification) : Generator(specification)
 {
 
 }
@@ -62,7 +62,7 @@ bool CppTestGenerator::test_banner(int& errorcode)
 
 bool CppTestGenerator::test_includes(int& errorcode)
 {
-    std::string hdr_name = msg_stencil_.get_value_string("outputheaderfilename");
+    std::string hdr_name = msg_spec_.get_value_string("outputheaderfilename");
 
     ss_ << "#include <gmock/gmock.h>" << std::endl
         << "#include <gtest/gtest.h>" << std::endl
@@ -74,8 +74,8 @@ bool CppTestGenerator::test_includes(int& errorcode)
 
 bool CppTestGenerator::test_serdes(int& errorcode)
 {
-    std::string namespac = msg_stencil_.get_value_string("namespace");
-    std::string classname = msg_stencil_.get_value_string("classname");
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
     std::string testname = classname + "Test";
 
     ss_ << "TEST(" << testname << ", SerDes)\n";
@@ -83,7 +83,7 @@ bool CppTestGenerator::test_serdes(int& errorcode)
     ss_ << "    " << namespac << "::" << classname << " in, out;\n";
     ss_ << "    skyloupe::Stream stream;\n\n";
     
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;
@@ -103,8 +103,8 @@ bool CppTestGenerator::test_serdes(int& errorcode)
 
 bool CppTestGenerator::test_size(int& errorcode)
 {
-    std::string namespac = msg_stencil_.get_value_string("namespace");
-    std::string classname = msg_stencil_.get_value_string("classname");
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
     std::string testname = classname + "Test";
 
     ss_ << "TEST(" << testname << ", Size)\n";
@@ -132,8 +132,8 @@ bool CppTestGenerator::test_size(int& errorcode)
 
 bool CppTestGenerator::test_equality(int& errorcode)
 {
-    std::string namespac = msg_stencil_.get_value_string("namespace");
-    std::string classname = msg_stencil_.get_value_string("classname");
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
     std::string testname = classname + "Test";
 
     ss_ << "TEST(" << testname << ", EqualityOperator)\n";
@@ -141,7 +141,7 @@ bool CppTestGenerator::test_equality(int& errorcode)
     ss_ << "    " << namespac << "::" << classname << " in, out;\n";
     ss_ << "    skyloupe::Stream stream;\n\n";
 
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;

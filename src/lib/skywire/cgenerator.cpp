@@ -98,7 +98,7 @@ bool CGenerator::hdr_sentry_top(int& errorcode)
 }
 
 bool CGenerator::hdr_includes(int& errorcode) {
-    const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
+    const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
     {
@@ -108,8 +108,8 @@ bool CGenerator::hdr_includes(int& errorcode) {
 
     for (auto& item : values)
     {
-        std::string template_str = lang_stencil_.get_value_string("include_str");
-        std::string target_str = lang_stencil_.get_value_string("include_substr");
+        std::string template_str = lang_spec_.get_value_string("include_str");
+        std::string target_str = lang_spec_.get_value_string("include_substr");
 
         template_str = std::regex_replace(template_str, std::regex(target_str), item);
 
@@ -180,7 +180,7 @@ bool CGenerator::hdr_size(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
+    ss_ << lang_spec_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
@@ -218,7 +218,7 @@ bool CGenerator::hdr_equals_function(int& errorcode)
         return success;
     }
 
-    ss_ << lang_stencil_.get_value_string("semicolon_str") << std::endl;
+    ss_ << lang_spec_.get_value_string("semicolon_str") << std::endl;
 
     return success;
 }
@@ -240,7 +240,7 @@ bool CGenerator::imp_banner(int& errorcode)
 
 bool CGenerator::imp_includes(int& errorcode)
 {
-    std::string value = msg_stencil_.get_value_string("outputheaderfilename", "@NOTFOUND");
+    std::string value = msg_spec_.get_value_string("outputheaderfilename", "@NOTFOUND");
 
     if (value == "@NOTFOUND")
     {
@@ -255,9 +255,9 @@ bool CGenerator::imp_includes(int& errorcode)
 
 bool CGenerator::imp_serialize(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
-    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string null_check_str = lang_spec_.get_value_string("struct_str_null_check_str");
+    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     bool success = gen_one_line_subst("serialize_impl_str", "classname", "classname_substr", 0);
     if (false == success)
     {
@@ -270,7 +270,7 @@ bool CGenerator::imp_serialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("write_native_template_str");
+        std::string template_str = lang_spec_.get_value_string("write_native_template_str");
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
@@ -286,16 +286,16 @@ bool CGenerator::imp_serialize(int& errorcode)
     }
 
     insert_indents(1);
-    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
+    ss_ << lang_spec_.get_value_string("endfunction_success_str");
 
     return success;
 }
 
 bool CGenerator::imp_deserialize(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string null_check_str = lang_stencil_.get_value_string("struct_str_null_check_str");
-    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string null_check_str = lang_spec_.get_value_string("struct_str_null_check_str");
+    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     bool success = gen_one_line_subst("deserialize_impl_str", "classname", "classname_substr", 0);
     if (false == success)
     {
@@ -308,7 +308,7 @@ bool CGenerator::imp_deserialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("read_native_template_str");
+        std::string template_str = lang_spec_.get_value_string("read_native_template_str");
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
@@ -324,7 +324,7 @@ bool CGenerator::imp_deserialize(int& errorcode)
     }
 
     insert_indents(1);
-    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
+    ss_ << lang_spec_.get_value_string("endfunction_success_str");
 
     return success;
 }
@@ -367,8 +367,8 @@ bool CGenerator::imp_size(int& errorcode)
 
 bool CGenerator::imp_equals_function(int& errorcode)
 {
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string null_check_str = lang_stencil_.get_value_string("struct_equals_null_check_str");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string null_check_str = lang_spec_.get_value_string("struct_equals_null_check_str");
     bool success = gen_one_line_subst("equals_str", "classname", "classname_substr", 0);
     if (false == success)
     {
@@ -387,7 +387,7 @@ bool CGenerator::imp_equals_function(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("equal_check_template_str");
+        std::string template_str = lang_spec_.get_value_string("equal_check_template_str");
         insert_indents(2);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
@@ -405,9 +405,9 @@ bool CGenerator::imp_equals_function(int& errorcode)
     ss_ << ")" << std::endl;
     insert_indents(2);
     //using the failure flag for success (and vice versa) in this case.
-    ss_ << lang_stencil_.get_value_string("return_failure_str");
+    ss_ << lang_spec_.get_value_string("return_failure_str");
     insert_indents(1);
-    ss_ << lang_stencil_.get_value_string("endfunction_success_str");
+    ss_ << lang_spec_.get_value_string("endfunction_success_str");
 
     return success;
 }
@@ -438,12 +438,12 @@ bool CGenerator::imp_set_functions(int& errorcode)
 
 bool CGenerator::getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode)
 {
-    const std::string type_substr = lang_stencil_.get_value_string("type_substr");
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string classname_substr = lang_stencil_.get_value_string("classname_substr");
-    const std::string null_check_str = lang_stencil_.get_value_string("struct_value_null_check_str");
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string null_check_str = lang_spec_.get_value_string("struct_value_null_check_str");
 
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;
@@ -451,8 +451,8 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string(fcn_key);
-        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_stencil_.get_value_string("classname"));
+        std::string template_str = lang_spec_.get_value_string(fcn_key);
+        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
 
         template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
@@ -462,13 +462,13 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         insert_indents(1);
         ss_ << null_check_str;
 
-        template_str = lang_stencil_.get_value_string(ass_key);
+        template_str = lang_spec_.get_value_string(ass_key);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
         insert_indents(1);
         ss_ << template_str << ";" << std::endl;
         insert_indents(1);
-        ss_ << lang_stencil_.get_value_string("endfunction_success_str");
+        ss_ << lang_spec_.get_value_string("endfunction_success_str");
     }
 
     return true;

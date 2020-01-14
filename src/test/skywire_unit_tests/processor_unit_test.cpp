@@ -21,7 +21,6 @@ class ProcessorUnitTest : public ::testing::Test
 {
 protected:
     ProcessorUnitTest() {}
-    skyloupe::Stencil stencil_;
 };
 
 TEST_F(ProcessorUnitTest, Instantiate)

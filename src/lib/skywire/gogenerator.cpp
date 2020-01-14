@@ -27,7 +27,7 @@ bool GoGenerator::generate(int& errorcode)
 
     results_.clear();
 
-    classname_ = msg_stencil_.get_value_string("classname", "@NOTFOUND");
+    classname_ = msg_spec_.get_value_string("classname", "@NOTFOUND");
 
     if (false == do_header(errorcode))
     {
@@ -72,7 +72,7 @@ bool GoGenerator::imp_b0(int& errorcode)
 {
     bool success =  gen_one_line("banner_str");
 
-    ss_ << msg_stencil_.get_value_string("block_separator_str", "\n");
+    ss_ << msg_spec_.get_value_string("block_separator_str", "\n");
 
     return success;
 }
@@ -87,7 +87,7 @@ bool GoGenerator::imp_b1(int& errorcode)
         return success;
     }
 
-    ss_ << msg_stencil_.get_value_string("block_separator_str", "\n");
+    ss_ << msg_spec_.get_value_string("block_separator_str", "\n");
 
     return success;
 }
@@ -109,16 +109,16 @@ bool GoGenerator::imp_b3(int& errorcode)
 bool GoGenerator::imp_b4(int& errorcode)
 {
     return do_block("struct_block", [this]()->std::string {
-        std::string member_substr = lang_stencil_.get_value_string("member_substr");
-        std::string type_substr = lang_stencil_.get_value_string("type_substr");
+        std::string member_substr = lang_spec_.get_value_string("member_substr");
+        std::string type_substr = lang_spec_.get_value_string("type_substr");
 
         std::string body;
         for (auto& member : ordered_members_)
         {
             std::string template_str;
-            template_str = lang_stencil_.get_value_string("member_decl_str");
+            template_str = lang_spec_.get_value_string("member_decl_str");
             template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(type_substr), lang_stencil_.get_value_string(std::get<member_type>(member.second)));
+            template_str = std::regex_replace(template_str, std::regex(type_substr), lang_spec_.get_value_string(std::get<member_type>(member.second)));
 
             body += template_str;
         }
@@ -144,16 +144,16 @@ bool GoGenerator::imp_b6(int& errorcode)
 bool GoGenerator::imp_b7(int& errorcode)
 {
     return do_block("equals_fcn_block", [this]()->std::string {
-        std::string member_substr = lang_stencil_.get_value_string("member_substr");
-        std::string type_substr = lang_stencil_.get_value_string("type_substr");
+        std::string member_substr = lang_spec_.get_value_string("member_substr");
+        std::string type_substr = lang_spec_.get_value_string("type_substr");
 
         unsigned int i = 0;
         std::string body;
-        body +=  lang_stencil_.get_value_string("equal_eval_start_str");
+        body +=  lang_spec_.get_value_string("equal_eval_start_str");
         for (auto& member : ordered_members_)
         {
             std::string template_str;
-            template_str = lang_stencil_.get_value_string("equal_eval_member_str");
+            template_str = lang_spec_.get_value_string("equal_eval_member_str");
             template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
             if (i++ < ordered_members_.size() - 1)
@@ -164,7 +164,7 @@ bool GoGenerator::imp_b7(int& errorcode)
             body += template_str;
         }
 
-        body += lang_stencil_.get_value_string("equal_eval_tail_str");
+        body += lang_spec_.get_value_string("equal_eval_tail_str");
 
         return body;
     });
@@ -180,16 +180,16 @@ bool GoGenerator::imp_b8(int& errorcode)
 bool GoGenerator::do_block(const std::string block_id, std::function<std::string()> builder)
 {
     bool success = true;
-    std::string block_str = lang_stencil_.get_value_string(block_id);
-    std::string structname_substr = lang_stencil_.get_value_string("structname_substr");
-    std::string body_token_str = lang_stencil_.get_value_string("body_token");
+    std::string block_str = lang_spec_.get_value_string(block_id);
+    std::string structname_substr = lang_spec_.get_value_string("structname_substr");
+    std::string body_token_str = lang_spec_.get_value_string("body_token");
 
     std::string new_body_str = builder();
 
     block_str = std::regex_replace(block_str, std::regex(structname_substr), classname_);
     block_str = std::regex_replace(block_str, std::regex(body_token_str), new_body_str);
 
-    ss_ << block_str << msg_stencil_.get_value_string("block_separator_str", "\n");
+    ss_ << block_str << msg_spec_.get_value_string("block_separator_str", "\n");
 
     return success;
 }

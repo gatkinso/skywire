@@ -20,7 +20,7 @@
 namespace skyloupe
 {
 
-CTestGenerator::CTestGenerator(Stencil& stencil) : Generator(stencil)
+CTestGenerator::CTestGenerator(Specification& specification) : Generator(specification)
 {
 
 }
@@ -62,7 +62,7 @@ bool CTestGenerator::test_banner(int& errorcode)
 
 bool CTestGenerator::test_includes(int& errorcode)
 {
-    std::string hdr_name = msg_stencil_.get_value_string("outputheaderfilename");
+    std::string hdr_name = msg_spec_.get_value_string("outputheaderfilename");
 
     ss_ << "#include <gmock/gmock.h>" << std::endl
         << "#include <gtest/gtest.h>" << std::endl
@@ -74,7 +74,7 @@ bool CTestGenerator::test_includes(int& errorcode)
 
 bool CTestGenerator::test_serdes(int& errorcode)
 {
-    std::string classname = msg_stencil_.get_value_string("classname");
+    std::string classname = msg_spec_.get_value_string("classname");
     std::string testname = classname + "Test";
 
     ss_ << "TEST(" << testname << ", SerDes)\n";
@@ -127,7 +127,7 @@ bool CTestGenerator::test_serdes(int& errorcode)
 
 bool CTestGenerator::test_size(int& errorcode)
 {
-    std::string classname = msg_stencil_.get_value_string("classname");
+    std::string classname = msg_spec_.get_value_string("classname");
     std::string testname = classname + "Test";
 
     ss_ << "TEST(" << testname << ", Size)\n";

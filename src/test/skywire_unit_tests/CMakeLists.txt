@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 #
 
-set(TARGETNAME unit_tests)
+set(TARGETNAME skywire_unit_tests)
 
 include_directories(
-                ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto
+                ${PROJECT_BINARY_DIR}/skywireproto
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c)
@@ -38,10 +38,10 @@ set(UNIT_TESTS
                 filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp
-                stencil_unit_test.cpp
+                specification_unit_test.cpp
                 stream_unit_test.cpp)
 
-set(UNIT_TEST_JSON stencil_unit_test.json)
+set(UNIT_TEST_JSON specification_unit_test.json)
 
 add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
@@ -57,15 +57,16 @@ if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
+target_link_libraries(${TARGETNAME} skywire skywireproto specification GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
-add_dependencies(${TARGETNAME} stencil skywire wiregen)
+add_dependencies(${TARGETNAME} wiregen)
 
 add_custom_command(
-        TARGET ${TARGETNAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/cfg/${UNIT_TEST_JSON}
-                ${CMAKE_CURRENT_BINARY_DIR}/${UNIT_TEST_JSON})
+    TARGET ${TARGETNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${PROJECT_SOURCE_DIR}/cfg/${UNIT_TEST_JSON}
+        ${CMAKE_CURRENT_BINARY_DIR}/${UNIT_TEST_JSON})
+
 
