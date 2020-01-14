@@ -25,7 +25,7 @@ class CTestGenerator : public Generator
 {
 public:
     CTestGenerator() = delete;
-    CTestGenerator(Stencil& stencil);
+    CTestGenerator(Specification& spec);
     virtual ~CTestGenerator() = default;
 
     bool generate(int& errorcode) override;

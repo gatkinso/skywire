@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "stencil/stencil.h"
+#include "specification/specification.h"
 
 namespace skyloupe 
 {
@@ -28,8 +28,8 @@ class Generator;
 class GeneratorFactory
 {
 public:
-    static bool machine(std::unique_ptr<Generator>& gen_ptr, const std::string type_str, skyloupe::Stencil& msg_stencil);
-    static bool tests_machine(std::unique_ptr<Generator>& gen_ptr, const std::string type_str, skyloupe::Stencil& msg_stencil);
+    static bool machine(std::unique_ptr<Generator>& gen_ptr, const std::string type_str, skyloupe::Specification& msg_spec);
+    static bool tests_machine(std::unique_ptr<Generator>& gen_ptr, const std::string type_str, skyloupe::Specification& msg_spec);
 };
 
 }

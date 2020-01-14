@@ -21,7 +21,7 @@
 #include <tuple>
 #include "errorcodes.h"
 #include "types.h"
-#include "stencil/stencil.h"
+#include "specification/specification.h"
 
 namespace skyloupe 
 {
@@ -34,7 +34,7 @@ public:
     typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
 
     Generator() = delete;
-    Generator(Stencil& stencil);
+    Generator(Specification& specification);
     virtual ~Generator() = default;
 
     virtual bool generate(int& errorcode) = 0;
@@ -44,8 +44,8 @@ public:
     virtual results_t get_results() const { return results_; }  //copy???
 
 protected:
-    Stencil lang_stencil_;
-    Stencil msg_stencil_;
+    Specification lang_spec_;
+    Specification msg_spec_;
     results_t results_;
     std::stringstream ss_;
     int errorcode_;
@@ -58,7 +58,6 @@ protected:
     bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
     bool inorder_members(int& errorcode, unsigned int indents = 0);
     bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
-
     bool inorder_member_names(int& errorcode, unsigned int indents = 0);
 
     std::set<std::string> native_types_;

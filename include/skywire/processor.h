@@ -17,7 +17,7 @@
 
 #include <map>
 #include <string>
-#include "stencil/stencil.h"
+#include "specification/specification.h"
 #include "generators.h"
 #include "errorcodes.h"
 #include "types.h"
@@ -35,7 +35,7 @@ public:
     virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
     void set_langfile(const std::string& filename) { language_file_ = filename; }
 private:
-    Stencil msg_stencil_;
+    Specification msg_stencil_;
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";

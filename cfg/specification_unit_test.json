@@ -10,9 +10,4 @@
     "boolValues":{
         "generate":true
     },
-    "includes":[
-        "<string>",
-        "<list>",
-        "<map>"
-    ]
 }

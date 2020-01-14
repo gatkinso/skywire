@@ -13,25 +13,25 @@
 #  permissions and limitations under the License.
 #
 
-set(TARGETNAME stencil)
+set(TARGETNAME specification)
 
 set(TARGET_INC_DIR ${PROJECT_SOURCE_DIR}/include/${TARGETNAME})
 
 set(_INC_DIRS ${TARGET_INC_DIR}
               ${PROJECT_SOURCE_DIR}/include/${TARGETNAME}
-              ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto)
+              ${PROJECT_BINARY_DIR}/skywireproto)
 
 include_directories(${TARGETNAME} ${_INC_DIRS})
 
-set(_SOURCES stencil.cpp)
+set(_SOURCES specification.cpp)
 
-set(_HEADERS ${TARGET_INC_DIR}/stencil.h)
+set(_HEADERS ${TARGET_INC_DIR}/specification.h)
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_SOURCES})
 
-add_dependencies(${TARGETNAME} skyproto)
+add_dependencies(${TARGETNAME} skywireproto)
 
-target_link_libraries(${TARGETNAME} skyproto)
+target_link_libraries(${TARGETNAME} skywireproto)
 
 
 

@@ -19,11 +19,11 @@
 namespace skyloupe
 {
 
-Generator::Generator(Stencil& stencil) 
-: msg_stencil_(stencil) 
+Generator::Generator(Specification& specification) 
+: msg_spec_(specification) 
 , results_()
 {
-    for (auto& member : msg_stencil_.get_proto().members())
+    for (auto& member : msg_spec_.get_proto().members())
     {
         member_desc_t memtuple = std::make_tuple(member.second.type(), member.second.name(), member.second.endian());
         std::pair<uint32_t, member_desc_t> mempair = std::make_pair(member.first, memtuple);
@@ -43,18 +43,18 @@ bool Generator::is_native_type(const std::string& type)
 
 bool Generator::set_msg_settings(const std::string pathname)
 {
-    msg_stencil_.clear();
+    msg_spec_.clear();
 
-    return msg_stencil_.read_file(pathname);
+    return msg_spec_.read_file(pathname);
 }
 
 bool Generator::set_lang_settings(const std::string pathname)
 {
-    lang_stencil_.clear();
+    lang_spec_.clear();
 
-    bool success =  lang_stencil_.read_file(pathname);
+    bool success =  lang_spec_.read_file(pathname);
 
-    std::vector<std::string> native_type = lang_stencil_.get_value("native_types");
+    std::vector<std::string> native_type = lang_spec_.get_value("native_types");
     if (native_type[0] != "@NOTFOUND")
     {
         for (const auto& item : native_type)
@@ -78,7 +78,7 @@ void Generator::insert_char(const char c)
 
 bool Generator::insert_indents(unsigned int indents)
 {
-    std::string indent_str = lang_stencil_.get_value_string("indent_str");
+    std::string indent_str = lang_spec_.get_value_string("indent_str");
 
     for (unsigned int i = 0; i < indents; i++)
     {
@@ -90,7 +90,7 @@ bool Generator::insert_indents(unsigned int indents)
 
 bool Generator::gen_one_line(const std::string& key, unsigned int indents)
 {
-    std::string value_str = lang_stencil_.get_value_string(key);
+    std::string value_str = lang_spec_.get_value_string(key);
 
     insert_indents(indents);
 
@@ -101,9 +101,9 @@ bool Generator::gen_one_line(const std::string& key, unsigned int indents)
 
 bool Generator::gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
 {
-    std::string template_str = lang_stencil_.get_value_string(template_key);
-    std::string subst_str = msg_stencil_.get_value_string(subst_key);
-    std::string target_str = lang_stencil_.get_value_string(target_key);
+    std::string template_str = lang_spec_.get_value_string(template_key);
+    std::string subst_str = msg_spec_.get_value_string(subst_key);
+    std::string target_str = lang_spec_.get_value_string(target_key);
 
     insert_indents(indents);
 
@@ -116,7 +116,7 @@ bool Generator::gen_one_line_subst(const std::string& template_key, const std::s
 
 bool Generator::inorder_members(int& errorcode, unsigned int indents)
 {
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;
@@ -133,7 +133,7 @@ bool Generator::inorder_members(int& errorcode, unsigned int indents)
 
 bool Generator::inorder_member_names(int& errorcode, unsigned int indents)
 {
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;
@@ -150,15 +150,15 @@ bool Generator::inorder_member_names(int& errorcode, unsigned int indents)
 
 bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents, bool prepend_classname)
 {
-    std::string type_substr = lang_stencil_.get_value_string("type_substr");
-    std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    std::string type_substr = lang_spec_.get_value_string("type_substr");
+    std::string member_substr = lang_spec_.get_value_string("member_substr");
     std::string class_substr("");
     if (prepend_classname == true)
     {
-        class_substr = lang_stencil_.get_value_string("classname_substr");
+        class_substr = lang_spec_.get_value_string("classname_substr");
     }
 
-    if (msg_stencil_.get_proto().members_size() == 0)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
         errorcode |= SW_LANG_NOMEMBERS;
         return false;
@@ -166,12 +166,12 @@ bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, 
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string(funct_str);
+        std::string template_str = lang_spec_.get_value_string(funct_str);
         insert_indents(indents);
         if (prepend_classname == true)
         {
             template_str = 
-                std::regex_replace(template_str, std::regex(class_substr), msg_stencil_.get_value_string("classname"));
+                std::regex_replace(template_str, std::regex(class_substr), msg_spec_.get_value_string("classname"));
         }
         template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
