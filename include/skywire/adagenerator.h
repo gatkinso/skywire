@@ -24,7 +24,7 @@ namespace skyloupe
 class AdaGenerator : public Generator
 {
 public:
-    AdaGenerator(Stencil& stencil) : Generator(stencil) {}
+    AdaGenerator(Specification& spec) : Generator(spec) {}
     virtual ~AdaGenerator() {}
 
     bool generate(int& errorcode) override;

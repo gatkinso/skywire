@@ -25,7 +25,7 @@ class CppGenerator : public Generator
 {
 public:
     CppGenerator() = delete;
-    CppGenerator(Stencil& stencil);
+    CppGenerator(Specification& spec);
     virtual ~CppGenerator() = default;
 
     bool generate(int& errorcode) override;

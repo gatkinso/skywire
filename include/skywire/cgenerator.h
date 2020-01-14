@@ -25,7 +25,7 @@ class CGenerator : public Generator
 {
 public:
     CGenerator() = delete;
-    CGenerator(Stencil& stencil) : Generator(stencil) {}
+    CGenerator(Specification& spec) : Generator(spec) {}
     virtual ~CGenerator() {}
 
     bool generate(int& errorcode) override;

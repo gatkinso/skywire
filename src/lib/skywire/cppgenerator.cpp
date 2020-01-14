@@ -21,7 +21,7 @@
 namespace skyloupe
 {
 
-CppGenerator::CppGenerator(Stencil& stencil) : Generator(stencil) 
+CppGenerator::CppGenerator(Specification& specification) : Generator(specification) 
 {
 
 }
@@ -95,7 +95,7 @@ bool CppGenerator::hdr_sentry(int& errorcode)
 
 bool CppGenerator::hdr_includes(int& errorcode)
 {
-    const std::vector<std::string> values = msg_stencil_.get_value("includes", "@NOTFOUND");
+    const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
 
     if (values[0] == "@NOTFOUND")
     {
@@ -105,8 +105,8 @@ bool CppGenerator::hdr_includes(int& errorcode)
 
     for (auto& item : values)
     {
-        std::string template_str = lang_stencil_.get_value_string("include_str");
-        std::string target_str = lang_stencil_.get_value_string("include_substr");
+        std::string template_str = lang_spec_.get_value_string("include_str");
+        std::string target_str = lang_spec_.get_value_string("include_substr");
 
         template_str = std::regex_replace(template_str, std::regex(target_str), item);
 
@@ -228,10 +228,10 @@ bool CppGenerator::hdr_serialize(int& errorcode)
         return false;
     }
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
@@ -243,11 +243,11 @@ bool CppGenerator::hdr_serialize(int& errorcode)
 
         if (is_native_type(std::get<member_type>(member.second)))
         {
-            template_str = lang_stencil_.get_value_string("serialize_native_mem_str");
+            template_str = lang_spec_.get_value_string("serialize_native_mem_str");
         }
         else
         {
-            template_str = lang_stencil_.get_value_string("serialize_user_mem_str");
+            template_str = lang_spec_.get_value_string("serialize_user_mem_str");
         }
         
         insert_indents(3);
@@ -279,10 +279,10 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         return false;
     }
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    const std::string endian_substr = lang_stencil_.get_value_string("endian_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
@@ -294,11 +294,11 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
 
         if (is_native_type(std::get<member_type>(member.second)))
         {
-            template_str = lang_stencil_.get_value_string("deserialize_native_mem_str");
+            template_str = lang_spec_.get_value_string("deserialize_native_mem_str");
         }
         else
         {
-            template_str = lang_stencil_.get_value_string("deserialize_user_mem_str");
+            template_str = lang_spec_.get_value_string("deserialize_user_mem_str");
         }
 
         insert_indents(3);
@@ -332,9 +332,9 @@ bool CppGenerator::hdr_size(int& errorcode)
     insert_indents(3);
     ss_ << "return(" << std::endl;
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
 
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_SIZE;
@@ -348,11 +348,11 @@ bool CppGenerator::hdr_size(int& errorcode)
 
         if (is_native_type(std::get<member_type>(member.second)))
         {
-            template_str = lang_stencil_.get_value_string("size_native_mem_str");
+            template_str = lang_spec_.get_value_string("size_native_mem_str");
         }
         else
         {
-            template_str = lang_stencil_.get_value_string("size_user_mem_str");
+            template_str = lang_spec_.get_value_string("size_user_mem_str");
         }
 
         insert_indents(4);
@@ -383,14 +383,14 @@ bool CppGenerator::hdr_equals(int& errorcode)
         return false;
     }
 
-    const std::string equals_selfcheck_str = lang_stencil_.get_value_string("equals_selfcheck_str");
+    const std::string equals_selfcheck_str = lang_spec_.get_value_string("equals_selfcheck_str");
     insert_indents(3);
     ss_ << equals_selfcheck_str;
     insert_indents(3);
     ss_ << "return(" << std::endl;
 
-    const std::string member_substr = lang_stencil_.get_value_string("member_substr");
-    if (msg_stencil_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
     {
         errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_EQUALS;
@@ -400,7 +400,7 @@ bool CppGenerator::hdr_equals(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_stencil_.get_value_string("equals_mem_str");
+        std::string template_str = lang_spec_.get_value_string("equals_mem_str");
 
         insert_indents(4);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));

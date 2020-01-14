@@ -17,19 +17,18 @@
 #include <gtest/gtest.h>
 #include "skywire/generators.h"
 
-class CGeneratorUnitTest : public ::testing::Test
+class GeneratorUnitTest : public ::testing::Test
 {
 protected:
-    CGeneratorUnitTest() {}
-    skyloupe::Stencil stencil_;
+    GeneratorUnitTest() {}
 };
 
-TEST_F(CGeneratorUnitTest, Instantiate)
+TEST_F(GeneratorUnitTest, Instantiate)
 {
-    ASSERT_NO_THROW(skyloupe::CGenerator unit(stencil_));
+
 }
 
-TEST_F(CGeneratorUnitTest, generatecpp)
+TEST_F(GeneratorUnitTest, generatecpp)
 {
-    skyloupe::CGenerator unit(stencil_);
+
 }

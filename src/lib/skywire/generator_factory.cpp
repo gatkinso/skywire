@@ -20,9 +20,9 @@ namespace skyloupe
 {
 
 bool GeneratorFactory::machine(std::unique_ptr<Generator>& gen_ptr, 
-                               const std::string type_str, skyloupe::Stencil& msg_stencil)
+                               const std::string type_str, skyloupe::Specification& msg_spec)
 {
-    std::string msglang = msg_stencil.get_value_string("language");
+    std::string msglang = msg_spec.get_value_string("language");
 
     auto lang = Generator::GeneratorTypes.find(msglang);
 
@@ -34,23 +34,23 @@ bool GeneratorFactory::machine(std::unique_ptr<Generator>& gen_ptr,
 
     if (lang->second == "ada")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_spec));
     }
     else if (lang->second == "c")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CGenerator(msg_spec));
     }
     else if (lang->second == "c++")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppGenerator(msg_spec));
     }
     else if (lang->second == "java")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_spec));
     }
     else if (lang->second == "python3")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3Generator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3Generator(msg_spec));
     }
     else
     {
@@ -62,9 +62,9 @@ bool GeneratorFactory::machine(std::unique_ptr<Generator>& gen_ptr,
 }
 
 bool GeneratorFactory::tests_machine(std::unique_ptr<Generator>& gen_ptr, 
-                                    const std::string type_str, skyloupe::Stencil& msg_stencil)
+                                    const std::string type_str, skyloupe::Specification& msg_spec)
 {
-    std::string msglang = msg_stencil.get_value_string("language");
+    std::string msglang = msg_spec.get_value_string("language");
 
     auto lang = Generator::GeneratorTypes.find(msglang);
 
@@ -81,11 +81,11 @@ bool GeneratorFactory::tests_machine(std::unique_ptr<Generator>& gen_ptr,
     }
     else if (lang->second == "c")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_spec));
     }
     else if (lang->second == "c++")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_stencil));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_spec));
     }
     else if (lang->second == "java")
     {

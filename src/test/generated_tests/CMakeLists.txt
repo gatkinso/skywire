@@ -96,7 +96,7 @@ add_executable(${TARGETNAME}
 #    TARGET ${TARGETNAME} PRE_BUILD
 #    COMMAND ${CMAKE_COMMAND} -E remove
 #            ${WG_C_RESULTS}
-#            ${WG_CPP_RESULTS})                
+#            ${WG_CPP_RESULTS})
 
 test_big_endian(IS_BIG_ENDIAN)
 
@@ -110,9 +110,9 @@ if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} stencil skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
+target_link_libraries(${TARGETNAME} specification skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
-add_dependencies(${TARGETNAME} stencil skywire wiregen)
+add_dependencies(${TARGETNAME} specification skywire wiregen)
 

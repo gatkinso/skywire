@@ -14,14 +14,14 @@
 //
 
 #include <fstream>
-#include "stencil.h"
+#include "specification.h"
 #include "google/protobuf/util/json_util.h"
 #include "google/protobuf/reflection.h"
 
 namespace skyloupe
 {
 
-bool Stencil::read_file(const std::string& pathname)
+bool Specification::read_file(const std::string& pathname)
 {
     if (pathname.length() == 0)
     {
@@ -54,7 +54,7 @@ bool Stencil::read_file(const std::string& pathname)
         
         if (ret == false)
         {
-            stencil_proto_.Clear();
+            spec_proto_.Clear();
             return false;
         }
     }
@@ -66,9 +66,9 @@ bool Stencil::read_file(const std::string& pathname)
     return true;
 }
 
-bool Stencil::write_file(const std::string& pathname) const
+bool Specification::write_file(const std::string& pathname) const
 {
-    if (pathname.length() == 0 || stencil_proto_.IsInitialized() == false)
+    if (pathname.length() == 0 || spec_proto_.IsInitialized() == false)
     {
         return false;
     }
@@ -102,7 +102,7 @@ bool Stencil::write_file(const std::string& pathname) const
     return true;
 }
 
-bool Stencil::read_string(const std::string& json_str)
+bool Specification::read_string(const std::string& json_str)
 {
     if (json_str.length() == 0)
     {
@@ -111,11 +111,11 @@ bool Stencil::read_string(const std::string& json_str)
 
     try
     {
-        auto ret = google::protobuf::util::JsonStringToMessage(json_str, &stencil_proto_);
+        auto ret = google::protobuf::util::JsonStringToMessage(json_str, &spec_proto_);
 
         if (ret != google::protobuf::util::Status::OK)
         {
-            stencil_proto_.Clear();
+            spec_proto_.Clear();
             return false;
         }
     }
@@ -127,16 +127,16 @@ bool Stencil::read_string(const std::string& json_str)
     return true;
 }
 
-bool Stencil::write_string(std::string& json_str) const
+bool Specification::write_string(std::string& json_str) const
 {
-    if (stencil_proto_.IsInitialized() == false)
+    if (spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
     try
     {
-        auto ret = google::protobuf::util::MessageToJsonString(stencil_proto_, &json_str);
+        auto ret = google::protobuf::util::MessageToJsonString(spec_proto_, &json_str);
 
         if (ret != google::protobuf::util::Status::OK)
         {
@@ -151,17 +151,17 @@ bool Stencil::write_string(std::string& json_str) const
     return true;
 }
 
-std::vector<std::string> Stencil::get_value(const::std::string& key, const std::string nomatch)
+std::vector<std::string> Specification::get_value(const::std::string& key, const std::string nomatch)
 {
     std::vector<std::string> values;
 
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         values.push_back(nomatch);
         return values;
     }
 
-    const google::protobuf::Message* pMessage = &stencil_proto_;
+    const google::protobuf::Message* pMessage = &spec_proto_;
     const google::protobuf::Descriptor* pDescriptor = pMessage->GetDescriptor();
 
     if (pDescriptor == nullptr)
@@ -215,16 +215,16 @@ std::vector<std::string> Stencil::get_value(const::std::string& key, const std::
     return values;
 }
 
-std::string Stencil::get_value_string(const::std::string& key, const std::string nomatch)
+std::string Specification::get_value_string(const::std::string& key, const std::string nomatch)
 {
     std::string value(nomatch);
 
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         return nomatch;
     }
     
-    for (auto val : stencil_proto_.string_values())
+    for (auto val : spec_proto_.string_values())
     {
         if (val.first == key)
         {
@@ -236,56 +236,14 @@ std::string Stencil::get_value_string(const::std::string& key, const std::string
     return value;
 }
 
-bool Stencil::get_value_int(const::std::string& key, int& value, int nomatch)
+bool Specification::set_value(const::std::string& key, const std::string& value)
 {
-    value = nomatch;
-
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
-    for (auto val : stencil_proto_.int_values())
-    {
-        if (val.first == key)
-        {
-            value = val.second;
-            break;
-        }
-    }
-
-    return true;
-}
-
-bool Stencil::get_value_bool(const::std::string& key, bool& value, bool nomatch)
-{
-    value = nomatch;
-
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
-    {
-        return false;
-    }
-
-    for (auto val : stencil_proto_.bool_values())
-    {
-        if (val.first == key)
-        {
-            value = val.second;
-            break;
-        }
-    }
-
-    return true;
-}
-
-bool Stencil::set_value(const::std::string& key, const std::string& value)
-{
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
-    {
-        return false;
-    }
-
-    google::protobuf::Message* pMessage = &stencil_proto_;
+    google::protobuf::Message* pMessage = &spec_proto_;
     const google::protobuf::Descriptor* pDescriptor = pMessage->GetDescriptor();
 
     if (pDescriptor == nullptr)
@@ -316,15 +274,15 @@ bool Stencil::set_value(const::std::string& key, const std::string& value)
     return true;
 }
 
-bool Stencil::set_value_string(const::std::string& key, const std::string& value)
+bool Specification::set_value_string(const::std::string& key, const std::string& value)
 {
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
     bool done = false;
-    for (auto iter = stencil_proto_.mutable_string_values()->begin(); iter != stencil_proto_.mutable_string_values()->end(); iter++)
+    for (auto iter = spec_proto_.mutable_string_values()->begin(); iter != spec_proto_.mutable_string_values()->end(); iter++)
     {
         auto val = iter->first;
         if (val == key)
@@ -337,67 +295,27 @@ bool Stencil::set_value_string(const::std::string& key, const std::string& value
     if (done == false)
     {
         google::protobuf::MapPair < std::string, std::string > pair(key, value);
-        stencil_proto_.mutable_string_values()->insert(pair);
+        spec_proto_.mutable_string_values()->insert(pair);
     }
 
     return true;
 }
 
-bool Stencil::set_value_int(const::std::string& key, int value)
+bool Specification::clear()
 {
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    spec_proto_.Clear();
+
+    return true;
+}
+
+bool Specification::clear_key(const::std::string& key)
+{
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
-    auto map = *stencil_proto_.mutable_int_values();
-    map[key] = value;
-
-    return true;
-}
-
-bool Stencil::set_value_bool(const::std::string& key, bool value)
-{
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
-    {
-        return false;
-    }
-
-    bool done = false;
-    for (auto iter = stencil_proto_.mutable_bool_values()->begin(); iter != stencil_proto_.mutable_bool_values()->end(); iter++)
-    {
-        auto val = iter->first;
-        if (val == key)
-        {
-            iter->second = value;
-            done = true;
-        }
-    }
-
-    if (done == false)
-    {
-        google::protobuf::MapPair < std::string, bool > pair(key, value);
-        stencil_proto_.mutable_bool_values()->insert(pair);
-    }
-
-    return true;
-}
-
-bool Stencil::clear()
-{
-    stencil_proto_.Clear();
-
-    return true;
-}
-
-bool Stencil::clear_key(const::std::string& key)
-{
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
-    {
-        return false;
-    }
-
-    google::protobuf::Message* pMessage = &stencil_proto_;
+    google::protobuf::Message* pMessage = &spec_proto_;
     const google::protobuf::Descriptor* pDescriptor = pMessage->GetDescriptor();
 
     if (pDescriptor == nullptr)
@@ -421,55 +339,31 @@ bool Stencil::clear_key(const::std::string& key)
     return true;
 }
 
-bool Stencil::clear_key_string(const::std::string& key)
+bool Specification::clear_key_string(const::std::string& key)
 {
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (key.empty() || spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
-    stencil_proto_.mutable_string_values()->erase(key);
+    spec_proto_.mutable_string_values()->erase(key);
 
     return true;
 }
 
-bool Stencil::clear_key_int(const::std::string& key)
+bool Specification::set_value_member(uint32_t key, const std::string& type, const std::string& name, uint32_t endian)
 {
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    if (spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
-    stencil_proto_.mutable_int_values()->erase(key);
-
-    return true;
-}
-
-bool Stencil::clear_key_bool(const::std::string& key)
-{
-    if (key.empty() || stencil_proto_.IsInitialized() == false)
+    auto iter = spec_proto_.mutable_members()->find(key);
+    if (iter == spec_proto_.members().end())
     {
-        return false;
-    }
-
-    stencil_proto_.mutable_bool_values()->erase(key);
-
-    return true;
-}
-
-bool Stencil::set_value_member(uint32_t key, const std::string& type, const std::string& name, uint32_t endian)
-{
-    if (stencil_proto_.IsInitialized() == false)
-    {
-        return false;
-    }
-
-    auto iter = stencil_proto_.mutable_members()->find(key);
-    if (iter == stencil_proto_.members().end())
-    {
-        (*stencil_proto_.mutable_members())[key].set_type(type);
-        (*stencil_proto_.mutable_members())[key].set_name(name);
-        (*stencil_proto_.mutable_members())[key].set_endian(endian);
+        (*spec_proto_.mutable_members())[key].set_type(type);
+        (*spec_proto_.mutable_members())[key].set_name(name);
+        (*spec_proto_.mutable_members())[key].set_endian(endian);
     }
     else
     {
@@ -481,15 +375,15 @@ bool Stencil::set_value_member(uint32_t key, const std::string& type, const std:
     return true;
 }
 
-bool Stencil::get_value_member(uint32_t key, std::string& type_val, std::string& name_val, uint32_t& endian_val)
+bool Specification::get_value_member(uint32_t key, std::string& type_val, std::string& name_val, uint32_t& endian_val)
 {
-    if (stencil_proto_.IsInitialized() == false)
+    if (spec_proto_.IsInitialized() == false)
     {
         return false;
     }
 
-    auto iter = stencil_proto_.mutable_members()->find(key);
-    if (iter == stencil_proto_.members().end())
+    auto iter = spec_proto_.mutable_members()->find(key);
+    if (iter == spec_proto_.members().end())
     {
         return false;
     }
@@ -503,9 +397,9 @@ bool Stencil::get_value_member(uint32_t key, std::string& type_val, std::string&
     return true;
 }
 
-bool Stencil::clear_key_member(uint32_t key)
+bool Specification::clear_key_member(uint32_t key)
 {
-    size_t ret = stencil_proto_.mutable_members()->erase(key);
+    size_t ret = spec_proto_.mutable_members()->erase(key);
     if (ret == 0)
         return false;
     return true;

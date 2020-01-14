@@ -18,7 +18,7 @@ set(TARGETNAME skywire)
 set(TARGET_INC_DIR ${PROJECT_SOURCE_DIR}/include/${TARGETNAME})
 
 set(_INC_DIRS ${TARGET_INC_DIR}
-              ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto
+              ${PROJECT_BINARY_DIR}/skywireproto
               ${PROJECT_SOURCE_DIR}/include
               ${PROJECT_BINARY_DIR}/proto/cpp
               ${PROJECT_SOURCE_DIR}/lang/c)
@@ -56,13 +56,12 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
              ${TARGET_INC_DIR}/generators.h
              ${TARGET_INC_DIR}/generator_factory.h
              ${TARGET_INC_DIR}/processor.h
-             ${TARGET_INC_DIR}/protos.h
              ${TARGET_INC_DIR}/result_presenter.h)
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
 
 set_target_properties(${TARGETNAME} PROPERTIES FOLDER "Static Libs")
 
-add_dependencies(${TARGETNAME} skyproto)
+add_dependencies(${TARGETNAME} skywireproto)
 
-target_link_libraries(${TARGETNAME} skyproto stencil)
+target_link_libraries(${TARGETNAME} skywireproto stencil)
