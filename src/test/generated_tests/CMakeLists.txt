@@ -33,7 +33,6 @@ file(MAKE_DIRECTORY ${WG_C_DIR})
 file(MAKE_DIRECTORY ${WG_CPP_DIR})
 
 include_directories(
-                ${PROJECT_BINARY_DIR}/3rd_party/skyproto/skyproto
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c
@@ -74,11 +73,11 @@ foreach(WG_CPP ${WG_CPP_FILES})
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
         ${WG_CPP_DIR}/${WG_CPP}.h)
     set(UNIT_TESTS ${UNIT_TESTS}
-        ${WG_CPP_DIR}/${WG_CPP}Test.cpp)    
+        ${WG_CPP_DIR}/${WG_CPP}Test.cpp)
 endforeach(WG_CPP)
 
 set(GENERATED_C_FILES
-                ${WG_C_RESULTS})                
+                ${WG_C_RESULTS})
 
 set(GENERATED_CPP_FILES
                 ${WG_CPP_RESULTS})
