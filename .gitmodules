@@ -1,6 +1,3 @@
 [submodule "3rd_party/qwikpirate"]
 	path = 3rd_party/qwikpirate
 	url = https://github.com/skyloupe/qwikpirate.git
-[submodule "3rd_party/skyproto"]
-	path = 3rd_party/skyproto
-	url = git@github.com:gatkinso/skyproto.git
