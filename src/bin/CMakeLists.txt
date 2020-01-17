@@ -1,1 +1,2 @@
+add_subdirectory(wirecloud)
 add_subdirectory(wiregen)
