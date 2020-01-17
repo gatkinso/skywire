@@ -198,7 +198,7 @@ int main(int argc, const char* argv[])
         }
     }
 
-	return errorcode;
+    return errorcode;
 }
 
 //bin/wiregen --langfile ../lang/lang.cpp.json --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\",\"language\":\"c++\",\"lang_file\":\"lang.cpp.json\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"

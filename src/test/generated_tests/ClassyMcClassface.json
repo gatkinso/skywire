@@ -1,5 +1,5 @@
 {
-   "stringValues":{  
+   "stringValues":{
       "classname":"ClassyMcClassface",
       "outputheaderfilename":"ClassyMcClassface.h",
       "outputtestfilename":"ClassyMcClassfaceTest.cpp",
@@ -7,46 +7,46 @@
       "language": "c++",
       "lang_file": "lang.cpp.json"
    },
-   "members":{  
-      "100":{  
+   "members":{
+      "100":{
          "type":"float",
          "name":"a_myfloat100",
          "endian":1
       },    
-      "200":{  
+      "200":{
          "type":"uint32_t",
          "name":"b_myuint32_200"
       },
-      "201":{  
+      "201":{
          "type":"int64_t",
          "name":"c_myint64_201"
       },
-      "202":{  
+      "202":{
          "type":"double",
          "name":"d_myDoubleBubble202"
       },
-      "301":{  
+      "301":{
          "type":"char",
          "name":"e_charcoal"
       },
-      "1000":{  
+      "1000":{
          "type":"float",
          "name":"f_myfloat1000"
       },    
-      "2000":{  
+      "2000":{
          "type":"uint32_t",
          "name":"g_myuint32_2000"
       },
-      "2010":{  
+      "2010":{
          "type":"int64_t",
          "name":"h_myint64_2010"
       },
-      "2020":{  
+      "2020":{
          "type":"double",
          "name":"i_myDoubleBubble2020"
       },
    },
-   "includes":[  
+   "includes":[
       "\"streamable.h\"",
       "<stdint.h>"
    ]
