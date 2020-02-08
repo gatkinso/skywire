@@ -19,8 +19,9 @@
 namespace skyloupe
 {
 
-Generator::Generator(Specification& specification) 
-: msg_spec_(specification) 
+Generator::Generator(Specification& msg_specification, Specification& lang_specification) 
+: msg_spec_(msg_specification)
+, lang_spec_(lang_specification)
 , results_()
 {
     for (auto& member : msg_spec_.get_proto().members())
@@ -39,31 +40,6 @@ bool Generator::is_native_type(const std::string& type)
     }
 
     return true;
-}
-
-bool Generator::set_msg_settings(const std::string pathname)
-{
-    msg_spec_.clear();
-
-    return msg_spec_.read_file(pathname);
-}
-
-bool Generator::set_lang_settings(const std::string pathname)
-{
-    lang_spec_.clear();
-
-    bool success =  lang_spec_.read_file(pathname);
-
-    std::vector<std::string> native_type = lang_spec_.get_value("native_types");
-    if (native_type[0] != "@NOTFOUND")
-    {
-        for (const auto& item : native_type)
-        {
-            native_types_.insert(item);
-        }
-    }
-
-    return success;
 }
 
 void Generator::cr()

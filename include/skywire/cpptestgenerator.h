@@ -25,7 +25,7 @@ class CppTestGenerator : public Generator
 {
 public:
     CppTestGenerator() = delete;
-    CppTestGenerator(Specification& specification);
+    CppTestGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
     virtual ~CppTestGenerator() = default;
 
     bool generate(int& errorcode) override;
