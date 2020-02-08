@@ -23,7 +23,7 @@ namespace skyloupe
 class JavaGenerator : public Generator
 {
 public:
-    JavaGenerator(Specification& spec) : Generator(spec) {}
+    JavaGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
     virtual ~JavaGenerator() {}
 
     bool generate(int& errorcode) override;

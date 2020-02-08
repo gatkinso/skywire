@@ -30,10 +30,13 @@ std::string input_filename;
 std::string input_str;
 std::string output_directory = ".";
 results_t output_str_map;
-std::string langfile;
+std::string lang_file;
+std::string lang_str;
 bool silent = false;
 bool generate_tests = false;
 bool file_mode = false;
+bool has_lang_file = false;
+bool has_lang_spec = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
@@ -45,7 +48,8 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
                   << "     wirecloud --input_file filename         -- launches using filename for input" << std::endl
                   << "     wirecloud --input_str json_msg_spec     -- launches using provided json string for input" << std::endl
                   << "     wirecloud --outdir directoryname        -- directory to write generated file(s) to" << std::endl
-                  << "     wirecloud --langfile language filename  -- language file to be used" << std::endl
+                  << "     wirecloud --lang_file language filename -- language file to be used" << std::endl
+                  << "     wirecloud --lang_str json_lang_spec     -- language file to be used" << std::endl
                   << "     wirecloud --generate_tests              -- generate unit tests" << std::endl
                   << "     wirecloud --silent                      -- no output displayed" << std::endl;
         exit(0);
@@ -112,15 +116,27 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
-    if (flag.compare("--langfile") == 0)
+    if (flag.compare("--lang_file") == 0)
     {
         if (false == value.empty())
         {
-            langfile = value;
+            lang_file = value;
+            has_lang_file = true;
         }
-        else
+    }
+
+    if (flag.compare("--lang_str") == 0)
+    {
+        if( has_lang_file == true )
         {
-            std::cout << "Need a valid language file name" << std::endl;
+            std::cout << "Can only specify language file or string flags, not both" << std::endl;
+            exit(1);
+        }
+
+        if (false == value.empty())
+        {
+            lang_file = value;
+            has_lang_spec = true;
         }
     }
 
@@ -151,13 +167,20 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--input_file", true, false, cli_callback);
     cmdargs.setOption("--input_str", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
-    cmdargs.setOption("--langfile", true, false, cli_callback);
+    cmdargs.setOption("--lang_file", true, false, cli_callback);
+    cmdargs.setOption("--lang_str", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);
     cmdargs.setOption("--silent", true, true, cli_callback);
 
     bool ret = cmdargs.parse(argc, argv, cli_errors_);
 
     cmdargs.apply();
+
+    if( has_lang_file == false && has_lang_spec == false )
+    {
+        std::cout << "Need --lang_file or --lang_str (never both!)" << std::endl;
+        exit(1);
+    }
 
     return ret;
 }
@@ -174,7 +197,7 @@ int main(int argc, const char* argv[])
         return success;
     }
 
-    Specification msg_spec;
+    Specification msg_spec, lang_spec;
 
     if (true == file_mode)
     {
@@ -195,6 +218,23 @@ int main(int argc, const char* argv[])
         }
     }
 
+    if( has_lang_file == true )
+    {
+        if (false == lang_spec.read_file(lang_file))
+        {
+            errorcode |= SW_FILEREADERROR;
+            std::cerr << "Error reading file: " << input_filename << std::endl;
+            return success;
+        }
+    } else {
+        if (false == lang_spec.read_string(lang_str))
+        {
+            errorcode |= SW_STRINGREADERROR;
+            std::cerr << "Error reading file: " << input_filename << std::endl;
+            return success;
+        }
+    }
+
     TransportClient client(
         grpc::CreateChannel("localhost:1967", grpc::InsecureChannelCredentials())
     );
@@ -210,4 +250,4 @@ int main(int argc, const char* argv[])
     return errorcode;
 }
 
-//bin/wirecloud --langfile ../lang/lang.cpp.json --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\",\"language\":\"c++\",\"lang_file\":\"lang.cpp.json\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"
+//bin/wirecloud --lang_file ../lang/lang.cpp.json --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\",\"language\":\"c++\",\"lang_file\":\"lang.cpp.json\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"

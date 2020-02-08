@@ -21,11 +21,6 @@
 namespace skyloupe
 {
 
-CppGenerator::CppGenerator(Specification& specification) : Generator(specification) 
-{
-
-}
-
 bool CppGenerator::generate(int& errorcode)
 {
     errorcode = 0;

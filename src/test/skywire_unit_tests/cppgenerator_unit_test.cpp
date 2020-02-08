@@ -21,15 +21,15 @@ class CPPGeneratorUnitTest : public ::testing::Test
 {
 protected:
     CPPGeneratorUnitTest() {}
-    skyloupe::Specification specification_;
+    skyloupe::Specification msg_specification_, lang_specification_;
 };
 
 TEST_F(CPPGeneratorUnitTest, Instantiate)
 {
-    ASSERT_NO_THROW(skyloupe::CppGenerator unit(specification_));
+    ASSERT_NO_THROW(skyloupe::CppGenerator unit(msg_specification_, lang_specification_));
 }
 
 TEST_F(CPPGeneratorUnitTest, generatecpp)
 {
-    skyloupe::CppGenerator unit(specification_);
+    skyloupe::CppGenerator unit(msg_specification_, lang_specification_);
 }

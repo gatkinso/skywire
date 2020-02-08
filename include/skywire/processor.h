@@ -15,7 +15,6 @@
 
 #pragma once
 
-#include <map>
 #include <string>
 #include "specification/specification.h"
 #include "generators.h"
@@ -31,11 +30,13 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_string(const std::string& input_str, results_t& output_str_map, int& errorcode, bool generate_tests = true);
-    virtual bool process_file(const std::string& pathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
+    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str,results_t& output_str_map, int& errorcode, bool generate_tests = true);
+    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
     void set_langfile(const std::string& filename) { language_file_ = filename; }
+
 private:
-    Specification msg_stencil_;
+    Specification msg_spec_;
+    Specification lang_spec_;
 
     std::string language_key_ = "language";
     std::string language_file_key_ = "lang_file";
