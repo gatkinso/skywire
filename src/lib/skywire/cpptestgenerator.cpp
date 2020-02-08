@@ -20,11 +20,6 @@
 namespace skyloupe
 {
 
-CppTestGenerator::CppTestGenerator(Specification& specification) : Generator(specification)
-{
-
-}
-
 bool CppTestGenerator::generate(int& errorcode)
 {
     errorcode = 0;

@@ -34,13 +34,11 @@ public:
     typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
 
     Generator() = delete;
-    Generator(Specification& specification);
+    Generator(Specification& msg_specification, Specification& lang_specification);
     virtual ~Generator() = default;
 
     virtual bool generate(int& errorcode) = 0;
     virtual bool is_native_type(const std::string& type);
-    virtual bool set_lang_settings(const std::string pathname);
-    virtual bool set_msg_settings(const std::string pathname);
     virtual results_t get_results() const { return results_; }  //copy???
 
 protected:

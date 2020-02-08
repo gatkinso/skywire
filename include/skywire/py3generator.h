@@ -25,7 +25,7 @@ class Py3Generator : public Generator
 {
 public:
     Py3Generator() = delete;
-    Py3Generator(Specification& specification) : Generator(specification) {}
+    Py3Generator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
     virtual ~Py3Generator() {}
 
     bool generate(int& errorcode) override;

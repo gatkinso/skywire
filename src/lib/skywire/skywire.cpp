@@ -23,22 +23,16 @@ bool process_file(const std::string& pathname, const std::string& outdirname, co
 {
     skyloupe::Processor processor;
 
-    if(!langfile.empty())
-        processor.set_langfile(langfile);
-
-    bool success = processor.process_file(pathname, outdirname, errorcode, generate_tests);
+    bool success = processor.process_file(pathname, langfile, outdirname, errorcode, generate_tests);
 
     return success;
 }
 
-bool process_string(const std::string& input_str, results_t& output_str_map, const std::string& langfile, int& errorcode, bool generate_tests)
+bool process_string(const std::string& input_str, results_t& output_str_map, const std::string& langstring, int& errorcode, bool generate_tests)
 {
     skyloupe::Processor processor;
 
-    if(!langfile.empty())
-        processor.set_langfile(langfile);
-            
-    bool success = processor.process_string(input_str, output_str_map, errorcode, generate_tests);
+    bool success = processor.process_string(input_str, langstring, output_str_map, errorcode, generate_tests);
 
     return success;
 }

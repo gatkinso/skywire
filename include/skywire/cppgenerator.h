@@ -25,7 +25,7 @@ class CppGenerator : public Generator
 {
 public:
     CppGenerator() = delete;
-    CppGenerator(Specification& spec);
+    CppGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
     virtual ~CppGenerator() = default;
 
     bool generate(int& errorcode) override;
