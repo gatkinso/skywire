@@ -1,6 +1,6 @@
 {
     "stringValues": {
-        "banner_str":"// This is the generated .go file\n",
+        "banner_str":"// This is the generated go file\n",
         "include_substr":  "__INCLUDEFILE__",
         "structname_substr":"__STRUCTNAME__",
         "type_substr":"__TYPE__",
@@ -17,15 +17,18 @@
         "import_block": "import (\n__BLOCK_BODY__)\n",
         "var_block": "var (\n__BLOCK_BODY__)\n",
         "struct_block": "type __STRUCTNAME__ struct {\n__BLOCK_BODY__}\n",
-        "serialize_fcn_block": "func (s *__STRUCTNAME__) Serialize() (o []byte) {\n__BLOCK_BODY__}\n",
-        "deserialize_fcn_block": "func (s *__STRUCTNAME__) Deserialize(o []byte) (error) {\n__BLOCK_BODY__}\n",
-        "equals_fcn_block": "func (s *__STRUCTNAME__) Equals(other *__STRUCTNAME__) (bool) {\n__BLOCK_BODY__}\n",
-        "size_fcn_block": "func (s *__STRUCTNAME__) Size() (uint64) {\n__BLOCK_BODY__}\n",
+        "serialize_fcn_block": "//Serialize method\nfunc (s *__STRUCTNAME__) Serialize() (o []byte) {\n__BLOCK_BODY__}\n",
+        "deserialize_fcn_block": "//Deserialize method\nfunc (s *__STRUCTNAME__) Deserialize(o []byte) (error) {\n__BLOCK_BODY__}\n",
+        "equals_fcn_block": "//Equals method\nfunc (s *__STRUCTNAME__) Equals(other *__STRUCTNAME__) (bool) {\n__BLOCK_BODY__}\n",
+        "size_fcn_block": "//Size method\nfunc (s *__STRUCTNAME__) Size() (uint64) {\n__BLOCK_BODY__;\n}\n",
 
         "member_decl_str":"\t__MEMBERNAME__ __TYPE__\n",
         "equal_eval_start_str":"\tif\n",
         "equal_eval_member_str":"\t\ts.__MEMBERNAME__ == other.__MEMBERNAME__",
         "equal_eval_tail_str":" {\n\t\treturn true\n\t} else {\n\t\t return false\n\t}\n",
+
+        "size_eval_start_str":"\treturn ",
+        "size_eval_member_str":"unsafe.SizeOf(s.__MEMBERNAME__)",
 
         "char": "int8",
         "unsigned char" : "uint8",
