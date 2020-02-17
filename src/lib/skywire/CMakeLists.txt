@@ -34,6 +34,7 @@ set(_GENERATORS
              gogenerator.cpp
              file_writer.cpp
              javagenerator.cpp
+             proto3generator.cpp
              py3generator.cpp
              ${TARGET_INC_DIR}/adagenerator.h
              ${TARGET_INC_DIR}/cgenerator.h
@@ -42,6 +43,7 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/cpptestgenerator.h
              ${TARGET_INC_DIR}/gogenerator.h
              ${TARGET_INC_DIR}/javagenerator.h
+             ${TARGET_INC_DIR}/proto3generator.h
              ${TARGET_INC_DIR}/py3generator.h)
 
 set(_SOURCES ${TARGETNAME}.cpp
