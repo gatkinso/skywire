@@ -145,6 +145,10 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaGenerator(msg_spec_, lang_spec_));
     }
+    else if (lang == proto3_str_)
+    {
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Proto3Generator(msg_spec_, lang_spec_));
+    }
     else if (lang == py3_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3Generator(msg_spec_, lang_spec_));

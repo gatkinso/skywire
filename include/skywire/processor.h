@@ -47,6 +47,7 @@ private:
     std::string cpp_str_ = "c++";
     std::string go_str_ = "go";
     std::string java_str_ = "java";
+    std::string proto3_str_ = "proto3";
     std::string py3_str_ = "python3";
 
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests);

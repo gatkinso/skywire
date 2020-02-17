@@ -54,10 +54,10 @@ bool GoGenerator::do_header(int& errorcode)
 bool GoGenerator::do_implementation(int& errorcode)
 {
     std::string& imp_string = results_["implementation"];
-    imp_b0(errorcode);
     imp_b1(errorcode);
     imp_b2(errorcode);
     imp_b3(errorcode);
+    imp_b0(errorcode); //note the order
     imp_b4(errorcode);
     imp_b5(errorcode);
     imp_b6(errorcode);
@@ -173,7 +173,27 @@ bool GoGenerator::imp_b7(int& errorcode)
 bool GoGenerator::imp_b8(int& errorcode)
 {
     return do_block("size_fcn_block", [this]()->std::string {
-        return "\n";  //TODO build this string
+        std::string member_substr = lang_spec_.get_value_string("member_substr");
+        std::string type_substr = lang_spec_.get_value_string("type_substr");
+
+        unsigned int i = 0;
+        std::string body;
+        body +=  lang_spec_.get_value_string("size_eval_start_str");
+        for (auto& member : ordered_members_)
+        {
+            std::string template_str;
+            template_str = lang_spec_.get_value_string("size_eval_member_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+
+            if (i++ < ordered_members_.size() - 1)
+            {
+                template_str += " + ";
+            }
+
+            body += template_str;
+        }
+
+        return body;
     });
 }
 
