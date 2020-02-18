@@ -52,7 +52,8 @@ foreach(WG_C ${WG_C_FILES})
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_C}.json
                 --outdir ${WG_C_DIR}
                 --langfile ${CMAKE_SOURCE_DIR}/lang/lang.c.json
-                --generate_tests)
+                --generate_tests
+                --write_to_file)
     set(WG_C_RESULTS ${WG_C_RESULTS}
         ${WG_C_DIR}/${WG_C}.h
         ${WG_C_DIR}/${WG_C}.c)
@@ -69,7 +70,8 @@ foreach(WG_CPP ${WG_CPP_FILES})
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
                 --outdir ${WG_CPP_DIR}
                 --langfile ${CMAKE_SOURCE_DIR}/lang/lang.cpp.json
-                --generate_tests)
+                --generate_tests
+                --write_to_file)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
         ${WG_CPP_DIR}/${WG_CPP}.h)
     set(UNIT_TESTS ${UNIT_TESTS}

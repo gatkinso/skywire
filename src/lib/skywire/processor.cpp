@@ -19,7 +19,7 @@
 namespace skyloupe
 {
 
-bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, int& errorcode, bool generate_tests)
+bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -52,10 +52,19 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
         return success;
     }
 
-    return process(output_str_map, errorcode, generate_tests);
+    bool ret = process(output_str_map, errorcode, generate_tests);
+
+    if (true == ret && true == write_to_file && false == output_str_map.empty())
+    {
+        do_file_write(outputdir, output_str_map, "outputheaderfilename", "header", errorcode);  //refactor - confusing
+        do_file_write(outputdir, output_str_map, "outputimplfilename", "implementation", errorcode);
+        do_file_write(outputdir, output_str_map, "outputtestfilename", "unittest", errorcode);
+    }
+
+    return ret;
 }
 
-bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests)
+bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -95,7 +104,7 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
         return success;
     }
 
-    if (false == output_str_map.empty())
+    if (true == write_to_file && false == output_str_map.empty())
     {
         do_file_write(outputdir, output_str_map, "outputheaderfilename", "header", errorcode);  //refactor - confusing
         do_file_write(outputdir, output_str_map, "outputimplfilename", "implementation", errorcode);
