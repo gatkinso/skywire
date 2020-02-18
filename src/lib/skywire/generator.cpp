@@ -30,6 +30,10 @@ Generator::Generator(Specification& msg_specification, Specification& lang_speci
         std::pair<uint32_t, member_desc_t> mempair = std::make_pair(member.first, memtuple);
         ordered_members_.insert(mempair);
     }
+
+    for (auto& member : lang_spec_.get_proto().native_types()) {
+        native_types_.insert(member);
+    }
 }
 
 bool Generator::is_native_type(const std::string& type)

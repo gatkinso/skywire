@@ -30,8 +30,8 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str,results_t& output_str_map, int& errorcode, bool generate_tests = true);
-    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests = true);
+    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
     void set_langfile(const std::string& filename) { language_file_ = filename; }
 
 private:

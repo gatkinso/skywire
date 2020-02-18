@@ -27,9 +27,11 @@ std::string input_str;
 std::string output_directory = ".";
 results_t output_str_map;
 std::string langfile;
+std::string langspec;
 bool silent = false;
 bool generate_tests = false;
 bool file_mode = false;
+bool write_to_file = false;
 
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
@@ -41,9 +43,11 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
                   << "     wiregen --input_file filename         -- launches using filename for input" << std::endl
                   << "     wiregen --input_str json_msg_spec     -- launches using provided json string for input" << std::endl
                   << "     wiregen --outdir directoryname        -- directory to write generated file(s) to" << std::endl
-                  << "     wiregen --langfile language filename  -- language file to be used" << std::endl
+                  << "     wiregen --langfile filename           -- language filename (if --input_file is specified) to be used" << std::endl
+                  << "     wiregen --langspec string             -- language string (if --input_str is specified) to be used" << std::endl
                   << "     wiregen --generate_tests              -- generate unit tests" << std::endl
-                  << "     wiregen --silent                      -- no output displayed" << std::endl;
+                  << "     wiregen --silent                      -- no output displayed" << std::endl
+                  << "     wiregen --write_to_file               -- write output to file (if absent outputs to stdout)" << std::endl;
         exit(0);
     }
 
@@ -114,15 +118,19 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         {
             langfile = value;
         }
-        else
+    }
+
+    if (flag.compare("--langspec") == 0)
+    {
+        if (false == value.empty())
         {
-            std::cout << "Need a valid language file name" << std::endl;
+            langspec = value;
         }
     }
 
     if (flag.compare("--silent") == 0)
     {
-        if (false == value.empty())
+        if (false != value.empty())
         {
             silent = true;
         }
@@ -135,6 +143,14 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
             generate_tests = true;
         }
     }
+
+    if (flag.compare("--write_to_file") == 0)
+    {
+        if (false != value.empty())
+        {
+            write_to_file = true;
+        }
+    }    
 }
 
 bool process_cmd_line(int argc, const char* argv[])
@@ -148,8 +164,10 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--input_str", true, false, cli_callback);
     cmdargs.setOption("--outdir", true, false, cli_callback);
     cmdargs.setOption("--langfile", true, false, cli_callback);
+    cmdargs.setOption("--langspec", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);
     cmdargs.setOption("--silent", true, true, cli_callback);
+    cmdargs.setOption("--write_to_file", true, true, cli_callback);
 
     bool ret = cmdargs.parse(argc, argv, cli_errors_);
 
@@ -172,15 +190,17 @@ int main(int argc, const char* argv[])
 
     if (true == file_mode)
     {
-        success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests);
+        success = process_file(input_filename, output_directory, langfile, errorcode, generate_tests, write_to_file);
     } 
     else
     {
-        success = process_string(input_str, output_str_map, langfile, errorcode, generate_tests);
+        success = process_string(input_str, output_str_map, langspec, output_directory, errorcode, generate_tests, write_to_file);
 
-        for (auto item : output_str_map)
-        {
-            std::cout << item.second << std::endl << "/******************/"<< std::endl;
+        if (false == write_to_file) {
+            for (auto item : output_str_map)
+            {
+                std::cout << item.second << std::endl;
+            }
         }
     }
 
