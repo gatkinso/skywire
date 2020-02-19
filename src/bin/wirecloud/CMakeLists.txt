@@ -24,9 +24,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 set(_SOURCES main.cpp)
 
-set(LANGUAGE_JSONS lang.c.json
-                   lang.cpp.json
-                   lang.cpp11.json
+set(LANGUAGE_JSONS c/lang.c.json
+                   cpp/lang.cpp.json
+                   c++11/lang.cpp11.json
                    go/lang.go.json
                    python/lang.python3.json)
 

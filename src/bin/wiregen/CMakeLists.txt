@@ -20,9 +20,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include
 
 set(_SOURCES main.cpp)
 
-set(DEPLOY_JSONS   lang.c.json
-                   lang.cpp.json
-                   lang.cpp11.json
+set(DEPLOY_JSONS   c/lang.c.json
+                   cpp/lang.cpp.json
+                   c++11/lang.cpp11.json
                    go/lang.go.json
                    proto/lang.proto3.json
                    python/lang.python3.json)
@@ -35,8 +35,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
                        python3.test.json)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-set(TEST_SCRIPTS   test_wiregen
-                   test_wiregen_strings)
+set(TEST_SCRIPTS   test_wiregen)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
