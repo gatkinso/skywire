@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #pragma warning(disable:4800)
-#include "specification.pb.h"
+    #include "specification.pb.h"
 #pragma warning(default:4800)
 
 namespace skyloupe
