@@ -376,7 +376,7 @@ In the U.S. visit: http://www.ngap.org/index.html
 
 Skywire is offered under the Apache 2.0 license.
 https://www.apache.org/licenses/LICENSE-2.0
-(c)2014-2018 Skyloupe, LLC.  All rights reserved.
+(c)2014-2020 Skyloupe, LLC.  All rights reserved.
 
 Skywire uses and bundles the following third party software packages:
 

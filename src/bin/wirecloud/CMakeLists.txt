@@ -50,12 +50,12 @@ add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy ${TGT_NAME} ${DST_NAME})
 
 foreach(LANG_FILE ${LANGUAGE_JSONS})
-add_custom_command(
-        TARGET ${TARGETNAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
-                ${CMAKE_CURRENT_BINARY_DIR}/${LANG_FILE})
-set(LANG_JSON_PATHS ${LANG_JSON_PATHS} ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE})
+    add_custom_command(
+            TARGET ${TARGETNAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+                    ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
+                    ${CMAKE_CURRENT_BINARY_DIR}/${LANG_FILE})
+    set(LANG_JSON_PATHS ${LANG_JSON_PATHS} ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE})
 endforeach(LANG_FILE)
 
 install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
