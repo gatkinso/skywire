@@ -386,5 +386,8 @@ https://developers.google.com/protocol-buffers/
 Google Test - (Apache 2.0)
 https://github.com/google/googletest
 
+gRPC - (Apache 2.0)
+https://github.com/grpc/grpc
+
 Qwikpirate - a command line parsing tool (LGPL)
 https://github.com/skyloupe/qwikpirate
