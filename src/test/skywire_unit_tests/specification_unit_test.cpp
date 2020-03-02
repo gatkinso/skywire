@@ -87,6 +87,38 @@ TEST_F(SpecificationUnitTest, read_file)
     ASSERT_EQ(true, rc);
 }
 
+TEST_F(SpecificationUnitTest, read_file_BadJson)
+{
+    skyloupe::Specification spec;
+
+    bool rc = spec.read_file("invalid_specification_unit_test.json");
+    ASSERT_EQ(false, rc);
+}
+
+TEST_F(SpecificationUnitTest, read_file_EmptyFilename)
+{
+    skyloupe::Specification spec;
+
+    bool rc = spec.read_file("");
+    ASSERT_EQ(false, rc);
+}
+
+TEST_F(SpecificationUnitTest, read_file_NoExistFilename)
+{
+    skyloupe::Specification spec;
+
+    bool rc = spec.read_file("no such file");
+    ASSERT_EQ(false, rc);
+}
+
+TEST_F(SpecificationUnitTest, write_file_EmptyFilename)
+{
+    skyloupe::Specification spec;
+
+    bool rc = spec.write_file("");
+    ASSERT_EQ(false, rc);
+}
+
 TEST_F(SpecificationUnitTest, read_string)
 {
     std::string json_str = "{\"stringValues\":{\"classname\":\"TestClass\",\"language\":\"C++\",\"namespace\":\"testspace\"}}";
