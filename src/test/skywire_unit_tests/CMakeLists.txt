@@ -42,6 +42,7 @@ set(UNIT_TESTS
                 stream_unit_test.cpp)
 
 set(UNIT_TEST_JSON specification_unit_test.json)
+set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
 
 add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
@@ -68,5 +69,11 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
         ${PROJECT_SOURCE_DIR}/cfg/${UNIT_TEST_JSON}
         ${CMAKE_CURRENT_BINARY_DIR}/${UNIT_TEST_JSON})
+
+add_custom_command(
+    TARGET ${TARGETNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${PROJECT_SOURCE_DIR}/cfg/${INVALID_UNIT_TEST_JSON}
+        ${CMAKE_CURRENT_BINARY_DIR}/${INVALID_UNIT_TEST_JSON})
 
 
