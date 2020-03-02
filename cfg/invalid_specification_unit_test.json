@@ -1,0 +1,13 @@
+
+    "stringValues": {
+        "note_the": "Missing opening brace",
+        "namespace": "testspace",
+        "classname": "MyTestClass",
+        "language": "c++"
+    },
+    "includes":[
+        "<string>",
+        "<list>",
+        "<map>"
+     ]
+}
