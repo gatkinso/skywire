@@ -14,18 +14,18 @@ class SkySmoke(unittest.TestCase):
         """Instance teardown code goes here"""
 
     def hash_file(file_path):
-    try:
-        md5 = hashlib.md5()
-        with open(file_path, 'r') as input_file:
-            while True:
-                blk = input_file.read(MD5HASH_BLOCKSIZE)
-                if not len(blk):
-                    break
-                md5.update(blk)
-            md5sum = md5.hexdigest()
-    except (OSError, IOError):
-        md5sum = ''
-    return md5sum
+        try:
+            md5 = hashlib.md5()
+            with open(file_path, 'r') as input_file:
+                while True:
+                    blk = input_file.read(MD5HASH_BLOCKSIZE)
+                    if not len(blk):
+                        break
+                    md5.update(blk)
+                md5sum = md5.hexdigest()
+        except (OSError, IOError):
+            md5sum = ''
+        return md5sum
 
 def files_equal(input_file, output_file):
     in_md5 = get_md5(input_file)
