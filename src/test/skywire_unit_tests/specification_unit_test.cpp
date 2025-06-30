@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "google/protobuf/reflection.h"
+#include <google/protobuf/stubs/status.h>
 #include <google/protobuf/util/json_util.h>
 #include "google/protobuf/util/message_differencer.h"
 #include <string>
@@ -24,6 +25,8 @@
 #pragma warning(default:4800)
 #include "specification/specification.h"
 #include "sw_endian.h"
+
+auto PBOK = google::protobuf::util::status_internal::StatusCode::kOk;
 
 class SpecificationUnitTest : public ::testing::Test
 {
@@ -40,9 +43,9 @@ protected:
 TEST_F(SpecificationUnitTest, Serialize_Json)
 {
     std::string json_str;
-    google::protobuf::util::Status ret = google::protobuf::util::MessageToJsonString(spec_proto_, &json_str);
+    auto ret = google::protobuf::util::MessageToJsonString(spec_proto_, &json_str);
 
-    ASSERT_EQ(google::protobuf::util::Status::OK, ret);
+    ASSERT_EQ(PBOK, ret.code());
 }
 
 TEST_F(SpecificationUnitTest, ReflectionByName)
@@ -161,9 +164,9 @@ TEST_F(SpecificationUnitTest, get_value_string)
     ASSERT_EQ(true, rc);
 
     std::string json_str;
-    google::protobuf::util::Status ret = google::protobuf::util::MessageToJsonString(spec.get_proto(), &json_str);
+    auto ret = google::protobuf::util::MessageToJsonString(spec.get_proto(), &json_str);
 
-    ASSERT_EQ(google::protobuf::util::Status::OK, ret);
+    ASSERT_EQ(PBOK, ret.code());
 
     std::string values = spec.get_value_string("namespace", "NOT FOUND");
 

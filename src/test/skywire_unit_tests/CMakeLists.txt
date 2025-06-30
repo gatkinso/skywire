@@ -44,7 +44,7 @@ set(UNIT_TESTS
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
 
-add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
+add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS} ${PROTOBUF_LIBRARIES})
 
 test_big_endian(IS_BIG_ENDIAN)
 

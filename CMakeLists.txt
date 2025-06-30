@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.28)
 
 project(skywire)
 
@@ -28,7 +28,7 @@ else()
     add_definitions(-DSW_LITTLE_ENDIAN)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_C_STANDARD 99)
@@ -74,5 +74,4 @@ if(UNIX AND NOT APPLE)
 endif(UNIX AND NOT APPLE)
 
 add_subdirectory(3rd_party/qwikpirate)
-add_subdirectory(3rd_party/skytrans)
 add_subdirectory(src)

@@ -99,6 +99,8 @@ Skywire is heavily dependent on CMake.  No other build system is currently suppo
 That said, we'd be happy to integrate others should there be enough requests for 
 it.
 
+cmake -S skywire -B build_sw -D CMAKE_PREFIX_PATH="/Users/geoffrey/apps/EZ/skytrans;/Users/geoffrey/apps/EZ/grpc;/Users/geoffrey/apps/EZ/googletest" -D CMAKE_INSTALL_PREFIX=$HOME/skywire
+
 ## [3.1] Windows
 
 	cmake -G "Visual Studio 14 2015 Win64" e:\source\skywire 

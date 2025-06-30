@@ -16,7 +16,7 @@
 set(TARGETNAME generator)
 set(${TARGETNAME}_INC_DIR ${PROJECT_SOURCE_DIR}/include/${TARGETNAME})
 
-set(Python_ADDITIONAL_VERSIONS 3.6)
+set(Python_ADDITIONAL_VERSIONS 3.6 3.7 3.8 3.9 3.10 3.11 3.12)
 find_package(Python3 COMPONENTS Development)
  
 include_directories(

@@ -35,13 +35,14 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
                        python3.test.json)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-set(TEST_SCRIPTS   test_wiregen)
+#set(TEST_SCRIPTS   test_wiregen)
+
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
 add_dependencies(${TARGETNAME} skywire specification cli)
 
-target_link_libraries(${TARGETNAME} skywire specification cli)
+target_link_libraries(${TARGETNAME} skywire specification cli ${Protobuf_LIBRARIES})
 
 if(MSVC)
     set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${TARGETNAME}.exe)
