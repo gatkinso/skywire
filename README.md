@@ -31,13 +31,19 @@ are trying to communicate with, wiregen gives you the ability to define a
 "stencil" for a C++ class (or C struct) that can be used to generate code 
 to interface with it.
 
-Eventually, wiregen will support generating messages in Ada, modern C++ variants,
-C#, Java, Javascript, and Python.
+Currently, wiregen will supports generating messages in
+* C
+* C++ (classical and modern)
+* C# (future)
+* Go
+* Java
+* Javascript (future)
+* Python
+* Rust (future)
+* Swift
 
-Not so sure about the Ada.  However very large companies still use it, so maybe.
-
-The stencil itself is defined using a JSON object which is in turn serialized
-into a Protocol Buffer message.  This message can be used in the
+The message specification itself is defined using a JSON object which is in turn 
+serialized into a Protocol Buffer message.  This message can be used in the
 traditional Protocol Buffer manner, or a new C++ class (or C struct!) can be
 generated that will give the developer the ability to serialize the message 
 data "natively" for the targeted ICD or device.
@@ -51,18 +57,6 @@ While these are not necessary for generating messages using default settings,
 it comes in very handy when the wiregen generator has been customized.  All 
 unit tests are generated using the Google Test unit test framework.
 
-## [1.1] A Note About Security
-
-Currently the generated code targets a fully Open Source runtime called "Redchip."
-Redchip is perfectly fine for most prototypes.  It is pretty fast and stable.
-However Redchip is intended for prototyping and internal IPC:  not a lot of work 
-has gone into Redchip to do things like check for errors, handle data corruption, 
-or prevent buffer overruns.
-
-To handle these more advanced conditions, a fee-based runtime called "Blackchip"
-is being developed.  Blackchip will also provide generators do things like 
-generate your Doxygen comments for you.
-
 ## [1.2] Source Code Repository
 
 At the time of this writing, the Skywire source code can be found at:
@@ -71,13 +65,11 @@ https://github.com/skyloupe/skywire
 
 ## [1.2] Dependencies
 
-Google Protocol Buffers - v3.11.2
-
-GRPC - v1.25.0
+Google Protocol Buffers
 
 # [2.0] Build Requirements
 
-cmake version 3.6 or higher
+cmake version 3.28 or higher
 
 ## [2.1] Build Requirements (Windows)
 
@@ -99,13 +91,15 @@ Skywire is heavily dependent on CMake.  No other build system is currently suppo
 That said, we'd be happy to integrate others should there be enough requests for 
 it.
 
-cmake -S skywire -B build_sw -D CMAKE_PREFIX_PATH="/Users/geoffrey/apps/EZ/skytrans;/Users/geoffrey/apps/EZ/grpc;/Users/geoffrey/apps/EZ/googletest" -D CMAKE_INSTALL_PREFIX=$HOME/skywire
+$ cmake -S skywire -B build_dir -D CMAKE_PREFIX_PATH="/usr/local/protobuf;/usr/local/googletest" -D CMAKE_INSTALL_PREFIX=$HOME/skywire
+
+$ cmake --build build_dir
 
 ## [3.1] Windows
 
-	cmake -G "Visual Studio 14 2015 Win64" e:\source\skywire 
+	cmake -G "Visual Studio 14 2015 Win64" -S skywire -B build_dir -D CMAKE_PREFIX_PATH="C:/protobuf;C:/googletest" -D CMAKE_INSTALL_PREFIX=%HOME%/skywire 
 
-	cmake --build . --target install --config [Debug|Release|DebWithRelInfo|MinRelSize]
+	cmake --build build_dir --target install --config [Debug|Release|DebWithRelInfo|MinRelSize]
 
 ### [3.1.1] A note about building on Windows
 
@@ -122,10 +116,10 @@ Protocol Buffers and GTest.
 Should you decide to build against either of these locally the following definition
 should be invoked in CMake at build time:
 
--DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-3.6.1-debug;c:\Users\username\apps\gtest-1.8.1-debug
+-DCMAKE_PREFIX_PATH=c:\Users\username\apps\protobuf-debug;c:\Users\username\apps\gtest-debug
 
 The paths of course must be craft to match your development harness.  Note that 
-this can also be done for Linux and Mac builds hf need be. 
+this can also be done for Linux and Mac builds if need be. 
 
 On Linux:
 	cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=[Debug | Release] ~/source/skywire
@@ -191,11 +185,7 @@ with the file Example.json....
              "type":"uint32_t",
              "name":"myuint32_200",
              "endian":0
-          },
-          "201":{  
-             "type":"int64_t",
-             "name":"myint64_201"
-          },        
+          },      
        },
        "includes":[  
           "\"cstream.h\"",
@@ -222,40 +212,33 @@ with the file Example.json....
             bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
                 str.serialize(myfloat100, skyloupe::Endianness::Little);
                 str.serialize(myuint32_200, skyloupe::Endianness::Big);
-                str.serialize(myint64_201, skyloupe::Endianness::Big);
                 return true;
             }
             bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
                 str.deserialize(myfloat100, skyloupe::Endianness::Little);
                 str.deserialize(myuint32_200, skyloupe::Endianness::Big);
-                str.deserialize(myint64_201, skyloupe::Endianness::Big);
                 return true;
             }
             size_t size() const {
                 return(
                     sizeof(float) +
-                    sizeof(uint32_t) +
-                    sizeof(int64_t)
+                    sizeof(uint32_t)
                 );
             }
             bool operator==(const Example& other) const {
                 if(this == &other) return true;
                 return(
                     myfloat100 == other.myfloat100 &&
-                    myuint32_200 == other.myuint32_200 &&
-                    myint64_201 == other.myint64_201
+                    myuint32_200 == other.myuint32_200
                 );
             }
             float Get_myfloat100() const { return myfloat100; }
             uint32_t Get_myuint32_200() const { return myuint32_200; }
-            int64_t Get_myint64_201() const { return myint64_201; }
             void Set_myfloat100(const float newval) { myfloat100 = newval; }
             void Set_myuint32_200(const uint32_t newval) { myuint32_200 = newval; }
-            void Set_myint64_201(const int64_t newval) { myint64_201 = newval; }
         private:
             float myfloat100;
             uint32_t myuint32_200;
-            int64_t myint64_201;
         };
     }
 ```
@@ -276,7 +259,6 @@ with the file Example.json....
 
         in.Set_myfloat100(11.1f);
         in.Set_myuint32_200(14);
-        in.Set_myint64_201(-30);
 
         bool success = in.serialize(stream);
         ASSERT_TRUE(success);
@@ -299,7 +281,6 @@ with the file Example.json....
 
         in.Set_myfloat100(11.1f);
         in.Set_myuint32_200(14);
-        in.Set_myint64_201(-30);
 
         bool success = in.serialize(stream);
         ASSERT_TRUE(success);
@@ -338,10 +319,6 @@ To generate the message in C use this file:
          "name":"myuint32_200",
          "endian":0
       },
-      "201":{  
-         "type":"int64_t",
-         "name":"myint64_201"
-      }
    },
    "includes":[  
       "\"cstream.h\"",
@@ -387,9 +364,6 @@ https://developers.google.com/protocol-buffers/
 
 Google Test - (Apache 2.0)
 https://github.com/google/googletest
-
-gRPC - (Apache 2.0)
-https://github.com/grpc/grpc
 
 Qwikpirate - a command line parsing tool (LGPL)
 https://github.com/skyloupe/qwikpirate
