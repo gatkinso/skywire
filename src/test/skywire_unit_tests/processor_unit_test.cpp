@@ -33,7 +33,7 @@ std::string msg_str =
          \"type\":\"float\",                          \
          \"name\":\"float_1\",                        \
          \"endian\":1                                 \
-      },                                              \
+      }                                               \
    },                                                 \
    \"includes\":[                                     \
       \"<streamable.h>\",                             \
