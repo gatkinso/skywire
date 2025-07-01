@@ -25,7 +25,8 @@ set(DEPLOY_JSONS   c/lang.c.json
                    c++11/lang.cpp11.json
                    go/lang.go.json
                    proto/lang.proto3.json
-                   python/lang.python3.json)
+                   python/lang.python3.json
+                   swift/lang.swift.json)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     set(DEBUG_JSONS    c.test.json
@@ -36,7 +37,6 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
 #set(TEST_SCRIPTS   test_wiregen)
-
 
 add_executable(${TARGETNAME} ${_SOURCES})
 

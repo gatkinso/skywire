@@ -28,6 +28,15 @@ public:
     virtual ~SwiftGenerator() {}
 
     bool generate(int& errorcode) override;
+
+private:
+    virtual bool do_header(int& errorcode);
+    virtual bool do_implementation(int& errorcode);
+
+    virtual bool imp_base(int& errorcode);
+
+private:
+    std::string classname_;
 };
 
 }

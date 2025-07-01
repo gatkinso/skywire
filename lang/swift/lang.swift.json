@@ -1,0 +1,51 @@
+{
+    "stringValues": {
+        "banner_str":"// This is the generated Swift file\n",
+
+        "import_str":"import __INCLUDEFILE__\n",
+        "import_substr":  "__INCLUDEFILE__",
+
+
+
+
+
+        "structname_substr":"__STRUCTNAME__",
+        "type_substr":"__TYPE__",
+        "member_substr":"__MEMBERNAME__",
+        "format_substr":"__FORMAT__",
+        "index_substr":"__INDEX__",
+        "endian_substr":"__ENDIAN__",
+        "namespace_substr":"__NAMESPACE__",
+        "indent_str":"\t",
+        "block_separator_str":"\n",
+        "body_token": "__BLOCK_BODY__",
+
+        "namespace_block": "package __NAMESPACE__\n",
+        "struct_block": "public class __STRUCTNAME__ {\n__BLOCK_BODY__}\n",
+        "serialize_fcn_block": "//Serialize method\npublic func serialize() -> Data {\n__BLOCK_BODY__}\n",
+        "deserialize_fcn_block": "//Deserialize method\npublic func deserialize() -> Bool {\n__BLOCK_BODY__}\n",
+        "equals_fcn_block": "//Equals method\npublic func Equals(_ other: __STRUCTNAME__) -> Bool {\n__BLOCK_BODY__}\n",
+        "size_fcn_block": "//Size method\npublic func Size() -> UInt64 {\n__BLOCK_BODY__;\n}\n",
+
+        "member_decl_str":"\t__MEMBERNAME__ __TYPE__\n",
+        "equal_eval_start_str":"\tif\n",
+        "equal_eval_member_str":"\t\ts.__MEMBERNAME__ == other.__MEMBERNAME__",
+        "equal_eval_tail_str":" {\n\t\treturn true\n\t} else {\n\t\t return false\n\t}\n",
+
+        "size_eval_start_str":"\treturn ",
+        "size_eval_member_str":"unsafe.SizeOf(s.__MEMBERNAME__)",
+
+        "char": "int8",
+        "unsigned char" : "uint8",
+        "uint8_t" : "uint8",
+        "int8_t" : "int8",
+        "uint16_t" : "uint16",
+        "int16_t" : "int16",
+        "uint32_t" : "uint32",
+        "int32_t" : "int32",
+        "uint64_t" : "uint64",
+        "int64_t" : "int64",
+        "float" : "float32",
+        "double" : "float64",
+    },
+}
