@@ -124,9 +124,9 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
-    if (lang == ada_str_)
+    if (lang == swift_str_)
     {
-        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_spec_, lang_spec_));
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::SwiftGenerator(msg_spec_, lang_spec_));
     }
     else if (lang == c_str_)
     {

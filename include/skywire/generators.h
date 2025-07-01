@@ -14,7 +14,6 @@
 //
 
 #include "generator.h"
-#include "adagenerator.h"
 #include "cgenerator.h"
 #include "ctestgenerator.h"
 #include "cppgenerator.h"
@@ -23,3 +22,4 @@
 #include "javagenerator.h"
 #include "proto3generator.h"
 #include "py3generator.h"
+#include "swiftgenerator.h"

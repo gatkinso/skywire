@@ -13,12 +13,12 @@
 //   permissions and limitations under the License.
 //
 
-#include "adagenerator.h"
+#include "swiftgenerator.h"
 
 namespace skyloupe
 {
 
-bool AdaGenerator::generate(int& errorcode)
+bool SwiftGenerator::generate(int& errorcode)
 {
     errorcode = 0;
 

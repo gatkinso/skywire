@@ -21,11 +21,11 @@
 namespace skyloupe 
 {
 
-class AdaGenerator : public Generator
+class SwiftGenerator : public Generator
 {
 public:
-    AdaGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
-    virtual ~AdaGenerator() {}
+    SwiftGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
+    virtual ~SwiftGenerator() {}
 
     bool generate(int& errorcode) override;
 };
