@@ -24,6 +24,7 @@ set(DEPLOY_JSONS   c/lang.c.json
                    cpp/lang.cpp.json
                    c++11/lang.cpp11.json
                    go/lang.go.json
+                   java/lang.java.json
                    proto/lang.proto3.json
                    python/lang.python3.json
                    swift/lang.swift.json)
