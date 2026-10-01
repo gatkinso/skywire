@@ -19,7 +19,8 @@ include_directories(
                 ${PROJECT_BINARY_DIR}/skywireproto
                 ${PROJECT_SOURCE_DIR}/include
                 ${PROJECT_SOURCE_DIR}/lang/cpp
-                ${PROJECT_SOURCE_DIR}/lang/c)
+                ${PROJECT_SOURCE_DIR}/lang/c
+                ${PROTOZERO_INC_DIR})
 
 set(WIREGEN_C_FILES
                 ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
@@ -39,20 +40,13 @@ set(UNIT_TESTS
                 generator_unit_test.cpp
                 processor_unit_test.cpp
                 specification_unit_test.cpp
-                stream_unit_test.cpp)
+                stream_unit_test.cpp
+                pz_stream_unit_test.cpp)
 
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
 
 add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS} ${PROTOBUF_LIBRARIES})
-
-test_big_endian(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
-    target_compile_definitions(${TARGETNAME} PRIVATE SW_BIG_ENDIAN=1 SW_LITTLE_ENDIAN=0)
-else()
-    target_compile_definitions(${TARGETNAME} PRIVATE SW_BIG_ENDIAN=0 SW_LITTLE_ENDIAN=1)
-endif()
 
 if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)

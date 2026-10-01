@@ -18,7 +18,10 @@
 #include <stdint.h>
 #include <vector>
 #include <cstring>
+#include <string>
 #include "sw_endian.h"
+#include <protozero/pbf_writer.hpp>
+#include <protozero/pbf_reader.hpp>
 
 namespace skyloupe
 {
@@ -27,10 +30,10 @@ enum Endianness : uint32_t { Big = 0, Little = 1, Native = 2 };
 
 class Streamable;
 
-class Stream
+class SWStream
 {
 public:
-    Stream(size_t size = 512, size_t expand_size = 512)
+    SWStream(size_t size = 512, size_t expand_size = 512)
     :pos_(0)
     ,expand_size_(expand_size)
     {
@@ -405,11 +408,427 @@ public:
         expand_size_ = expand_size;
     }
 
+    void reset_tag()
+    {
+    }
+
+    void prepare()
+    {
+
+    }
+
 protected:
     size_t pos_;
     size_t expand_size_;
     std::vector<char> buffer_;
 };
 
-}
+class PZStream
+{
+public:
+    PZStream(std::string& buffer)
+    :buffer_(buffer)
+    {
+        pos_ = 0;
+        expand_size_ = 0;
+    }
 
+    void serialize(char d, Endianness)
+    {
+        write((char*)&d, sizeof(char));
+    }
+
+    void serialize(int16_t d, Endianness) { }
+
+    void serialize(int32_t d, Endianness)
+    {
+        writer_.add_int32(current_tag_++, d);
+    }
+
+    void serialize(int64_t d, Endianness)
+    {
+        writer_.add_int64(current_tag_++, d);
+    }
+
+    void serialize(unsigned char d, Endianness)
+    {
+        write((char*)&d, sizeof(char));
+    }
+
+    void serialize(uint16_t d, Endianness){ }
+
+    void serialize(uint32_t d, Endianness)
+    {
+        writer_.add_uint32(current_tag_++, d);
+    }
+
+    void serialize(uint64_t d, Endianness)
+    {
+        writer_.add_uint64(current_tag_++, d);
+    }
+
+    void serialize(float d, Endianness)
+    {
+        writer_.add_float(current_tag_++, d);
+    }
+
+    void serialize(double d, Endianness)
+    {
+        writer_.add_double(current_tag_++, d);
+    }
+
+    void deserialize(char& d, Endianness)
+    {
+        read((char*)&d, sizeof(char));
+    }
+
+    void deserialize(int16_t& d, Endianness) { }
+
+    void deserialize(int32_t& d, Endianness)
+    {
+        d = reader_.get_int32();
+    }
+
+    void deserialize(int64_t& d, Endianness)
+    {
+        d = reader_.get_int64();
+    }
+
+    void deserialize(unsigned char& d, Endianness)
+    {
+        read((char*)&d, sizeof(char));
+    }
+
+    void deserialize(uint16_t& d, Endianness) { }
+
+    void deserialize(uint32_t& d, Endianness)
+    {
+        if (reader_.next()) {
+            d = reader_.get_uint32();
+            reader_.skip();
+        }
+        else {
+            throw std::runtime_error("READER ISSUE");
+        }
+    }
+
+    void deserialize(uint64_t& d, Endianness)
+    {
+        d = reader_.get_uint64();
+    }
+
+    void deserialize(float& d, Endianness)
+    {
+        d = reader_.get_float();
+    }
+
+    void deserialize(double& d, Endianness)
+    {
+        d = reader_.get_double();
+    }
+
+    size_t write(const void* data, size_t len)
+    {
+        
+        return 0;
+    }
+
+    size_t read(void* data, size_t len)
+    {
+        return 0;
+    }
+
+    size_t size() const
+    {
+        return buffer_.size();
+    }
+
+    size_t byte_size() const
+    {
+        return size();
+    }
+
+    void clear()
+    {
+        buffer_.clear();
+    }
+
+    const char* data() const
+    {
+        return buffer_.data();
+    }
+
+    void set_expand_size(size_t expand_size)
+    {
+        if (expand_size_ == 0) return;
+
+        expand_size_ = expand_size;
+    }
+
+    void reset_tag()
+    {
+        current_tag_ = 1;
+    }
+
+    void prepare()
+    {
+        reader_.set_data(buffer_);
+        pos_ = 0;
+    }
+
+protected:
+    size_t pos_;
+    size_t expand_size_;
+    std::string& buffer_;
+
+    protozero::pbf_tag_type current_tag_ = 1;
+    protozero::pbf_writer writer_{buffer_};
+    protozero::pbf_reader reader_{buffer_};
+};
+
+class Stream {
+public:
+    typedef enum mode { SW, PZ } modetype;
+
+    Stream(size_t size = 512, size_t expand_size = 512, modetype mode = SW)
+    :swstream_(size, expand_size)
+    ,pzstream_(buffer_)
+    ,mode_(mode){
+    }
+    ~Stream() {}
+    bool serialize(char d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(int16_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(int32_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(int64_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(unsigned char d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(uint16_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(uint32_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(uint64_t d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(float d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    bool serialize(double d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
+    void deserialize(char& d, Endianness)
+    {
+        if (mode_ == SW) {
+            swstream_.read((char*)&d, sizeof(char));
+        } else {
+            pzstream_.read((char*)&d, sizeof(char));
+        }
+    }
+    bool deserialize(int16_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(int32_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(int64_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(unsigned char& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(uint16_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(uint32_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(uint64_t& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(float& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+    bool deserialize(double& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
+    }
+
+    size_t write(const void* data, size_t len)
+    {
+        if (mode_ == SW) {
+            return swstream_.write(data, len);
+        } else {
+            return pzstream_.write(data, len);
+        }
+    }
+
+    size_t read(void* data, size_t len)
+    {
+        if (mode_ == SW) {
+            return swstream_.read(data, len);
+        } else {
+            return pzstream_.read(data, len);
+        }
+    }
+
+    size_t size() const {
+        if (mode_ == SW) {
+            return swstream_.size();
+        } else {
+            return pzstream_.size();
+        }
+    }
+    size_t byte_size() const {
+        if (mode_ == SW) {
+            return swstream_.byte_size();
+        } else {
+            return pzstream_.byte_size();
+        }
+    }
+    void clear() {
+        if (mode_ == SW) {
+            swstream_.clear();
+        } else {
+            pzstream_.clear();
+        }
+    }
+    const char* data() const {
+        if (mode_ == SW) {
+            return swstream_.data();
+        } else {
+            return pzstream_.data();
+        }
+    }
+    void set_expand_size(size_t expand_size) {
+        if (mode_ == SW) {
+            swstream_.set_expand_size(expand_size);
+        } else {
+            pzstream_.set_expand_size(expand_size);
+        }
+    }
+    void reset_tag() {
+        if (mode_ == SW) {
+            swstream_.reset_tag();
+        } else {
+            pzstream_.reset_tag();
+        }
+    }
+
+    void prepare() {
+        if (mode_ == PZ) {
+            pzstream_.prepare();
+        }
+    }
+
+private:
+    modetype mode_ = SW;
+    SWStream swstream_;
+    PZStream pzstream_; 
+    std::string buffer_;
+};
+
+} // namespace skyloupe

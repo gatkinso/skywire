@@ -27,7 +27,7 @@ std::string basestringy ="\
 \n         /*INITIALIZE_MEMBERS*/ \
 \n    } \
 \n \
-\n    /*Getters_and_Setters*/ \
+\n    /*GETTERS_SETTERS*/ \
 \n \
 \n    // Serialize to byte array (little-endian) \
 \n    public byte[] serialize() { \

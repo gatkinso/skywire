@@ -37,7 +37,8 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c
                 ${WG_C_DIR}
-                ${WG_CPP_DIR})
+                ${WG_CPP_DIR}
+                ${PROTOZERO_INC_DIR})
 
 set(UNIT_TESTS c_cpp.cpp)
 

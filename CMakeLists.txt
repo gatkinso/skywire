@@ -19,6 +19,13 @@ project(skywire)
 
 include(TestBigEndian)
 include (CTest)
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag(-Wno-unused-value HAS_NO_UNUSED_VALUE)
+
+if (HAS_NO_UNUSED_VALUE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-value>)
+endif()
 
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
@@ -63,6 +70,8 @@ include_directories(${PROTOBUF_INCLUDE_DIRS})
 
 enable_testing()
 find_package(GTest REQUIRED)
+
+set(PROTOZERO_INC_DIR ${PROTOZERO_DIR}/include)
 
 if(UNIX)
     add_definitions(-DAPPLE)

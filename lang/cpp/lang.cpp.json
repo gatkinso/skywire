@@ -46,6 +46,7 @@
         "uint64_t",
         "int64_t",
         "float",
-        "double"
+        "double",
+        "string"
     ]
 }
