@@ -112,7 +112,14 @@ bool CppTestGenerator::test_size(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
+        if (is_string_type(std::get<member_type>(member.second)))
+        {
+            ss_ << std::get<member_length>(member.second);
+        }
+        else
+        {
+            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
+        }
         if (i++ < ordered_members_.size() - 1)
         {
             ss_ << "+";
@@ -175,6 +182,7 @@ bool CppTestGenerator::do_sets(int& errorcode)
         else if (std::get<member_type>(member.second) == "int64_t")       ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASES64 << ");\n";
         else if (std::get<member_type>(member.second) == "float")         ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASEFLOAT << "f);\n";
         else if (std::get<member_type>(member.second) == "double")        ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASEDOUBLE << ");\n";
+        else if (std::get<member_type>(member.second) == "string")        ss_ << "in.Set_" << std::get<member_name>(member.second) << "(\"skywire\");\n";
 
         sign *= -1;
     }
