@@ -40,7 +40,16 @@
         "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
         "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
 
-        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ "
+        "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ ",
+        "length_substr":"__LENGTH__",
+        "member_string_decl_str":"char __MEMBERNAME__[__LENGTH__];",
+        "equal_check_string_template_str":"memcmp(left->__MEMBERNAME__, right->__MEMBERNAME__, __LENGTH__) == 0 ",
+        "get_string_str":"int Get___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * structure, char * value);\n",
+        "set_string_str":"int Set___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * const structure, const char * value);\n",
+        "get_string_c_str":"int Get___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * structure, char * value)",
+        "set_string_c_str":"int Set___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * const structure, const char * value)",
+        "get_string_assignment_str":"memcpy(value, structure->__MEMBERNAME__, __LENGTH__)",
+        "set_string_assignment_str":"memcpy(structure->__MEMBERNAME__, value, __LENGTH__)"
     },
     "native_types":[
         "char",

@@ -61,6 +61,7 @@ bool CTestGenerator::test_includes(int& errorcode)
 
     ss_ << "#include <gmock/gmock.h>" << std::endl
         << "#include <gtest/gtest.h>" << std::endl
+        << "#include <cstring>" << std::endl
         << "#include \"";
     ss_ << hdr_name << "\"" << std::endl << std::endl;
 
@@ -133,7 +134,10 @@ bool CTestGenerator::test_size(int& errorcode)
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
+        if (is_string_type(std::get<member_type>(member.second)))
+            ss_ << std::get<member_length>(member.second);
+        else
+            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
         if (i++ < ordered_members_.size() - 1)
         {
             ss_ << "+";
@@ -171,6 +175,7 @@ bool CTestGenerator::do_sets(int& errorcode)
         else if (std::get<member_type>(member.second) == "int64_t")       ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASES64 << ";\n";
         else if (std::get<member_type>(member.second) == "float")         ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASEFLOAT << "f;\n";
         else if (std::get<member_type>(member.second) == "double")        ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASEDOUBLE << ";\n";
+        else if (std::get<member_type>(member.second) == "string")        ss_ << "strncpy(out[i]." << std::get<member_name>(member.second) << ", \"skywire\", " << std::get<member_length>(member.second) << ");\n";
     }
 
     insert_indents(2);
