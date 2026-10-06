@@ -65,8 +65,9 @@ if(MSVC)
     endforeach()
 endif(MSVC)
 
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
+set(protobuf_MODULE_COMPATIBLE TRUE)
+find_package(Protobuf CONFIG REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
 
 enable_testing()
 find_package(GTest REQUIRED)

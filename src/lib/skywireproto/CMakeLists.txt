@@ -31,7 +31,7 @@ foreach(PROTO ${PROTO_FILES})
         OUTPUT  ${PROTO_DIR}/${PROTO}.pb.h
                 ${PROTO_DIR}/${PROTO}.pb.cc
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTO}.proto
-        COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+        COMMAND protobuf::protoc
         ARGS    ${CMAKE_CURRENT_SOURCE_DIR}/${PROTO}.proto
                 --cpp_out=${PROTO_DIR}
                 --proto_path=${CMAKE_CURRENT_SOURCE_DIR}
@@ -48,4 +48,4 @@ if(MSVC)
     target_compile_options(${TARGETNAME} PRIVATE "/wd4800")
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} ${PROTOBUF_LIBRARIES})
+target_link_libraries(${TARGETNAME} protobuf::libprotobuf)

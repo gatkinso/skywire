@@ -46,13 +46,13 @@ set(UNIT_TESTS
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
 
-add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS} ${PROTOBUF_LIBRARIES})
+add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
 if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} skywire skywireproto specification GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
+target_link_libraries(${TARGETNAME} skywire skywireproto specification GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS} protobuf::libprotobuf)
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 
