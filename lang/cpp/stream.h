@@ -572,7 +572,7 @@ public:
 
     void prepare()
     {
-        reader_.set_data(buffer_);
+        reader_ = protozero::pbf_reader{buffer_};
         pos_ = 0;
     }
 
