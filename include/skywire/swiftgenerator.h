@@ -1,5 +1,5 @@
 //
-//   Copyright (C) 2018 Skyloupe, LLC
+//   Copyright (C) 2019 Skyloupe, LLC
 //
 //   Licensed under the Apache License, Version 2.0 (the "License").
 //   You may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #include <string>
 #include "generator.h"
 
-namespace skyloupe 
+namespace skyloupe
 {
 
 class SwiftGenerator : public Generator
@@ -29,11 +29,27 @@ public:
 
     bool generate(int& errorcode) override;
 
+protected:
+    // Maps a message-spec (C-style) type to its Swift type via the lang spec.
+    std::string swift_type(const std::string& type);
+    // Resolves a member's endian flag to a Swift Endianness literal.
+    std::string swift_endian(unsigned int endian_flag);
+
 private:
-    virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool imp_base(int& errorcode);
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_imports(int& errorcode);
+    virtual bool imp_classname(int& errorcode);
+    virtual bool imp_members(int& errorcode);
+    virtual bool imp_cons(int& errorcode);
+    virtual bool imp_serialize(int& errorcode);
+    virtual bool imp_deserialize(int& errorcode);
+    virtual bool imp_size(int& errorcode);
+    virtual bool imp_equals(int& errorcode);
+    virtual bool imp_get_functions(int& errorcode);
+    virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_classend(int& errorcode);
 
 private:
     std::string classname_;

@@ -118,3 +118,40 @@ gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
 add_dependencies(${TARGETNAME} specification skywire wiregen)
 
+# Swift generated round-trip test (skipped gracefully where swiftc is absent)
+find_program(SWIFTC_EXECUTABLE swiftc)
+
+if(SWIFTC_EXECUTABLE)
+    set(WG_SWIFT_DIR "${PROJECT_BINARY_DIR}/generated_swift_wiregen")
+    file(MAKE_DIRECTORY ${WG_SWIFT_DIR})
+
+    set(WG_SWIFT_IMPL ${WG_SWIFT_DIR}/SwiftyMcSwiftface.swift)
+    set(WG_SWIFT_TEST ${WG_SWIFT_DIR}/SwiftyMcSwiftface_test.swift)
+    set(WG_SWIFT_RUNTIME ${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift)
+    set(WG_SWIFT_BIN ${WG_SWIFT_DIR}/swifty_test)
+
+    add_custom_command(
+        OUTPUT  ${WG_SWIFT_IMPL} ${WG_SWIFT_TEST}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json wiregen
+        COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
+        ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json
+                --outdir ${WG_SWIFT_DIR}
+                --langfile ${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
+                --generate_tests
+                --write_to_file)
+
+    add_custom_command(
+        OUTPUT  ${WG_SWIFT_BIN}
+        DEPENDS ${WG_SWIFT_IMPL} ${WG_SWIFT_TEST} ${WG_SWIFT_RUNTIME}
+        COMMAND ${SWIFTC_EXECUTABLE}
+        ARGS    -o ${WG_SWIFT_BIN}
+                ${WG_SWIFT_RUNTIME}
+                ${WG_SWIFT_IMPL}
+                ${WG_SWIFT_TEST})
+
+    add_custom_target(swift_generated_test ALL DEPENDS ${WG_SWIFT_BIN})
+    add_dependencies(swift_generated_test wiregen)
+
+    add_test(NAME skywire_generated_tests:SwiftRoundTrip COMMAND ${WG_SWIFT_BIN})
+endif(SWIFTC_EXECUTABLE)
+
