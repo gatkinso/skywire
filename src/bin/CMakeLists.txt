@@ -13,5 +13,4 @@
 #  permissions and limitations under the License.
 #
 
-add_subdirectory(wirecloud)
 add_subdirectory(wiregen)

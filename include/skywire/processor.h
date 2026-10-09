@@ -42,7 +42,7 @@ private:
     std::string language_file_key_ = "lang_file";
     std::string language_file_;
 
-    std::string ada_str_ = "ada";
+    std::string swift_str_ = "swift";
     std::string c_str_ = "c";
     std::string cpp_str_ = "c++";
     std::string go_str_ = "go";

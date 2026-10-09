@@ -131,7 +131,32 @@ bool CGenerator::hdr_structtag(int& errorcode)
 
 bool CGenerator::hdr_members(int& errorcode)
 {
-    return inorder_members(errorcode, 2);
+    if (msg_spec_.get_proto().members_size() == 0)
+    {
+        errorcode |= SW_LANG_NOMEMBERS;
+        return false;
+    }
+
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string length_substr = lang_spec_.get_value_string("length_substr");
+
+    for (auto& member : ordered_members_)
+    {
+        insert_indents(2);
+        if (is_string_type(std::get<member_type>(member.second)))
+        {
+            std::string template_str = lang_spec_.get_value_string("member_string_decl_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            ss_ << template_str << std::endl;
+        }
+        else
+        {
+            ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << ";" << std::endl;
+        }
+    }
+
+    return true;
 }
 
 bool CGenerator::hdr_structtype(int& errorcode)
@@ -187,26 +212,56 @@ bool CGenerator::hdr_size(int& errorcode)
 
 bool CGenerator::hdr_get_functions(int& errorcode)
 {
-    bool success = inorder_functions("get_str", errorcode, 1, true);
-    if (false == success)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
+        errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_GET;
-        return success;
+        return false;
     }
 
-    return success;
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+
+    for (auto& member : ordered_members_)
+    {
+        insert_indents(1);
+        std::string key = is_string_type(std::get<member_type>(member.second)) ? "get_string_str" : "get_str";
+        std::string template_str = lang_spec_.get_value_string(key);
+        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
+        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        ss_ << template_str;
+    }
+
+    return true;
 }
 
 bool CGenerator::hdr_set_functions(int& errorcode)
 {
-    bool success = inorder_functions("set_str", errorcode, 1, true);
-    if (false == success)
+    if (msg_spec_.get_proto().members_size() == 0)
     {
+        errorcode |= SW_LANG_NOMEMBERS;
         errorcode |= SW_LANG_C_HDR_SET;
-        return success;
+        return false;
     }
 
-    return success;
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+
+    for (auto& member : ordered_members_)
+    {
+        insert_indents(1);
+        std::string key = is_string_type(std::get<member_type>(member.second)) ? "set_string_str" : "set_str";
+        std::string template_str = lang_spec_.get_value_string(key);
+        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
+        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        ss_ << template_str;
+    }
+
+    return true;
 }
 
 bool CGenerator::hdr_equals_function(int& errorcode)
@@ -274,8 +329,10 @@ bool CGenerator::imp_serialize(int& errorcode)
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
-        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG"); 
+        if (is_string_type(std::get<member_type>(member.second)))
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
+        else if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG");
         else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
             template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
         else
@@ -312,7 +369,9 @@ bool CGenerator::imp_deserialize(int& errorcode)
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
-        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
+        if (is_string_type(std::get<member_type>(member.second)))
+            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
+        else if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
             template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG");
         else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
             template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
@@ -347,7 +406,10 @@ bool CGenerator::imp_size(int& errorcode)
     for (auto& member : ordered_members_)
     {
         insert_indents(2);
-        ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
+        if (is_string_type(std::get<member_type>(member.second)))
+            ss_ << std::get<member_length>(member.second);
+        else
+            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
 
         if (i++ < ordered_members_.size() - 1)
         {
@@ -384,12 +446,23 @@ bool CGenerator::imp_equals_function(int& errorcode)
     insert_indents(1);
     ss_ << "if(" << std::endl;
 
+    const std::string length_substr = lang_spec_.get_value_string("length_substr");
     int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_spec_.get_value_string("equal_check_template_str");
+        std::string template_str;
         insert_indents(2);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        if (is_string_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_spec_.get_value_string("equal_check_string_template_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+        }
+        else
+        {
+            template_str = lang_spec_.get_value_string("equal_check_template_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        }
 
         ss_ << template_str;
 
@@ -441,7 +514,11 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
     const std::string type_substr = lang_spec_.get_value_string("type_substr");
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string length_substr = lang_spec_.get_value_string("length_substr");
     const std::string null_check_str = lang_spec_.get_value_string("struct_value_null_check_str");
+
+    const std::string str_fcn_key = (fcn_key == "get_c_str") ? "get_string_c_str" : "set_string_c_str";
+    const std::string str_ass_key = (ass_key == "get_assignment_str") ? "get_string_assignment_str" : "set_string_assignment_str";
 
     if (msg_spec_.get_proto().members_size() == 0)
     {
@@ -451,9 +528,10 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_spec_.get_value_string(fcn_key);
-        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
+        bool isstr = is_string_type(std::get<member_type>(member.second));
 
+        std::string template_str = lang_spec_.get_value_string(isstr ? str_fcn_key : fcn_key);
+        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
         template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
 
@@ -462,11 +540,13 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         insert_indents(1);
         ss_ << null_check_str;
 
-        template_str = lang_spec_.get_value_string(ass_key);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        std::string ass_str = lang_spec_.get_value_string(isstr ? str_ass_key : ass_key);
+        ass_str = std::regex_replace(ass_str, std::regex(member_substr), std::get<member_name>(member.second));
+        if (isstr)
+            ass_str = std::regex_replace(ass_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
 
         insert_indents(1);
-        ss_ << template_str << ";" << std::endl;
+        ss_ << ass_str << ";" << std::endl;
         insert_indents(1);
         ss_ << lang_spec_.get_value_string("endfunction_success_str");
     }

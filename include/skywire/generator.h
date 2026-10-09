@@ -30,8 +30,8 @@ class Generator
 {
 public:
     static const std::multimap<std::string, std::string> GeneratorTypes;
-    enum member_index { member_type = 0, member_name = 1, member_endianness = 2 };
-    typedef std::tuple<std::string, std::string, unsigned int> member_desc_t;
+    enum member_index { member_type = 0, member_name = 1, member_endianness = 2, member_length = 3 };
+    typedef std::tuple<std::string, std::string, unsigned int, unsigned int> member_desc_t;
 
     Generator() = delete;
     Generator(Specification& msg_specification, Specification& lang_specification);
@@ -39,6 +39,7 @@ public:
 
     virtual bool generate(int& errorcode) = 0;
     virtual bool is_native_type(const std::string& type);
+    virtual bool is_string_type(const std::string& type);
     virtual results_t get_results() const { return results_; }  //copy???
 
 protected:
