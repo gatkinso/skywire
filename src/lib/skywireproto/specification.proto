@@ -22,6 +22,7 @@ message Member
     string type       = 10;
     string name       = 20;
     uint32 endian     = 30;
+    uint32 length     = 40;
 }
 
 message Specification

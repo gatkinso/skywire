@@ -32,7 +32,15 @@
         "endian_substr":"__ENDIAN__",
         "indent_str":"    ",
         "get_str": "__TYPE__ Get___MEMBERNAME__() const { return __MEMBERNAME__; }\n",
-        "set_str": "void Set___MEMBERNAME__(const __TYPE__ newval) { __MEMBERNAME__ = newval; }\n"
+        "set_str": "void Set___MEMBERNAME__(const __TYPE__ newval) { __MEMBERNAME__ = newval; }\n",
+        "length_substr":"__LENGTH__",
+        "member_string_decl_str":"char __MEMBERNAME__[__LENGTH__];",
+        "serialize_string_mem_str":"str.write(__MEMBERNAME__, __LENGTH__);",
+        "deserialize_string_mem_str":"str.read(__MEMBERNAME__, __LENGTH__);",
+        "size_string_mem_str":"__LENGTH__",
+        "equals_string_mem_str":"memcmp(__MEMBERNAME__, other.__MEMBERNAME__, __LENGTH__) == 0",
+        "get_string_str":"const char* Get___MEMBERNAME__() const { return __MEMBERNAME__; }\n",
+        "set_string_str":"void Set___MEMBERNAME__(const char* newval) { strncpy(__MEMBERNAME__, newval, __LENGTH__); }\n"
     },
     "native_types":[
         "char",
@@ -46,6 +54,7 @@
         "uint64_t",
         "int64_t",
         "float",
-        "double"
+        "double",
+        "string"
     ]
 }

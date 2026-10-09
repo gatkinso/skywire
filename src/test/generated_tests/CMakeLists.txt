@@ -37,7 +37,8 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/lang/cpp
                 ${PROJECT_SOURCE_DIR}/lang/c
                 ${WG_C_DIR}
-                ${WG_CPP_DIR})
+                ${WG_CPP_DIR}
+                ${PROTOZERO_INC_DIR})
 
 set(UNIT_TESTS c_cpp.cpp)
 
@@ -111,9 +112,24 @@ if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} specification skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
+target_link_libraries(${TARGETNAME} specification skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS} protobuf::libprotobuf)
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
 add_dependencies(${TARGETNAME} specification skywire wiregen)
+
+# Swift generated round-trip test. The Swift toolchain is detected when the
+# test runs (see swift_roundtrip.cmake); without swiftc the test reports Skipped.
+add_test(NAME skywire_generated_tests:SwiftRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
+            -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_swift_wiregen
+            -DEXE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/swift_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:SwiftRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "SWIFT_TOOLCHAIN_NOT_FOUND")
 

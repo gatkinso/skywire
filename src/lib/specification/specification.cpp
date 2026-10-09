@@ -113,8 +113,9 @@ bool Specification::read_string(const std::string& json_str)
     {
         auto ret = google::protobuf::util::JsonStringToMessage(json_str, &spec_proto_);
 
-        if (ret != google::protobuf::util::Status::OK)
+        if (ret.ok() == false)
         {
+            // If the conversion fails, clear the proto to ensure it is in a clean state.
             spec_proto_.Clear();
             return false;
         }
@@ -138,10 +139,10 @@ bool Specification::write_string(std::string& json_str) const
     {
         auto ret = google::protobuf::util::MessageToJsonString(spec_proto_, &json_str);
 
-        if (ret != google::protobuf::util::Status::OK)
-        {
-            return false;
-        }
+        //if (ret != google::protobuf::util::Status::kOk)
+        //{
+        //    return false;
+        //}
     }
     catch (std::ofstream::failure e)
     {

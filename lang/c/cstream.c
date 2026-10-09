@@ -107,11 +107,12 @@ void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int end
 #else
     system_endian = SW_BIG_ENDIAN_FLAG;
 #endif
-    char buf[8];
-    memcpy(buf, d, sz);
-    if (endian != SW_NATIVE_ENDIAN_FLAG && system_endian != endian)
+    if (endian != SW_NATIVE_ENDIAN_FLAG && system_endian != endian &&
+        (sz == 2 || sz == 4 || sz == 8))
     {
-        switch (sz) 
+        char buf[8];
+        memcpy(buf, d, sz);
+        switch (sz)
         {
         case 2:
             __swap16(buf);
@@ -125,9 +126,12 @@ void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int end
         default:
             break;
         }
+        memcpy(streamer->tail_, buf, sz);
     }
-
-    memcpy(streamer->tail_, buf, sz);
+    else
+    {
+        memcpy(streamer->tail_, d, sz);
+    }
 
     streamer->tail_ += sz;
 }

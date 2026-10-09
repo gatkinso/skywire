@@ -13,12 +13,19 @@
 #  permissions and limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.28)
 
 project(skywire)
 
 include(TestBigEndian)
 include (CTest)
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag(-Wno-unused-value HAS_NO_UNUSED_VALUE)
+
+if (HAS_NO_UNUSED_VALUE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-value>)
+endif()
 
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
@@ -28,7 +35,7 @@ else()
     add_definitions(-DSW_LITTLE_ENDIAN)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_C_STANDARD 99)
@@ -58,11 +65,14 @@ if(MSVC)
     endforeach()
 endif(MSVC)
 
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
+set(protobuf_MODULE_COMPATIBLE TRUE)
+find_package(Protobuf CONFIG REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
 
 enable_testing()
 find_package(GTest REQUIRED)
+
+set(PROTOZERO_INC_DIR ${PROTOZERO_DIR}/include)
 
 if(UNIX)
     add_definitions(-DAPPLE)
@@ -74,5 +84,4 @@ if(UNIX AND NOT APPLE)
 endif(UNIX AND NOT APPLE)
 
 add_subdirectory(3rd_party/qwikpirate)
-add_subdirectory(3rd_party/skytrans)
 add_subdirectory(src)

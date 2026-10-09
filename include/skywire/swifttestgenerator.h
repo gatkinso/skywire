@@ -1,5 +1,5 @@
 //
-//   Copyright (C) 2018 Skyloupe, LLC
+//   Copyright (C) 2019 Skyloupe, LLC
 //
 //   Licensed under the Apache License, Version 2.0 (the "License").
 //   You may not use this file except in compliance with the License.
@@ -18,16 +18,21 @@
 #include <string>
 #include "generator.h"
 
-namespace skyloupe 
+namespace skyloupe
 {
 
-class AdaGenerator : public Generator
+class SwiftTestGenerator : public Generator
 {
 public:
-    AdaGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
-    virtual ~AdaGenerator() {}
+    SwiftTestGenerator() = delete;
+    SwiftTestGenerator(Specification& mspec, Specification& lspec) : Generator(mspec, lspec) {}
+    virtual ~SwiftTestGenerator() = default;
 
     bool generate(int& errorcode) override;
+
+protected:
+    virtual bool do_test_implementation(int& errorcode);
+    virtual bool do_sets(int& errorcode);
 };
 
 }

@@ -26,7 +26,7 @@ Generator::Generator(Specification& msg_specification, Specification& lang_speci
 {
     for (auto& member : msg_spec_.get_proto().members())
     {
-        member_desc_t memtuple = std::make_tuple(member.second.type(), member.second.name(), member.second.endian());
+        member_desc_t memtuple = std::make_tuple(member.second.type(), member.second.name(), member.second.endian(), member.second.length());
         std::pair<uint32_t, member_desc_t> mempair = std::make_pair(member.first, memtuple);
         ordered_members_.insert(mempair);
     }
@@ -44,6 +44,11 @@ bool Generator::is_native_type(const std::string& type)
     }
 
     return true;
+}
+
+bool Generator::is_string_type(const std::string& type)
+{
+    return type == "string";
 }
 
 void Generator::cr()

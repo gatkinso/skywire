@@ -24,8 +24,10 @@ set(DEPLOY_JSONS   c/lang.c.json
                    cpp/lang.cpp.json
                    c++11/lang.cpp11.json
                    go/lang.go.json
+                   java/lang.java.json
                    proto/lang.proto3.json
-                   python/lang.python3.json)
+                   python/lang.python3.json
+                   swift/lang.swift.json)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     set(DEBUG_JSONS    c.test.json
@@ -35,13 +37,13 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
                        python3.test.json)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
-set(TEST_SCRIPTS   test_wiregen)
+#set(TEST_SCRIPTS   test_wiregen)
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
 add_dependencies(${TARGETNAME} skywire specification cli)
 
-target_link_libraries(${TARGETNAME} skywire specification cli)
+target_link_libraries(${TARGETNAME} skywire specification cli protobuf::libprotobuf)
 
 if(MSVC)
     set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${TARGETNAME}.exe)

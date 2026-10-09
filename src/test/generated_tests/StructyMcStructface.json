@@ -30,6 +30,11 @@
          "type":"char",
          "name":"e_charcoal"
       },
+      "302":{
+         "type":"string",
+         "name":"j_mystring302",
+         "length":16
+      },
       "1000":{
          "type":"float",
          "name":"f_myfloat1000"

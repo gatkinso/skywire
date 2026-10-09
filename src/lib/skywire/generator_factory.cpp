@@ -32,9 +32,9 @@ bool GeneratorFactory::machine(std::unique_ptr<Generator>& gen_ptr,
         return false;        
     }
 
-    if (lang->second == "ada")
+    if (lang->second == "swift")
     {
-        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::AdaGenerator(msg_spec));
+        gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::SwiftGenerator(msg_spec));
     }
     else if (lang->second == "c")
     {
@@ -74,7 +74,7 @@ bool GeneratorFactory::tests_machine(std::unique_ptr<Generator>& gen_ptr,
         return false;        
     }
 
-    if (lang->second == "ada")
+    if (lang->second == "swift")
     {
         std::cerr << "Not yet implemented" << std::endl;
         return false;
@@ -86,6 +86,11 @@ bool GeneratorFactory::tests_machine(std::unique_ptr<Generator>& gen_ptr,
     else if (lang->second == "c++")
     {
         gen_ptr = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_spec));
+    }
+    else if (lang->second == "go")
+    {
+        std::cerr << "Not yet implemented" << std::endl;
+        return false;
     }
     else if (lang->second == "java")
     {

@@ -15,6 +15,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <cstring>
 #include "StructyMcStructface.h"
 #include "ClassyMcClassface.h"
 
@@ -42,6 +43,7 @@ TEST_F(CandCpp, SerDes)
         structy[i].c_myint64_201 = i;
         structy[i].d_myDoubleBubble202 = (double)i;
         structy[i].e_charcoal = i%256;
+        strncpy(structy[i].j_mystring302, "skywire", 16);
         structy[i].f_myfloat1000 = sign*i*66.6f;
         structy[i].g_myuint32_2000 = i*49;
         structy[i].h_myint64_2010 = sign*i*-80;
@@ -63,6 +65,7 @@ TEST_F(CandCpp, SerDes)
         ASSERT_EQ(structy[i].c_myint64_201, classy[i].Get_c_myint64_201());
         ASSERT_EQ(structy[i].d_myDoubleBubble202, classy[i].Get_d_myDoubleBubble202());
         ASSERT_EQ(structy[i].e_charcoal, classy[i].Get_e_charcoal());
+        ASSERT_EQ(0, std::strncmp(structy[i].j_mystring302, classy[i].Get_j_mystring302(), 16));
         ASSERT_EQ(structy[i].f_myfloat1000, classy[i].Get_f_myfloat1000());
         ASSERT_EQ(structy[i].g_myuint32_2000, classy[i].Get_g_myuint32_2000());
         ASSERT_EQ(structy[i].h_myint64_2010, classy[i].Get_h_myint64_2010());
@@ -92,6 +95,7 @@ TEST_F(CandCpp, StreamCompare)
     structy.c_myint64_201 = i;
     structy.d_myDoubleBubble202 = (double)i;
     structy.e_charcoal = i % 256;
+    strncpy(structy.j_mystring302, "skywire", 16);
     structy.f_myfloat1000 = i*66.6f;
     structy.g_myuint32_2000 = i * 49;
     structy.h_myint64_2010 = i*-80;
@@ -102,6 +106,7 @@ TEST_F(CandCpp, StreamCompare)
     classy.Set_c_myint64_201(structy.c_myint64_201);
     classy.Set_d_myDoubleBubble202(static_cast<double>(structy.d_myDoubleBubble202));
     classy.Set_e_charcoal(structy.e_charcoal);
+    classy.Set_j_mystring302("skywire");
     classy.Set_f_myfloat1000(structy.f_myfloat1000);
     classy.Set_g_myuint32_2000(structy.g_myuint32_2000);
     classy.Set_h_myint64_2010(structy.h_myint64_2010);
