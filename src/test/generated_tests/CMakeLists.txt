@@ -133,3 +133,16 @@ add_test(NAME skywire_generated_tests:SwiftRoundTrip
 set_tests_properties(skywire_generated_tests:SwiftRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "SWIFT_TOOLCHAIN_NOT_FOUND")
 
+# Go generated round-trip and wire-format test. The Go toolchain is detected
+# when the test runs (see go_roundtrip.cmake); without go the test reports Skipped.
+add_test(NAME skywire_generated_tests:GoRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/GopherMcGoface.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/go/lang.go.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_go_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/go_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:GoRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "GO_TOOLCHAIN_NOT_FOUND")
+
