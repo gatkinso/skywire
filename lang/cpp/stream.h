@@ -35,6 +35,7 @@ class SWStream
 public:
     SWStream(size_t size = 512, size_t expand_size = 512)
     :pos_(0)
+    ,read_pos_(0)
     ,expand_size_(expand_size)
     {
         buffer_.resize(size);
@@ -362,14 +363,24 @@ public:
 
     size_t write(const void* data, size_t len)
     {
-        if(buffer_.size() < pos_ + len)
+        if (len == 0 || len > buffer_.max_size() - pos_)
+        {
+            return 0;
+        }
+
+        if (buffer_.size() < pos_ + len)
+        {
+            compact();
+        }
+
+        if (buffer_.size() < pos_ + len)
         {
             size_t grow = expand_size_;
             if (len > expand_size_)
             {
                 grow = len + expand_size_;
             }
-            buffer_.resize(buffer_.size() + grow);
+            buffer_.resize(pos_ + grow);
         }
 
         std::memcpy(buffer_.data() + pos_, data, len);
@@ -380,15 +391,20 @@ public:
 
     size_t read(void* data, size_t len)
     {
-        if(len == 0 || buffer_.size() < len || pos_ < len)
+        if (len == 0 || pos_ - read_pos_ < len)
         {
             return 0;
         }
 
-        std::memcpy(data, buffer_.data(), len);
-        buffer_.erase(buffer_.begin(), buffer_.begin() + len);
+        std::memcpy(data, buffer_.data() + read_pos_, len);
+        read_pos_ += len;
 
-        pos_ -= len;
+        // Fully drained: rewind so the buffer is reused from the start.
+        if (read_pos_ == pos_)
+        {
+            pos_ = 0;
+            read_pos_ = 0;
+        }
 
         return len;
     }
@@ -400,17 +416,19 @@ public:
 
     size_t byte_size() const
     {
-        return pos_;
+        return pos_ - read_pos_;
     }
 
     void clear()
     {
         buffer_.clear();
+        pos_ = 0;
+        read_pos_ = 0;
     }
 
     const char* data() const
     {
-        return buffer_.data();
+        return buffer_.data() + read_pos_;
     }
 
     void set_expand_size(size_t expand_size)
@@ -430,9 +448,24 @@ public:
     }
 
 protected:
+    // Unread bytes are [read_pos_, pos_); pos_ is where the next write lands.
     size_t pos_;
+    size_t read_pos_;
     size_t expand_size_;
     std::vector<char> buffer_;
+
+    // Slide unread bytes to the front so consumed space is reused before growing.
+    void compact()
+    {
+        if (read_pos_ == 0)
+        {
+            return;
+        }
+
+        std::memmove(buffer_.data(), buffer_.data() + read_pos_, pos_ - read_pos_);
+        pos_ -= read_pos_;
+        read_pos_ = 0;
+    }
 };
 
 class PZStream
@@ -444,6 +477,10 @@ public:
         pos_ = 0;
         expand_size_ = 0;
     }
+
+    // Holds a reference to its owner's buffer; a copy would alias it.
+    PZStream(const PZStream&) = delete;
+    PZStream& operator=(const PZStream&) = delete;
 
     void serialize(char d, Endianness)
     {
@@ -573,6 +610,8 @@ public:
     void clear()
     {
         buffer_.clear();
+        pos_ = 0;
+        reader_ = protozero::pbf_reader{buffer_};
     }
 
     const char* data() const
@@ -613,11 +652,13 @@ public:
     typedef enum mode { SW, PZ } modetype;
 
     Stream(size_t size = 512, size_t expand_size = 512, modetype mode = SW)
-    :swstream_(size, expand_size)
-    ,pzstream_(buffer_)
-    ,mode_(mode){
+    :mode_(mode)
+    ,swstream_(size, expand_size)
+    ,pzstream_(buffer_){
     }
     ~Stream() {}
+    Stream(const Stream&) = delete;
+    Stream& operator=(const Stream&) = delete;
     bool serialize(char d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
@@ -863,10 +904,11 @@ public:
     }
 
 private:
+    // buffer_ must be declared before pzstream_, which binds to it on construction.
     modetype mode_ = SW;
-    SWStream swstream_;
-    PZStream pzstream_; 
     std::string buffer_;
+    SWStream swstream_;
+    PZStream pzstream_;
 };
 
 } // namespace skyloupe

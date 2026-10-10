@@ -15,6 +15,8 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <type_traits>
+#include <vector>
 #include "stream.h"
 
 class StreamUnitTest : public ::testing::Test
@@ -351,4 +353,100 @@ TEST_F(StreamUnitTest, OutofBoundRead)
     ASSERT_EQ(bytes, 0);
 
     delete[] array_out;
+}
+
+// Stream's PZStream binds to Stream's own buffer, so a copy would alias it.
+static_assert(!std::is_copy_constructible<skyloupe::Stream>::value, "Stream must not be copyable");
+static_assert(!std::is_copy_assignable<skyloupe::Stream>::value, "Stream must not be copy-assignable");
+
+TEST_F(StreamUnitTest, ClearThenLargeWrite)
+{
+    // clear() used to leave the write position behind, so the next write
+    // landed past the end of the shrunken buffer.
+    skyloupe::Stream ss(16, 16);
+    std::vector<char> first(64, 'a');
+    std::vector<char> second(1000);
+    std::vector<char> out(1000, 0);
+
+    for (size_t i = 0; i < second.size(); i++)
+    {
+        second[i] = static_cast<char>(i);
+    }
+
+    ASSERT_EQ(ss.write(first.data(), first.size()), first.size());
+    ss.clear();
+    ASSERT_EQ(ss.byte_size(), 0);
+
+    ASSERT_EQ(ss.write(second.data(), second.size()), second.size());
+    ASSERT_EQ(ss.byte_size(), second.size());
+    ASSERT_EQ(ss.read(out.data(), out.size()), out.size());
+    ASSERT_EQ(out, second);
+}
+
+TEST_F(StreamUnitTest, PartialReadKeepsOrderAcrossGrowth)
+{
+    // Reads advance an offset; a later write that needs room compacts the
+    // unread bytes to the front before growing.
+    skyloupe::Stream ss(16, 8);
+    uint32_t out = 0;
+
+    for (uint32_t i = 0; i < 4; i++)
+    {
+        ss.serialize(i, skyloupe::Endianness::Big);
+    }
+
+    ss.deserialize(out, skyloupe::Endianness::Big);
+    ASSERT_EQ(out, 0u);
+    ss.deserialize(out, skyloupe::Endianness::Big);
+    ASSERT_EQ(out, 1u);
+    ASSERT_EQ(ss.byte_size(), 2 * sizeof(uint32_t));
+
+    for (uint32_t i = 4; i < 64; i++)
+    {
+        ss.serialize(i, skyloupe::Endianness::Big);
+    }
+
+    ASSERT_EQ(ss.byte_size(), 62 * sizeof(uint32_t));
+    for (uint32_t i = 2; i < 64; i++)
+    {
+        ss.deserialize(out, skyloupe::Endianness::Big);
+        ASSERT_EQ(out, i);
+    }
+    ASSERT_EQ(ss.byte_size(), 0);
+}
+
+TEST_F(StreamUnitTest, DataPointsAtUnreadBytes)
+{
+    skyloupe::Stream ss;
+    const char bytes[] = { 1, 2, 3, 4 };
+    char out = 0;
+
+    ss.write(bytes, sizeof(bytes));
+    ss.read(&out, 1);
+
+    ASSERT_EQ(ss.byte_size(), 3);
+    ASSERT_EQ(0, std::memcmp(ss.data(), bytes + 1, 3));
+}
+
+TEST_F(StreamUnitTest, ManySmallReads)
+{
+    // Each read used to erase from the front of the vector, making this
+    // quadratic in the message size.
+    const size_t COUNT = 1 << 20;
+    skyloupe::Stream ss;
+    std::vector<unsigned char> in(COUNT);
+
+    for (size_t i = 0; i < COUNT; i++)
+    {
+        in[i] = static_cast<unsigned char>(i * 31);
+    }
+    ss.write(in.data(), in.size());
+
+    for (size_t i = 0; i < COUNT; i++)
+    {
+        unsigned char b = 0;
+        ss.deserialize(b, skyloupe::Endianness::Native);
+        ASSERT_EQ(b, in[i]);
+    }
+    ASSERT_EQ(ss.byte_size(), 0);
 }
