@@ -102,7 +102,7 @@ void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int end
     }
 
     unsigned int system_endian = SW_NATIVE_ENDIAN_FLAG;
-#if SW_LITTLE_ENDIAN
+#if SW_HOST_LITTLE_ENDIAN
     system_endian = SW_LITTLE_ENDIAN_FLAG;
 #else
     system_endian = SW_BIG_ENDIAN_FLAG;
@@ -161,7 +161,7 @@ void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
     memcpy(d, streamer->head_, sz);
 
     unsigned int system_endian = SW_NATIVE_ENDIAN_FLAG;
-#if SW_LITTLE_ENDIAN
+#if SW_HOST_LITTLE_ENDIAN
     system_endian = SW_LITTLE_ENDIAN_FLAG;
 #else
     system_endian = SW_BIG_ENDIAN_FLAG;
