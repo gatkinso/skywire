@@ -14,7 +14,9 @@
 //
 
 #include <map>
+#include <cstdio>
 #include "swifttestgenerator.h"
+#include "test_values.h"
 
 namespace skyloupe
 {
@@ -67,7 +69,43 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
     ss_ << "        let output = " << classname << "()\n";
     ss_ << "        check(output.deserialize(stream), \"deserialize failed\")\n\n";
     ss_ << "        check(input.Equals(output), \"round-trip value mismatch\")\n";
-    ss_ << "        check(input.size() == output.size(), \"size mismatch\")\n";
+    ss_ << "        check(input.size() == output.size(), \"size mismatch\")\n\n";
+    // One byte short of a full message: deserialize must fail, consume
+    // nothing, and leave the destination untouched.
+    ss_ << "        let full = SWStream()\n";
+    ss_ << "        check(input.serialize(full), \"serialize failed\")\n";
+    ss_ << "        let short = SWStream()\n";
+    ss_ << "        short.write(full.read(input.size() - 1)!)\n";
+    ss_ << "        let untouched = " << classname << "()\n";
+    ss_ << "        check(!untouched.deserialize(short), \"short buffer accepted\")\n";
+    ss_ << "        check(untouched.Equals(" << classname << "()), \"short buffer modified the destination\")\n";
+    ss_ << "        check(short.remaining() == input.size() - 1, \"short buffer consumed bytes\")\n";
+
+    // The expected bytes are computed by wiregen, shared with every language.
+    std::vector<uint8_t> wire;
+    bool have_wire = true;
+    for (auto& member : ordered_members_)
+    {
+        have_wire = have_wire && test_values::encode(std::get<member_type>(member.second),
+                                                     std::get<member_endianness>(member.second),
+                                                     std::get<member_length>(member.second), wire);
+    }
+    if (have_wire)
+    {
+        ss_ << "\n";
+        ss_ << "        let want: [UInt8] = [";
+        for (size_t i = 0; i < wire.size(); i++)
+        {
+            ss_ << ((i % 8 == 0) ? "\n            " : " ");
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "0x%02x,", wire[i]);
+            ss_ << hex;
+        }
+        ss_ << "\n        ]\n";
+        ss_ << "        let wire = SWStream()\n";
+        ss_ << "        check(input.serialize(wire), \"serialize failed\")\n";
+        ss_ << "        check(wire.read(wire.remaining())! == want, \"wire mismatch\")\n";
+    }
     ss_ << "        print(\"PASS " << classname << " round-trip\")\n";
     ss_ << "    }\n";
     ss_ << "}\n";
@@ -77,6 +115,7 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
     return true;
 }
 
+// Every member gets the value shared by all the test generators.
 bool SwiftTestGenerator::do_sets(int& errorcode)
 {
     for (auto& member : ordered_members_)
@@ -84,23 +123,14 @@ bool SwiftTestGenerator::do_sets(int& errorcode)
         const std::string& type = std::get<member_type>(member.second);
         const std::string& name = std::get<member_name>(member.second);
 
-        ss_ << "        input.Set_" << name << "(";
-
-             if (type == "char")          ss_ << "65";
-        else if (type == "unsigned char") ss_ << "200";
-        else if (type == "uint8_t")       ss_ << "201";
-        else if (type == "int8_t")        ss_ << "-50";
-        else if (type == "uint16_t")      ss_ << "60000";
-        else if (type == "int16_t")       ss_ << "-12345";
-        else if (type == "uint32_t")      ss_ << "3000000000";
-        else if (type == "int32_t")       ss_ << "-2000000000";
-        else if (type == "uint64_t")      ss_ << "12000000000";
-        else if (type == "int64_t")       ss_ << "-9000000000";
-        else if (type == "float")         ss_ << "3.5";
-        else if (type == "double")        ss_ << "3.14159";
-        else if (type == "string")        ss_ << "Array(\"skywire\".utf8)";
-
-        ss_ << ")\n";
+        if (is_string_type(type))
+        {
+            ss_ << "        input.Set_" << name << "(Array(\"" << test_values::string_value() << "\".utf8))\n";
+        }
+        else if (test_values::literal(type))
+        {
+            ss_ << "        input.Set_" << name << "(" << test_values::literal(type) << ")\n";
+        }
     }
 
     return true;

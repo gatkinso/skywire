@@ -43,11 +43,11 @@ public:
     virtual results_t get_results() const { return results_; }  //copy???
 
 protected:
-    Specification lang_spec_;
     Specification msg_spec_;
+    Specification lang_spec_;
     results_t results_;
     std::stringstream ss_;
-    int errorcode_;
+    int errorcode_ = 0;
     std::map< uint32_t, member_desc_t> ordered_members_;
 
     void cr();

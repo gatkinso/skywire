@@ -329,6 +329,9 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         return false;
     }
 
+    // Reject a short stream before touching any field, like the Go, Java and Python generators.
+    gen_one_line("deserialize_size_check_str", 3);
+
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");
@@ -525,7 +528,7 @@ bool CppGenerator::hdr_members(int& errorcode)
         }
         else
         {
-            ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << ";" << std::endl;
+            ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << "{};" << std::endl;
         }
     }
 

@@ -14,6 +14,7 @@
 //
 
 #include <fstream>
+#include <iterator>
 #include "specification.h"
 #include "google/protobuf/util/json_util.h"
 #include "google/protobuf/reflection.h"
@@ -28,38 +29,24 @@ bool Specification::read_file(const std::string& pathname)
         return false;
     }
 
-    try
+    // Read the whole stream rather than trusting tellg(), which fails on pipes.
+    std::ifstream file(pathname.c_str(), std::ios::in | std::ios::binary);
+
+    if (file.fail())
     {
-        std::ifstream file(pathname.c_str(), std::ios::in | std::ios::ate);
-
-        if (file.fail()) 
-        {
-            return false;
-        }
-
-        size_t size = (size_t)file.tellg();
-
-        char* memblock = new char[size+1];
-        memset(memblock, 0, size+1);
-
-        file.seekg(0, std::ios::beg);
-        file.read(memblock, size);
-        file.close();
-
-        std::string str(memblock);
-
-        auto ret = read_string(str);
-
-        delete[] memblock;
-        
-        if (ret == false)
-        {
-            spec_proto_.Clear();
-            return false;
-        }
+        return false;
     }
-    catch (std::ifstream::failure e)
+
+    std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    if (file.bad())
     {
+        return false;
+    }
+
+    if (false == read_string(str))
+    {
+        spec_proto_.Clear();
         return false;
     }
 
@@ -139,10 +126,10 @@ bool Specification::write_string(std::string& json_str) const
     {
         auto ret = google::protobuf::util::MessageToJsonString(spec_proto_, &json_str);
 
-        //if (ret != google::protobuf::util::Status::kOk)
-        //{
-        //    return false;
-        //}
+        if (false == ret.ok())
+        {
+            return false;
+        }
     }
     catch (std::ofstream::failure e)
     {

@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
+#include <string.h>
 #include "sw_endian.h"
 
 #define DEF_CSTREAM_SIZE 1024
@@ -33,13 +34,22 @@ extern "C" {
         char *head_, *tail_;
     } Cstream;
 
-    void cstream_init(Cstream* streamer, size_t size);
+    // Returns 0 on success, -1 if streamer is NULL or the allocation fails.
+    // A size of 0 uses DEF_CSTREAM_SIZE.
+    int cstream_init(Cstream* streamer, size_t size);
 
+    // Frees the buffer; safe to call on a NULL or already-finished stream.
     void cstream_fini(Cstream* streamer);
 
-    void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian);
+    // Returns 0 on success, -1 on a NULL argument or failed allocation (the
+    // stream is left unchanged). Space already read is reused before growing.
+    int cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian);
 
-    void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian);
+    // Returns 0 on success, -1 if fewer than sz bytes are unread (nothing is consumed).
+    int cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian);
+
+    // Number of unread bytes.
+    size_t cstream_available(const Cstream* streamer);
 
 #ifdef __cplusplus
 }

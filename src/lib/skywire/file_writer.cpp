@@ -14,7 +14,9 @@
 //
 
 #include <fstream>
+#include <iostream>
 #include "file_writer.h"
+#include "errorcodes.h"
 
 namespace skyloupe
 {
@@ -33,7 +35,22 @@ bool FileWriter::write_file(int& errorcode)
 {
     std::ofstream out_file(pathname_, std::ofstream::out | std::ofstream::trunc);
 
+    if (false == out_file.is_open())
+    {
+        errorcode |= SW_FILEWRITEERROR;
+        std::cerr << "Cannot open " << pathname_ << " for writing" << std::endl;
+        return false;
+    }
+
     out_file.write(result_string_.c_str(), result_string_.size());
+    out_file.close();
+
+    if (out_file.fail())
+    {
+        errorcode |= SW_FILEWRITEERROR;
+        std::cerr << "Failed writing " << pathname_ << std::endl;
+        return false;
+    }
 
     return true;
 }

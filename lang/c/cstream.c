@@ -13,172 +13,215 @@
 //   permissions and limitations under the License.
 //
 
-#include <stdio.h>
+#include <stdint.h>
 #include "cstream.h"
 
-void __swap(char* l, char* r)
+static void sw_swap(char* l, char* r)
 {
     char t = *l;
     *l = *r;
     *r = t;
 }
 
-void __swap16(char* d)
+void sw_swap16(char* d)
 {
     if (!d) return;
 
-    __swap(&d[0], &d[1]);
+    sw_swap(&d[0], &d[1]);
 }
 
-void __swap32(char* d)
+void sw_swap32(char* d)
 {
     if (!d) return;
 
-    __swap(&d[0], &d[3]);
-    __swap(&d[1], &d[2]);
+    sw_swap(&d[0], &d[3]);
+    sw_swap(&d[1], &d[2]);
 }
 
-void __swap64(char* d)
+void sw_swap64(char* d)
 {
     if (!d) return;
 
-    __swap(&d[0], &d[7]);
-    __swap(&d[1], &d[6]);
-    __swap(&d[2], &d[5]);
-    __swap(&d[3], &d[4]);
+    sw_swap(&d[0], &d[7]);
+    sw_swap(&d[1], &d[6]);
+    sw_swap(&d[2], &d[5]);
+    sw_swap(&d[3], &d[4]);
 }
 
-void cstream_init(Cstream* streamer, size_t size)
+static unsigned int host_endian(void)
 {
+#if SW_HOST_LITTLE_ENDIAN
+    return SW_LITTLE_ENDIAN_FLAG;
+#else
+    return SW_BIG_ENDIAN_FLAG;
+#endif
+}
+
+int cstream_init(Cstream* streamer, size_t size)
+{
+    if (streamer == NULL)
+    {
+        return -1;
+    }
+
+    if (size == 0)
+    {
+        size = DEF_CSTREAM_SIZE;
+    }
+
     streamer->buffer_ = (char*)malloc(size);
-    streamer->size_ = size;
+    streamer->size_ = (streamer->buffer_ != NULL) ? size : 0;
     streamer->head_ = streamer->buffer_;
-    streamer->tail_ = streamer->head_;
+    streamer->tail_ = streamer->buffer_;
+
+    return (streamer->buffer_ != NULL) ? 0 : -1;
 }
 
 void cstream_fini(Cstream* streamer)
 {
-    if (streamer != NULL)
-        free(streamer->buffer_);
+    if (streamer == NULL)
+    {
+        return;
+    }
 
+    free(streamer->buffer_);
+    streamer->buffer_ = NULL;
     streamer->size_ = 0;
     streamer->head_ = NULL;
     streamer->tail_ = NULL;
 }
 
-void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian)
+// Make room for sz more bytes after tail_: first reclaim space already read,
+// then grow. On failure the stream is left unchanged.
+static int cstream_reserve(Cstream* streamer, size_t sz)
 {
-    size_t tsize = 0;
-    size_t hsize = 0;
-    size_t grow = 0;
+    size_t unread = 0;
+    size_t needed = 0;
+    size_t newsize = 0;
+    char* newbuffer = NULL;
 
+    if (streamer->buffer_ == NULL && cstream_init(streamer, DEF_CSTREAM_SIZE) != 0)
+    {
+        return -1;
+    }
+
+    if ((size_t)(streamer->buffer_ + streamer->size_ - streamer->tail_) >= sz)
+    {
+        return 0;
+    }
+
+    unread = (size_t)(streamer->tail_ - streamer->head_);
+    if (sz > SIZE_MAX - unread)
+    {
+        return -1;
+    }
+    needed = unread + sz;
+
+    if (streamer->head_ != streamer->buffer_)
+    {
+        memmove(streamer->buffer_, streamer->head_, unread);
+        streamer->head_ = streamer->buffer_;
+        streamer->tail_ = streamer->buffer_ + unread;
+    }
+
+    if (streamer->size_ >= needed)
+    {
+        return 0;
+    }
+
+    newsize = (streamer->size_ <= SIZE_MAX / 2) ? streamer->size_ * 2 : SIZE_MAX;
+    if (newsize < needed)
+    {
+        newsize = needed;
+    }
+
+    newbuffer = (char*)realloc(streamer->buffer_, newsize);
+    if (newbuffer == NULL)
+    {
+        return -1;
+    }
+
+    streamer->buffer_ = newbuffer;
+    streamer->size_ = newsize;
+    streamer->head_ = newbuffer;
+    streamer->tail_ = newbuffer + unread;
+
+    return 0;
+}
+
+int cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian)
+{
     if (sz == 0)
     {
-        return;
+        return 0;
     }
 
-    if (streamer == NULL)
+    if (streamer == NULL || d == NULL || cstream_reserve(streamer, sz) != 0)
     {
-        cstream_init(streamer, DEF_CSTREAM_SIZE);
-        return;
+        return -1;
     }
 
-    if (streamer->tail_ + sz > streamer->buffer_ + streamer->size_)
+    memcpy(streamer->tail_, d, sz);
+
+    if (endian != SW_NATIVE_ENDIAN_FLAG && endian != host_endian())
     {
-        hsize = streamer->head_ - streamer->buffer_;
-        tsize = streamer->tail_ - streamer->buffer_;
-
-        grow = streamer->size_ * 2;
-        if (sz >= grow)
-        {
-            grow = sz * 2;
-        }
-
-        streamer->size_ = streamer->size_ + grow;
-        char* newbuffer = (char*)realloc(streamer->buffer_, streamer->size_);
-        streamer->buffer_ = newbuffer;
-        streamer->head_ = streamer->buffer_ + hsize;
-        streamer->tail_ = streamer->buffer_ + tsize;
-    }
-
-    unsigned int system_endian = SW_NATIVE_ENDIAN_FLAG;
-#if SW_LITTLE_ENDIAN
-    system_endian = SW_LITTLE_ENDIAN_FLAG;
-#else
-    system_endian = SW_BIG_ENDIAN_FLAG;
-#endif
-    if (endian != SW_NATIVE_ENDIAN_FLAG && system_endian != endian &&
-        (sz == 2 || sz == 4 || sz == 8))
-    {
-        char buf[8];
-        memcpy(buf, d, sz);
         switch (sz)
         {
         case 2:
-            __swap16(buf);
+            sw_swap16(streamer->tail_);
             break;
         case 4:
-            __swap32(buf);
+            sw_swap32(streamer->tail_);
             break;
         case 8:
-            __swap64(buf);
+            sw_swap64(streamer->tail_);
             break;
         default:
             break;
         }
-        memcpy(streamer->tail_, buf, sz);
-    }
-    else
-    {
-        memcpy(streamer->tail_, d, sz);
     }
 
     streamer->tail_ += sz;
+
+    return 0;
 }
 
-void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
+size_t cstream_available(const Cstream* streamer)
 {
-    size_t tsize = 0;
-    size_t hsize = 0;
-    size_t grow = 0;
-
-    if (sz == 0 || streamer == NULL || streamer->head_ + sz > streamer->tail_)
+    if (streamer == NULL || streamer->head_ == NULL)
     {
-        return;
+        return 0;
     }
 
-    if((streamer->head_ - streamer->buffer_) > (0.8) * streamer->size_)
-    {
-        tsize = streamer->tail_ - streamer->head_;
+    return (size_t)(streamer->tail_ - streamer->head_);
+}
 
-        char* newbuffer = (char*)malloc(streamer->size_);        
-        memcpy(newbuffer, streamer->head_, tsize);
-        streamer->buffer_ = newbuffer;
-        streamer->head_ = streamer->buffer_;
-        streamer->tail_ = streamer->buffer_ + tsize;
+int cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
+{
+    if (sz == 0)
+    {
+        return 0;
+    }
+
+    if (d == NULL || cstream_available(streamer) < sz)
+    {
+        return -1;
     }
 
     memcpy(d, streamer->head_, sz);
 
-    unsigned int system_endian = SW_NATIVE_ENDIAN_FLAG;
-#if SW_LITTLE_ENDIAN
-    system_endian = SW_LITTLE_ENDIAN_FLAG;
-#else
-    system_endian = SW_BIG_ENDIAN_FLAG;
-#endif
-    
-    if (endian != SW_NATIVE_ENDIAN_FLAG && system_endian != endian)
+    if (endian != SW_NATIVE_ENDIAN_FLAG && endian != host_endian())
     {
         switch (sz)
         {
         case 2:
-            __swap16(d);
+            sw_swap16((char*)d);
             break;
         case 4:
-            __swap32(d);
+            sw_swap32((char*)d);
             break;
         case 8:
-            __swap64(d);
+            sw_swap64((char*)d);
             break;
         default:
             break;
@@ -186,5 +229,6 @@ void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
     }
 
     streamer->head_ += sz;
-}
 
+    return 0;
+}

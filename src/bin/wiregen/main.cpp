@@ -185,7 +185,7 @@ int main(int argc, const char* argv[])
     if (false == success)
     {
         std::cout << "Invalid input parameters" << std::endl;
-        return success;
+        return 1;
     }
 
     if (true == file_mode)
@@ -218,7 +218,13 @@ int main(int argc, const char* argv[])
         }
     }
 
-    return errorcode;
+    // Exit status is only 8 bits; never let a failure truncate to 0.
+    if (success == true)
+    {
+        return 0;
+    }
+
+    return (errorcode & 0xFF) != 0 ? (errorcode & 0xFF) : 1;
 }
 
 //bin/wiregen --langfile ../lang/lang.cpp.json --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\",\"language\":\"c++\",\"lang_file\":\"lang.cpp.json\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"

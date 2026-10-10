@@ -27,7 +27,7 @@ public:
     virtual bool present(int& errorcode) = 0;
 
 protected:
-    int errorcode_;
+    int errorcode_ = 0;
 };
 
 }
