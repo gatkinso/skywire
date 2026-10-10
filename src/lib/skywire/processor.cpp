@@ -13,11 +13,53 @@
 //   permissions and limitations under the License.
 //
 
+#include <regex>
+#include <set>
 #include "file_writer.h"
 #include "processor.h"
+#include "sw_endian.h"
 
 namespace skyloupe
 {
+
+namespace
+{
+
+// Everything from the message spec is pasted into generated source or used as
+// a path, so it is restricted to characters that cannot break out of either.
+const std::regex identifier_re("[A-Za-z_][A-Za-z0-9_]*");
+const std::regex qualified_re("[A-Za-z_][A-Za-z0-9_]*((\\.|::)[A-Za-z_][A-Za-z0-9_]*)*");
+const std::regex include_re("<[A-Za-z0-9_./+-]+>|\"[A-Za-z0-9_./+-]+\"|[A-Za-z0-9_./+-]+");
+const std::regex filename_re("[A-Za-z0-9_.+-]+");
+
+// Output slot produced by a generator -> spec key naming its file.
+const std::pair<const char*, const char*> output_slots[] = {
+    { "header", "outputheaderfilename" },
+    { "implementation", "outputimplfilename" },
+    { "unittest", "outputtestfilename" },
+};
+
+std::string printable(const std::string& value)
+{
+    std::string out(value);
+    for (auto& c : out)
+    {
+        if (c < 0x20 || c == 0x7f)
+        {
+            c = '?';
+        }
+    }
+    return out;
+}
+
+bool spec_error(int& errorcode, const std::string& what)
+{
+    errorcode |= SW_SPEC_INVALID;
+    std::cerr << "Invalid specification: " << what << std::endl;
+    return false;
+}
+
+}
 
 bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
 {
@@ -56,9 +98,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
 
     if (true == ret && true == write_to_file && false == output_str_map.empty())
     {
-        do_file_write(outputdir, output_str_map, "outputheaderfilename", "header", errorcode);  //refactor - confusing
-        do_file_write(outputdir, output_str_map, "outputimplfilename", "implementation", errorcode);
-        do_file_write(outputdir, output_str_map, "outputtestfilename", "unittest", errorcode);
+        ret = write_results(outputdir, output_str_map, errorcode);
     }
 
     return ret;
@@ -106,9 +146,7 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
 
     if (true == write_to_file && false == output_str_map.empty())
     {
-        do_file_write(outputdir, output_str_map, "outputheaderfilename", "header", errorcode);  //refactor - confusing
-        do_file_write(outputdir, output_str_map, "outputimplfilename", "implementation", errorcode);
-        do_file_write(outputdir, output_str_map, "outputtestfilename", "unittest", errorcode);
+        success = write_results(outputdir, output_str_map, errorcode);
     }
 
     return success;
@@ -117,6 +155,12 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
 bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests)
 {
     bool success = false;
+
+    if (false == validate_spec(errorcode))
+    {
+        return success;
+    }
+
     std::string lang = msg_spec_.get_value_string(language_key_);
 
     std::unique_ptr<skyloupe::Generator> genny;
@@ -207,26 +251,121 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     }
     // end temporary
 
-    return true;
+    return success;
 }
 
-void Processor::do_file_write(const std::string& outputdir, results_t& output_str_map, const std::string stencil_key, const std::string value_key, int& errorcode)
+bool Processor::validate_spec(int& errorcode)
 {
-    std::string filename_str = msg_spec_.get_value_string(stencil_key);
-    auto value = output_str_map.find(value_key);
+    bool valid = true;
+    const auto& proto = msg_spec_.get_proto();
+    const auto& values = proto.string_values();
 
-    if (false == filename_str.empty() && value != output_str_map.end())
+    auto classname = values.find("classname");
+    if (classname == values.end() || false == std::regex_match(classname->second, identifier_re))
     {
-        std::string pathname_str = outputdir + "/" + filename_str;
+        valid = spec_error(errorcode, "classname must be present and an identifier");
+    }
 
-        std::unique_ptr<skyloupe::ResultPresenter> presenter;
-        presenter = std::unique_ptr<skyloupe::FileWriter>(new skyloupe::FileWriter(pathname_str, value->second));
-        bool success = presenter->present(errorcode);
-        if (false == success)
+    auto name_space = values.find("namespace");
+    if (name_space != values.end() && false == std::regex_match(name_space->second, qualified_re))
+    {
+        valid = spec_error(errorcode, "namespace '" + printable(name_space->second) + "' must be identifiers joined by '.' or '::'");
+    }
+
+    for (const auto& slot : output_slots)
+    {
+        auto file = values.find(slot.second);
+        if (file != values.end() &&
+            (false == std::regex_match(file->second, filename_re) || file->second == "." || file->second == ".."))
         {
-            errorcode |= SW_FILEWRITEERROR;
+            valid = spec_error(errorcode, std::string(slot.second) + " '" + printable(file->second) + "' must be a plain file name");
         }
     }
+
+    for (const auto& include : proto.includes())
+    {
+        if (false == std::regex_match(include, include_re))
+        {
+            valid = spec_error(errorcode, "include '" + printable(include) + "' is not a plain path, <path> or \"path\"");
+        }
+    }
+
+    if (proto.members_size() == 0)
+    {
+        errorcode |= SW_LANG_NOMEMBERS;
+        valid = spec_error(errorcode, "no members");
+    }
+
+    std::set<std::string> native_types(lang_spec_.get_proto().native_types().begin(), lang_spec_.get_proto().native_types().end());
+    std::set<std::string> names;
+
+    for (const auto& member : proto.members())
+    {
+        const auto& m = member.second;
+        const std::string where = "member " + std::to_string(member.first) + ": ";
+
+        if (false == std::regex_match(m.name(), identifier_re))
+        {
+            valid = spec_error(errorcode, where + "name '" + printable(m.name()) + "' must be an identifier");
+        }
+        else if (false == names.insert(m.name()).second)
+        {
+            valid = spec_error(errorcode, where + "name '" + m.name() + "' is used by another member");
+        }
+
+        if (m.type() != "string" && native_types.count(m.type()) == 0 && false == std::regex_match(m.type(), identifier_re))
+        {
+            valid = spec_error(errorcode, where + "type '" + printable(m.type()) + "' is neither a native type nor an identifier");
+        }
+
+        if (m.type() == "string" && m.length() == 0)
+        {
+            valid = spec_error(errorcode, where + "string needs a length of at least 1");
+        }
+
+        if (m.endian() > SW_NATIVE_ENDIAN_FLAG)
+        {
+            valid = spec_error(errorcode, where + "endian " + std::to_string(m.endian()) + " is not 0 (big), 1 (little) or 2 (native)");
+        }
+    }
+
+    return valid;
+}
+
+bool Processor::write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode)
+{
+    const auto& values = msg_spec_.get_proto().string_values();
+
+    // Check every destination before writing any, so a bad spec leaves no partial output.
+    for (const auto& slot : output_slots)
+    {
+        if (output_str_map.count(slot.first) != 0 && values.find(slot.second) == values.end())
+        {
+            return spec_error(errorcode, std::string(slot.second) + " is required to write the " + slot.first + " output");
+        }
+    }
+
+    bool success = true;
+
+    for (const auto& slot : output_slots)
+    {
+        auto result = output_str_map.find(slot.first);
+        if (result == output_str_map.end())
+        {
+            continue;
+        }
+
+        std::string pathname_str = outputdir + "/" + values.at(slot.second);
+
+        std::unique_ptr<skyloupe::ResultPresenter> presenter(new skyloupe::FileWriter(pathname_str, result->second));
+        if (false == presenter->present(errorcode))
+        {
+            errorcode |= SW_FILEWRITEERROR;
+            success = false;
+        }
+    }
+
+    return success;
 }
 
 }

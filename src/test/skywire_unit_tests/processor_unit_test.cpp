@@ -15,6 +15,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <filesystem>
 #include "skywire/processor.h"
 
 using namespace skyloupe;
@@ -183,6 +184,127 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankLangFilenamne)
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
 
+// A minimal c++ message spec; each validation test swaps in one bad piece.
+static std::string make_spec(const std::string& members,
+                             const std::string& extra_values = "",
+                             const std::string& includes = R"(["<stdint.h>"])")
+{
+    return R"({"stringValues":{"classname":"TestClass","namespace":"testspace","language":"c++",)"
+           R"("outputheaderfilename":"TestClass.h")" + extra_values + R"(},"members":)" + members +
+           R"(,"includes":)" + includes + "}";
+}
 
+static const std::string good_members = R"({"1":{"type":"float","name":"float_1","endian":1}})";
 
+class ProcessorValidationTest : public ProcessorUnitTest
+{
+protected:
+    bool run(const std::string& spec)
+    {
+        Processor p;
+        return p.process_string(spec, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+    }
 
+    void expect_rejected(const std::string& spec)
+    {
+        ASSERT_FALSE(run(spec));
+        ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+        ASSERT_TRUE(output_str_map.empty());
+    }
+};
+
+TEST_F(ProcessorValidationTest, AcceptsValidSpec)
+{
+    ASSERT_TRUE(run(make_spec(good_members)));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+}
+
+TEST_F(ProcessorValidationTest, AcceptsQualifiedNamespace)
+{
+    std::string spec = make_spec(good_members);
+    spec.replace(spec.find("testspace"), 9, "com.acme.wire");
+    ASSERT_TRUE(run(spec));
+
+    spec = make_spec(good_members);
+    spec.replace(spec.find("testspace"), 9, "acme::wire");
+    ASSERT_TRUE(run(spec));
+}
+
+TEST_F(ProcessorValidationTest, RejectsPathTraversalInOutputFilename)
+{
+    expect_rejected(make_spec(good_members, R"(,"outputtestfilename":"../escape.cpp")"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsPathSeparatorInOutputFilename)
+{
+    expect_rejected(make_spec(good_members, R"(,"outputtestfilename":"sub/escape.cpp")"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsCodeInMemberName)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"float","name":"x; } evil(); struct { int y"}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsRegexFormatInMemberName)
+{
+    // "$&" would be expanded by regex_replace, so declarations and accessors disagree.
+    expect_rejected(make_spec(R"({"1":{"type":"float","name":"a$&b"}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsCodeInMemberType)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"int x; int","name":"a"}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsDuplicateMemberName)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"float","name":"a"},"2":{"type":"float","name":"a"}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsZeroLengthString)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"string","name":"s","length":0}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsUnknownEndian)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"float","name":"a","endian":3}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsBadClassname)
+{
+    std::string spec = make_spec(good_members);
+    spec.replace(spec.find("\"TestClass\""), 11, "\"Test Class\"");
+    expect_rejected(spec);
+}
+
+TEST_F(ProcessorValidationTest, RejectsNewlineInInclude)
+{
+    expect_rejected(make_spec(good_members, "", R"(["<stdint.h>\n#include <evil.h>"])"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsNoMembers)
+{
+    expect_rejected(make_spec("{}"));
+    ASSERT_NE(errorcode & SW_LANG_NOMEMBERS, 0u);
+}
+
+TEST_F(ProcessorValidationTest, MissingOutputFilenameWritesNothing)
+{
+    // Tests are generated but there is no outputtestfilename: nothing may be
+    // written, not even the header that does have a name.
+    namespace fs = std::filesystem;
+    fs::path dir = fs::temp_directory_path() / "skywire_processor_validation";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+
+    outputdir = dir.string();
+    generate_tests = true;
+    write_to_file = true;
+
+    ASSERT_FALSE(run(make_spec(good_members)));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(fs::is_empty(dir));
+
+    fs::remove_all(dir);
+}
