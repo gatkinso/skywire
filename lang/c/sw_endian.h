@@ -30,11 +30,6 @@
     #include <netinet/in.h>
 #endif
 
-#if defined LINUX || defined WIN32
-    #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
-    #define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
-#endif
-
 // Host byte order. A build may pass SW_LITTLE_ENDIAN or SW_BIG_ENDIAN
 // (bare or =0/1); otherwise it comes from the compiler. A guess is never
 // made: picking the wrong branch silently byte-swaps everything on the wire.
@@ -89,10 +84,9 @@
 extern "C" {
 #endif
 
-void __swap(char* l, char* r);
-void __swap16(char* d);
-void __swap32(char* d);
-void __swap64(char* d);
+void sw_swap16(char* d);
+void sw_swap32(char* d);
+void sw_swap64(char* d);
 
 #if SW_HOST_LITTLE_ENDIAN
     #ifndef htole16
@@ -168,51 +162,51 @@ void __swap64(char* d);
     #endif
 
     #ifndef neftohf
-    #define neftohf(x) (x)
+    #define neftohf(x) ((void)(x))
     #endif
 
     #ifndef nedtohd
-    #define nedtohd(x) (x)
+    #define nedtohd(x) ((void)(x))
     #endif
 
     #ifndef beftohf
-    #define beftohf(x) (__swap32((char*)&(x)))
+    #define beftohf(x) (sw_swap32((char*)&(x)))
     #endif
 
     #ifndef bedtohd
-    #define bedtohd(x) (__swap64((char*)&(x)))
+    #define bedtohd(x) (sw_swap64((char*)&(x)))
     #endif
 
     #ifndef leftohf
-    #define leftohf(x) (x)
+    #define leftohf(x) ((void)(x))
     #endif
 
     #ifndef ledtohd
-    #define ledtohd(x) (x)
+    #define ledtohd(x) ((void)(x))
     #endif
 
     #ifndef hftonef
-    #define hftonef(x) (x)
+    #define hftonef(x) ((void)(x))
     #endif
 
     #ifndef hdtoned
-    #define hdtoned(x) (x)
+    #define hdtoned(x) ((void)(x))
     #endif
 
     #ifndef hftobef
-    #define hftobef(x) (__swap32((char*)&(x)))
+    #define hftobef(x) (sw_swap32((char*)&(x)))
     #endif
 
     #ifndef hdtobed
-    #define hdtobed(x) (__swap64((char*)&(x)))
+    #define hdtobed(x) (sw_swap64((char*)&(x)))
     #endif
 
     #ifndef hftolef
-    #define hftolef(x) (x)
+    #define hftolef(x) ((void)(x))
     #endif
 
     #ifndef hdtoled
-    #define hdtoled(x) (x)
+    #define hdtoled(x) ((void)(x))
     #endif
 #else
     #ifndef htole16
@@ -288,51 +282,51 @@ void __swap64(char* d);
     #endif
 
     #ifndef neftohf
-    #define neftohf(x) (x)
+    #define neftohf(x) ((void)(x))
     #endif
 
     #ifndef nedtohd
-    #define nedtohd(x) (x)
+    #define nedtohd(x) ((void)(x))
     #endif
 
     #ifndef beftohf
-    #define beftohf(x) (x)
+    #define beftohf(x) ((void)(x))
     #endif
 
     #ifndef bedtohd
-    #define bedtohd(x) (x)
+    #define bedtohd(x) ((void)(x))
     #endif
 
     #ifndef leftohf
-    #define leftohf(x) (__swap32((char*)&(x)))
+    #define leftohf(x) (sw_swap32((char*)&(x)))
     #endif
 
     #ifndef ledtohd
-    #define ledtohd(x) (__swap64((char*)&(x)))
+    #define ledtohd(x) (sw_swap64((char*)&(x)))
     #endif
 
     #ifndef hftonef
-    #define hftonef(x) (x)
+    #define hftonef(x) ((void)(x))
     #endif
 
     #ifndef hdtoned
-    #define hdtoned(x) (x)
+    #define hdtoned(x) ((void)(x))
     #endif
 
     #ifndef hftobef
-    #define hftobef(x) (x)
+    #define hftobef(x) ((void)(x))
     #endif
 
     #ifndef hdtobed
-    #define hdtobed(x) (x)
+    #define hdtobed(x) ((void)(x))
     #endif
 
     #ifndef hftolef
-    #define hftolef(x) (__swap32((char*)&(x)))
+    #define hftolef(x) (sw_swap32((char*)&(x)))
     #endif
 
     #ifndef hdtoled
-    #define hdtoled(x) (__swap64((char*)&(x)))
+    #define hdtoled(x) (sw_swap64((char*)&(x)))
     #endif
 #endif
 

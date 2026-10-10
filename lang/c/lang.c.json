@@ -50,7 +50,7 @@
         "get_string_c_str":"int Get___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * structure, char * value)",
         "set_string_c_str":"int Set___CLASSNAME_____MEMBERNAME__(__CLASSNAME__ * const structure, const char * value)",
         "get_string_assignment_str":"memcpy(value, structure->__MEMBERNAME__, __LENGTH__)",
-        "set_string_assignment_str":"memcpy(structure->__MEMBERNAME__, value, __LENGTH__)"
+        "set_string_assignment_str":"strncpy(structure->__MEMBERNAME__, value, __LENGTH__)"
     },
     "native_types":[
         "char",

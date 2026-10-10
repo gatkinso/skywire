@@ -16,6 +16,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <cstring>
+#include <new>
+#include <vector>
 #include "StructyMcStructface.h"
 #include "ClassyMcClassface.h"
 
@@ -124,3 +126,33 @@ TEST_F(CandCpp, StreamCompare)
 
     cstream_fini(&cs);
 }
+
+TEST_F(CandCpp, CStringSetterStopsAtTerminator)
+{
+    // The setter used to memcpy the full field length from a shorter string,
+    // reading past it and putting whatever followed onto the wire.
+    StructyMcStructface s;
+    std::memset(&s, 0x5a, sizeof(s));
+
+    ASSERT_EQ(0, Set_StructyMcStructface_j_mystring302(&s, "abc"));
+
+    char expected[16] = { 'a', 'b', 'c' };
+    ASSERT_EQ(0, std::memcmp(s.j_mystring302, expected, sizeof(expected)));
+}
+
+TEST_F(CandCpp, CppDefaultConstructedIsZero)
+{
+    // Members are value-initialized, so a fresh object serializes as zeros
+    // rather than whatever was in memory.
+    alignas(testspace::ClassyMcClassface) unsigned char storage[sizeof(testspace::ClassyMcClassface)];
+    std::memset(storage, 0x5a, sizeof(storage));
+    auto* c = new (storage) testspace::ClassyMcClassface();
+
+    skyloupe::Stream str;
+    ASSERT_TRUE(c->serialize(str));
+
+    std::vector<char> zeros(str.byte_size(), 0);
+    ASSERT_EQ(0, std::memcmp(str.data(), zeros.data(), zeros.size()));
+    c->~ClassyMcClassface();
+}
+

@@ -528,7 +528,7 @@ bool CppGenerator::hdr_members(int& errorcode)
         }
         else
         {
-            ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << ";" << std::endl;
+            ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << "{};" << std::endl;
         }
     }
 
