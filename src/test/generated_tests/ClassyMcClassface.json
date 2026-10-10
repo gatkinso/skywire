@@ -34,6 +34,10 @@
          "name":"j_mystring302",
          "length":16
       },
+      "303":{
+         "type":"int8_t",
+         "name":"k_myint8_303"
+      },
       "1000":{
          "type":"float",
          "name":"f_myfloat1000"
