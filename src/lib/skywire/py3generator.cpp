@@ -15,11 +15,84 @@
 
 #include <regex>
 #include <map>
+#include <set>
 #include <string>
 #include "py3generator.h"
+#include "sw_endian.h"
 
 namespace skyloupe
 {
+
+std::string Py3Generator::py_format(const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+
+    if (is_string_type(type))
+    {
+        return std::to_string(std::get<member_length>(member)) + "s";
+    }
+
+    // An explicit byte order also selects standard sizes and no alignment.
+    std::string prefix;
+    switch (std::get<member_endianness>(member))
+    {
+    case SW_BIG_ENDIAN_FLAG:    prefix = lang_spec_.get_value_string("big_endian_str"); break;
+    case SW_LITTLE_ENDIAN_FLAG: prefix = lang_spec_.get_value_string("little_endian_str"); break;
+    default:                    prefix = lang_spec_.get_value_string("native_endian_str"); break;
+    }
+
+    return prefix + lang_spec_.get_value_string(type);
+}
+
+unsigned int Py3Generator::py_size(const member_desc_t& member)
+{
+    static const std::map<std::string, unsigned int> sizes = {
+        { "b", 1 }, { "B", 1 }, { "h", 2 }, { "H", 2 }, { "i", 4 }, { "I", 4 },
+        { "q", 8 }, { "Q", 8 }, { "f", 4 }, { "d", 8 },
+    };
+
+    const std::string& type = std::get<member_type>(member);
+
+    if (is_string_type(type))
+    {
+        return std::get<member_length>(member);
+    }
+    if (!is_native_type(type))
+    {
+        return 0;
+    }
+
+    auto it = sizes.find(lang_spec_.get_value_string(type));
+    return it == sizes.end() ? 0 : it->second;
+}
+
+std::string Py3Generator::subst(std::string template_str, const member_desc_t& member)
+{
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("classname_substr")), classname_);
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
+
+    return template_str;
+}
+
+void Py3Generator::method(const std::string& def_key, const std::string& doc_key)
+{
+    ss_ << std::endl;
+    insert_indents(1);
+    ss_ << lang_spec_.get_value_string(def_key);
+
+    if (!doc_key.empty())
+    {
+        line(lang_spec_.get_value_string(doc_key));
+    }
+}
+
+void Py3Generator::line(const std::string& text, unsigned int indents)
+{
+    insert_indents(indents);
+    ss_ << text;
+}
 
 bool Py3Generator::generate(int& errorcode)
 {
@@ -27,9 +100,11 @@ bool Py3Generator::generate(int& errorcode)
 
     results_.clear();
 
-    if (false == do_header(errorcode))
+    classname_ = msg_spec_.get_value_string("classname", "@NOTFOUND");
+
+    if (msg_spec_.get_proto().members_size() == 0)
     {
-        errorcode |= SW_FILE_HEADER;
+        errorcode |= SW_LANG_NOMEMBERS;
         return false;
     }
 
@@ -44,30 +119,24 @@ bool Py3Generator::generate(int& errorcode)
     return true;
 }
 
-bool Py3Generator::do_header(int& errorcode)
-{
-    return true;
-}
-
 bool Py3Generator::do_implementation(int& errorcode)
 {
-    std::string& header_string = results_["implementation"];
+    std::string& imp_string = results_["implementation"];
 
     imp_banner(errorcode);
-    imp_sentry(errorcode);
     imp_includes(errorcode);
-    imp_namespace(errorcode);
     imp_classname(errorcode);
-    imp_public(errorcode);
     imp_cons(errorcode);
-    imp_des(errorcode);
     imp_serialize(errorcode);
     imp_deserialize(errorcode);
     imp_size(errorcode);
     imp_equals(errorcode);
+    imp_dunders(errorcode);
     imp_print(errorcode);
+    imp_get_functions(errorcode);
+    imp_set_functions(errorcode);
 
-    header_string.append(ss_.str());
+    imp_string.append(ss_.str());
 
     return true;
 }
@@ -77,333 +146,231 @@ bool Py3Generator::imp_banner(int& errorcode)
     return gen_one_line("banner_str");
 }
 
-bool Py3Generator::imp_sentry(int& errorcode)
-{
-    return true;
-}
-
+// struct is always needed; the spec may list more modules (e.g. ones that
+// define user-defined member types).
 bool Py3Generator::imp_includes(int& errorcode)
 {
+    std::set<std::string> modules = { "struct" };
+
     const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
-
-    if (values[0] == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_C_INCLUDES;
-        return false;
-    }
-
     for (auto& item : values)
     {
-        std::string template_str = lang_spec_.get_value_string("include_str");
-        std::string target_str = lang_spec_.get_value_string("include_substr");
-
-        template_str = std::regex_replace(template_str, std::regex(target_str), item);
-
-        ss_ << template_str;
+        if (item != "@NOTFOUND")
+        {
+            modules.insert(item);
+        }
     }
 
-    ss_ << std::endl;
+    const std::string include_str = lang_spec_.get_value_string("include_str");
+    const std::string include_substr = lang_spec_.get_value_string("include_substr");
+
+    for (auto& module : modules)
+    {
+        ss_ << std::regex_replace(include_str, std::regex(include_substr), module);
+    }
 
     return true;
-}
-
-bool Py3Generator::imp_namespace(int& errorcode)
-{
-    bool success = gen_one_line("size_dict");
-    if (false == success)
-    {
-        errorcode |= SW_LANG_RUNTIME;
-        return success;
-    }
-
-    ss_ << std::endl;
-    return success;
 }
 
 bool Py3Generator::imp_classname(int& errorcode)
 {
-    bool success = gen_one_line_subst("classname_str", "classname", "classname_substr", 0);
-
-    if (false == success)
-    {
-        errorcode |= SW_LANG_C_STRUCTNAME;
-        return success;
-    }
-
-    return success;
-}
-
-bool Py3Generator::imp_public(int& errorcode)
-{
-    return true;
-}
-
-bool Py3Generator::imp_private(int& errorcode)
-{
-    return true;
+    return gen_one_line_subst("classname_str", "classname", "classname_substr", 0);
 }
 
 bool Py3Generator::imp_cons(int& errorcode)
 {
-    bool success = gen_one_line("cons_str", 1);
+    method("cons_str");
 
-    if (false == success)
-    {
-        errorcode |= SW_LANG_C_STRUCTNAME;
-        return success;
-    }
-
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-
-    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_IMP_CONS;
-        return false;
-    }
+    const std::string init_substr = lang_spec_.get_value_string("init_substr");
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str;
+        const std::string& type = std::get<member_type>(member.second);
+        std::string init_key;
 
-        template_str = lang_spec_.get_value_string("cons_member_init_str");
-        
-        insert_indents(2);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        if (is_string_type(type))
+            init_key = "init_string_str";
+        else if (!is_native_type(type))
+            init_key = "init_user_str";
+        else if (type == "float" || type == "double")
+            init_key = "init_float_str";
+        else
+            init_key = "init_int_str";
 
-        ss_ << template_str << std::endl;
+        std::string template_str = lang_spec_.get_value_string("cons_member_init_str");
+        template_str = std::regex_replace(template_str, std::regex(init_substr), lang_spec_.get_value_string(init_key));
+        line(subst(template_str, member.second));
     }
 
-    gen_one_line("endfunction_str");
-
-    return true;
-}
-
-bool Py3Generator::imp_des(int& errorcode)
-{
-    return true;
-}
-
-bool Py3Generator::imp_get_functions(int& errorcode)
-{
-    return true;
-}
-
-bool Py3Generator::imp_set_functions(int& errorcode)
-{
     return true;
 }
 
 bool Py3Generator::imp_serialize(int& errorcode)
 {
-    if (false == gen_one_line("serialize_fcn_str", 1))
-    {
-        errorcode |= SW_LANG_C_IMP_SERIALIZE;
-        return false;
-    }
+    method("serialize_fcn_str", "serialize_doc_str");
+    line(lang_spec_.get_value_string("serialize_start"));
 
-    if (false == gen_one_line("serialize_start", 2))
-    {
-        errorcode |= SW_LANG_C_IMP_SERIALIZE;
-        return false;
-    }
-
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-
-    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_C_IMP_SERIALIZE;
-        return false;
-    }
-
-    std::string format_str("\"");
-    for (auto& member : ordered_members_)
-    {
-        format_str.append(lang_spec_.get_value_string(std::get<member_type>(member.second)));
-    }
-    format_str.append("\", \\\n");
-    ss_ << format_str;
+    const std::string format_substr = lang_spec_.get_value_string("format_substr");
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str;
-
-        template_str = lang_spec_.get_value_string("serialize_member_str");
-        insert_indents(2);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-
-        ss_ << template_str << " \\" << std::endl;
+        if (is_native_type(std::get<member_type>(member.second)))
+        {
+            std::string template_str = lang_spec_.get_value_string("serialize_member_str");
+            template_str = std::regex_replace(template_str, std::regex(format_substr), py_format(member.second));
+            line(subst(template_str, member.second), 3);
+        }
+        else
+        {
+            line(subst(lang_spec_.get_value_string("serialize_user_member_str"), member.second), 3);
+        }
     }
 
-    insert_indents(2);
-    ss_ << ")\n";
-
-    gen_one_line("endfunction_str");
+    line(lang_spec_.get_value_string("serialize_end"));
 
     return true;
 }
 
 bool Py3Generator::imp_deserialize(int& errorcode)
 {
-    if (false == gen_one_line("deserialize_fcn_str", 1))
-    {
-        errorcode |= SW_LANG_C_IMP_DESERIALIZE;
-        return false;
-    }
+    method("deserialize_fcn_str", "deserialize_doc_str");
+    line(lang_spec_.get_value_string("deserialize_check_str"));
 
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-    const std::string index_substr = lang_spec_.get_value_string("index_substr");
+    std::string raise_str = lang_spec_.get_value_string("deserialize_raise_str");
+    raise_str = std::regex_replace(raise_str, std::regex(lang_spec_.get_value_string("classname_substr")), classname_);
+    line(raise_str, 3);
+
     const std::string format_substr = lang_spec_.get_value_string("format_substr");
+    const std::string offset_substr = lang_spec_.get_value_string("offset_substr");
 
-    if (msg_spec_.get_proto().members_size() == 0 || 
-        index_substr == "@NOTFOUND" ||
-        format_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_C_IMP_DESERIALIZE;
-        return false;
-    }
+    // Offsets are constants until the first user-defined member, whose size
+    // is only known at run time.
+    unsigned int fixed_offset = 0;
+    std::string dynamic_offset;
 
-    std::string format_str("\"");
     for (auto& member : ordered_members_)
     {
-        format_str.append(lang_spec_.get_value_string(std::get<member_type>(member.second)));
+        const std::string offset = std::to_string(fixed_offset) + dynamic_offset;
+        std::string template_str;
+
+        if (is_native_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_spec_.get_value_string("deserialize_member_str");
+            template_str = std::regex_replace(template_str, std::regex(format_substr), py_format(member.second));
+            fixed_offset += py_size(member.second);
+        }
+        else
+        {
+            template_str = lang_spec_.get_value_string("deserialize_user_member_str");
+            dynamic_offset += " + " + subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
+        }
+
+        template_str = std::regex_replace(template_str, std::regex(offset_substr), offset);
+        line(subst(template_str, member.second));
     }
-    format_str.append("\"");
-
-    std::string template_str;
-    template_str = lang_spec_.get_value_string("deserialize_start");
-    insert_indents(2);
-    template_str = std::regex_replace(template_str, std::regex(format_substr), format_str);
-    ss_ << template_str;
-
-    int i = 0;
-    for (auto& member : ordered_members_)
-    {
-        template_str = lang_spec_.get_value_string("deserialize_member_str");
-        insert_indents(2);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(index_substr), std::to_string(i++));
-
-        ss_ << template_str;
-    }
-
-    gen_one_line("endfunction_str");
 
     return true;
 }
 
 bool Py3Generator::imp_size(int& errorcode)
 {
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+    method("size_fcn_str", "size_doc_str");
 
-    if (msg_spec_.get_proto().members_size() == 0 || 
-        member_substr == "@NOTFOUND" ||
-        type_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_C_IMP_SIZE;
-        return false;
-    }
+    const std::string separator = lang_spec_.get_value_string("size_separator_str");
 
-    if (false == gen_one_line("size_fcn_str", 1))
-    {
-        errorcode |= SW_LANG_C_IMP_SIZE;
-        return false;
-    }
-
-    std::string template_str;
-    template_str = lang_spec_.get_value_string("size_start");
-    insert_indents(2);
-    ss_ << template_str;
-
-    int i = 0;
+    std::string body = lang_spec_.get_value_string("size_start");
+    size_t i = 0;
     for (auto& member : ordered_members_)
     {
-        template_str = lang_spec_.get_value_string("size_mem_str");
-        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
-        ss_ << template_str;
+        if (is_native_type(std::get<member_type>(member.second)))
+            body += std::to_string(py_size(member.second));
+        else
+            body += subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
 
-        if (i++ < ordered_members_.size() - 1)
+        if (++i < ordered_members_.size())
         {
-            ss_ << " + \\\n";
-            insert_indents(2);
+            body += separator;
         }
     }
 
-    gen_one_line("endfunction_str");
-    gen_one_line("endfunction_str");
+    line(body + "\n");
 
     return true;
 }
 
 bool Py3Generator::imp_equals(int& errorcode)
 {
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    method("equals_fcn_str");
+    line(lang_spec_.get_value_string("equals_start"));
 
-    if (msg_spec_.get_proto().members_size() == 0 || 
-        member_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_C_IMP_EQUALS;
-        return false;
-    }
-
-    if (false == gen_one_line("equals_fcn_str", 1))
-    {
-        errorcode |= SW_LANG_C_IMP_EQUALS;
-        return false;
-    }
-
-    std::string template_str;
-    template_str = lang_spec_.get_value_string("equals_start");
-    insert_indents(2);
-    ss_ << template_str;
-
-    int i = 0;
+    bool first = true;
     for (auto& member : ordered_members_)
     {
-        template_str = lang_spec_.get_value_string("equals_mem_str");
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        ss_ << template_str;
-
-        if (i++ < ordered_members_.size() - 1)
-        {
-            ss_ << " and \\\n";
-            insert_indents(2);
-        }
+        std::string key = first ? "equals_first_mem_str" : "equals_mem_str";
+        line(subst(lang_spec_.get_value_string(key), member.second), 3);
+        first = false;
     }
 
-    gen_one_line("endfunction_str");
-    gen_one_line("endfunction_str");
+    line(lang_spec_.get_value_string("equals_end"));
+
+    return true;
+}
+
+bool Py3Generator::imp_dunders(int& errorcode)
+{
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+
+    method("eq_fcn_str");
+    line(std::regex_replace(lang_spec_.get_value_string("eq_body_str"), std::regex(classname_substr), classname_));
+
+    method("repr_fcn_str");
+    line(std::regex_replace(lang_spec_.get_value_string("repr_body_str"), std::regex(classname_substr), classname_));
 
     return true;
 }
 
 bool Py3Generator::imp_print(int& errorcode)
 {
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    method("print_fcn_str");
 
-    if (msg_spec_.get_proto().members_size() == 0 || 
-        member_substr == "@NOTFOUND")
-    {
-        errorcode |= SW_LANG_IMP_PRINT;
-        return false;
-    }
-
-    if (false == gen_one_line("print_fcn_str", 1))
-    {
-        errorcode |= SW_LANG_IMP_PRINT;
-        return false;
-    }
-
-    int i = 0;
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_spec_.get_value_string("print_mem_str");
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        insert_indents(2);
-        ss_ << template_str;
+        line(subst(lang_spec_.get_value_string("print_mem_str"), member.second));
     }
 
-    gen_one_line("endfunction_str");
+    return true;
+}
+
+bool Py3Generator::imp_get_functions(int& errorcode)
+{
+    for (auto& member : ordered_members_)
+    {
+        ss_ << std::endl;
+        line(subst(lang_spec_.get_value_string("get_fcn_str"), member.second), 1);
+        line(subst(lang_spec_.get_value_string("get_body_str"), member.second));
+    }
+
+    return true;
+}
+
+bool Py3Generator::imp_set_functions(int& errorcode)
+{
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        std::string body_key;
+
+        if (is_string_type(type))
+            body_key = "set_string_body_str";
+        else if (type == "float")
+            body_key = "set_float_body_str";   // round to the float32 that goes on the wire
+        else
+            body_key = "set_body_str";
+
+        ss_ << std::endl;
+        line(subst(lang_spec_.get_value_string("set_fcn_str"), member.second), 1);
+        line(subst(lang_spec_.get_value_string(body_key), member.second));
+    }
 
     return true;
 }

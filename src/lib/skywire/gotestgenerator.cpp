@@ -13,78 +13,13 @@
 //   permissions and limitations under the License.
 //
 
-#include <algorithm>
 #include <cstdio>
-#include <cstring>
-#include <map>
 #include "gotestgenerator.h"
-#include "sw_endian.h"
+#include "test_values.h"
 
 namespace skyloupe
 {
 
-namespace
-{
-
-// Test value per type: the Go literal passed to the setter, plus the value's
-// bit pattern and width so the expected wire bytes can be computed here,
-// independently of the generated Go code.
-struct TestValue
-{
-    const char* literal;
-    uint64_t bits;
-    unsigned int width;
-};
-
-const std::map<std::string, TestValue>& test_values()
-{
-    static const std::map<std::string, TestValue> values = {
-        { "char",          { "65",          static_cast<uint8_t>(65),                    1 } },
-        { "unsigned char", { "200",         static_cast<uint8_t>(200),                   1 } },
-        { "uint8_t",       { "201",         static_cast<uint8_t>(201),                   1 } },
-        { "int8_t",        { "-50",         static_cast<uint8_t>(int8_t(-50)),           1 } },
-        { "uint16_t",      { "60000",       static_cast<uint16_t>(60000),                2 } },
-        { "int16_t",       { "-12345",      static_cast<uint16_t>(int16_t(-12345)),      2 } },
-        { "uint32_t",      { "3000000000",  static_cast<uint32_t>(3000000000u),          4 } },
-        { "int32_t",       { "-2000000000", static_cast<uint32_t>(int32_t(-2000000000)), 4 } },
-        { "uint64_t",      { "12000000000", static_cast<uint64_t>(12000000000ull),       8 } },
-        { "int64_t",       { "-9000000000", static_cast<uint64_t>(int64_t(-9000000000)), 8 } },
-        { "float",         { "3.5",         0,                                           4 } },
-        { "double",        { "3.14159",     0,                                           8 } },
-    };
-    return values;
-}
-
-uint64_t value_bits(const std::string& type)
-{
-    if (type == "float")
-    {
-        float f = 3.5f;
-        uint32_t u;
-        std::memcpy(&u, &f, sizeof(u));
-        return u;
-    }
-    if (type == "double")
-    {
-        double d = 3.14159;
-        uint64_t u;
-        std::memcpy(&u, &d, sizeof(u));
-        return u;
-    }
-    return test_values().at(type).bits;
-}
-
-bool host_is_little_endian()
-{
-    const uint16_t probe = 1;
-    uint8_t first;
-    std::memcpy(&first, &probe, 1);
-    return first == 1;
-}
-
-const char* test_string = "skywire";
-
-}
 
 bool GoTestGenerator::generate(int& errorcode)
 {
@@ -180,11 +115,11 @@ bool GoTestGenerator::do_sets(int& errorcode)
 
         if (is_string_type(type))
         {
-            ss_ << "\ts.Set_" << name << "([]byte(\"" << test_string << "\"))\n";
+            ss_ << "\ts.Set_" << name << "([]byte(\"" << test_values::string_value() << "\"))\n";
         }
-        else if (test_values().count(type))
+        else if (test_values::literal(type))
         {
-            ss_ << "\ts.Set_" << name << "(" << test_values().at(type).literal << ")\n";
+            ss_ << "\ts.Set_" << name << "(" << test_values::literal(type) << ")\n";
         }
     }
 
@@ -234,38 +169,8 @@ bool GoTestGenerator::do_expected_wire(int& errorcode)
 
 bool GoTestGenerator::encode_member(const member_desc_t& member, std::vector<uint8_t>& out)
 {
-    const std::string& type = std::get<member_type>(member);
-
-    if (is_string_type(type))
-    {
-        const size_t length = std::get<member_length>(member);
-        const size_t used = std::min(length, std::strlen(test_string));
-        out.insert(out.end(), test_string, test_string + used);
-        out.insert(out.end(), length - used, 0);
-        return true;
-    }
-
-    if (0 == test_values().count(type))
-    {
-        return false;
-    }
-
-    const unsigned int width = test_values().at(type).width;
-    const uint64_t bits = value_bits(type);
-
-    unsigned int endian = std::get<member_endianness>(member);
-    if (endian == SW_NATIVE_ENDIAN_FLAG)
-    {
-        endian = host_is_little_endian() ? SW_LITTLE_ENDIAN_FLAG : SW_BIG_ENDIAN_FLAG;
-    }
-
-    for (unsigned int i = 0; i < width; i++)
-    {
-        const unsigned int shift = (endian == SW_LITTLE_ENDIAN_FLAG) ? i : (width - 1 - i);
-        out.push_back(static_cast<uint8_t>(bits >> (8 * shift)));
-    }
-
-    return true;
+    return test_values::encode(std::get<member_type>(member), std::get<member_endianness>(member),
+                               std::get<member_length>(member), out);
 }
 
 }

@@ -23,5 +23,6 @@
 #include "javagenerator.h"
 #include "proto3generator.h"
 #include "py3generator.h"
+#include "py3testgenerator.h"
 #include "swiftgenerator.h"
 #include "swifttestgenerator.h"

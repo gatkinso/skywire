@@ -146,3 +146,16 @@ add_test(NAME skywire_generated_tests:GoRoundTrip
 set_tests_properties(skywire_generated_tests:GoRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "GO_TOOLCHAIN_NOT_FOUND")
 
+# Python 3 generated round-trip and wire-format test. The interpreter is detected
+# when the test runs (see py_roundtrip.cmake); without python3 the test reports Skipped.
+add_test(NAME skywire_generated_tests:PythonRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/SnakeyMcSnakeface.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/python/lang.python3.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_python_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/py_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:PythonRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "PYTHON3_NOT_FOUND")
+

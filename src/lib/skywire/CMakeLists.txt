@@ -36,8 +36,10 @@ set(_GENERATORS
              javagenerator.cpp
              proto3generator.cpp
              py3generator.cpp
+             py3testgenerator.cpp
              swiftgenerator.cpp
              swifttestgenerator.cpp
+             test_values.cpp
              ${TARGET_INC_DIR}/cgenerator.h
              ${TARGET_INC_DIR}/ctestgenerator.h
              ${TARGET_INC_DIR}/cppgenerator.h
@@ -47,8 +49,10 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/javagenerator.h
              ${TARGET_INC_DIR}/proto3generator.h
              ${TARGET_INC_DIR}/py3generator.h
+             ${TARGET_INC_DIR}/py3testgenerator.h
              ${TARGET_INC_DIR}/swiftgenerator.h
              ${TARGET_INC_DIR}/swifttestgenerator.h
+             ${TARGET_INC_DIR}/test_values.h
 )
 
 set(_SOURCES ${TARGETNAME}.cpp
