@@ -21,6 +21,7 @@
 #include "gogenerator.h"
 #include "gotestgenerator.h"
 #include "javagenerator.h"
+#include "javatestgenerator.h"
 #include "proto3generator.h"
 #include "py3generator.h"
 #include "py3testgenerator.h"

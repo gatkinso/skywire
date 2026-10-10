@@ -159,3 +159,16 @@ add_test(NAME skywire_generated_tests:PythonRoundTrip
 set_tests_properties(skywire_generated_tests:PythonRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "PYTHON3_NOT_FOUND")
 
+
+# Java generated round-trip and wire-format test. The JDK is detected when the
+# test runs (see java_roundtrip.cmake); without javac the test reports Skipped.
+add_test(NAME skywire_generated_tests:JavaRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/CoffeeMcCofface.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/java/lang.java.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_java_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/java_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:JavaRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "JAVA_TOOLCHAIN_NOT_FOUND")
