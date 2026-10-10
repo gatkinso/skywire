@@ -44,6 +44,7 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_serdes(errorcode);
     test_size(errorcode);
     test_equality(errorcode);
+    test_short_buffer(errorcode);
 
     header_string.append(ss_.str());
 
@@ -186,6 +187,35 @@ bool CppTestGenerator::do_sets(int& errorcode)
 
         sign *= -1;
     }
+
+    return true;
+}
+
+bool CppTestGenerator::test_short_buffer(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    // One byte short of a full message: deserialize must fail, consume
+    // nothing, and leave the destination untouched.
+    ss_ << "TEST(" << testname << ", ShortBuffer)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " in;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    skyloupe::Stream full;\n";
+    ss_ << "    ASSERT_TRUE(in.serialize(full));\n";
+    ss_ << "    ASSERT_EQ(full.byte_size(), in.size());\n\n";
+    ss_ << "    skyloupe::Stream stream;\n";
+    ss_ << "    stream.write(full.data(), full.byte_size() - 1);\n\n";
+    ss_ << "    " << namespac << "::" << classname << " out = in;\n";
+    ss_ << "    ASSERT_FALSE(out.deserialize(stream));\n";
+    ss_ << "    ASSERT_EQ(out, in);\n";
+    ss_ << "    ASSERT_EQ(stream.byte_size(), in.size() - 1);\n";
+    ss_ << "}\n\n";
 
     return true;
 }

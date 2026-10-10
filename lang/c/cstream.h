@@ -39,7 +39,11 @@ extern "C" {
 
     void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian);
 
-    void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian);
+    // Returns 0 on success, -1 if fewer than sz bytes are unread (nothing is consumed).
+    int cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian);
+
+    // Number of unread bytes.
+    size_t cstream_available(const Cstream* streamer);
 
 #ifdef __cplusplus
 }

@@ -44,6 +44,7 @@ bool CTestGenerator::do_test_implementation(int& errorcode)
     test_serdes(errorcode);
     test_size(errorcode);
     test_equality(errorcode);
+    test_short_buffer(errorcode);
 
     header_string.append(ss_.str());
 
@@ -180,6 +181,37 @@ bool CTestGenerator::do_sets(int& errorcode)
 
     insert_indents(2);
     ss_ << "sign *= -1;\n";
+
+    return true;
+}
+
+bool CTestGenerator::test_short_buffer(int& errorcode)
+{
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    // One byte short of a full message: Deserialize must fail, consume
+    // nothing, and leave the destination untouched.
+    ss_ << "TEST(" << testname << ", ShortBuffer)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in;\n";
+    ss_ << "    std::memset(&in, 0x5a, sizeof(in));\n";
+    ss_ << "    Cstream full;\n";
+    ss_ << "    cstream_init(&full, 128);\n";
+    ss_ << "    ASSERT_EQ(0, " << classname << "_Serialize(&in, &full));\n";
+    ss_ << "    ASSERT_EQ(" << classname << "_Size(), cstream_available(&full));\n\n";
+    ss_ << "    Cstream cs;\n";
+    ss_ << "    cstream_init(&cs, 128);\n";
+    ss_ << "    cstream_write(&cs, full.head_, " << classname << "_Size() - 1, SW_NATIVE_ENDIAN_FLAG);\n\n";
+    ss_ << "    " << classname << " out;\n";
+    ss_ << "    std::memset(&out, 0x11, sizeof(out));\n";
+    ss_ << "    " << classname << " before = out;\n\n";
+    ss_ << "    ASSERT_EQ(-1, " << classname << "_Deserialize(&out, &cs));\n";
+    ss_ << "    ASSERT_EQ(0, std::memcmp(&out, &before, sizeof(out)));\n";
+    ss_ << "    ASSERT_EQ(" << classname << "_Size() - 1, cstream_available(&cs));\n\n";
+    ss_ << "    cstream_fini(&cs);\n";
+    ss_ << "    cstream_fini(&full);\n";
+    ss_ << "}\n\n";
 
     return true;
 }

@@ -136,15 +136,30 @@ void cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int end
     streamer->tail_ += sz;
 }
 
-void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
+size_t cstream_available(const Cstream* streamer)
+{
+    if (streamer == NULL || streamer->head_ == NULL)
+    {
+        return 0;
+    }
+
+    return (size_t)(streamer->tail_ - streamer->head_);
+}
+
+int cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
 {
     size_t tsize = 0;
     size_t hsize = 0;
     size_t grow = 0;
 
-    if (sz == 0 || streamer == NULL || streamer->head_ + sz > streamer->tail_)
+    if (sz == 0)
     {
-        return;
+        return 0;
+    }
+
+    if (d == NULL || cstream_available(streamer) < sz)
+    {
+        return -1;
     }
 
     if((streamer->head_ - streamer->buffer_) > (0.8) * streamer->size_)
@@ -186,5 +201,7 @@ void cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
     }
 
     streamer->head_ += sz;
+
+    return 0;
 }
 

@@ -11,6 +11,7 @@
         "des_str":"virtual ~__CLASSNAME__() {}\n",
         "serialize_str": "bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {\n",
         "deserialize_str": "bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {\n",
+        "deserialize_size_check_str": "if (false == str.can_read(size())) return false;\n",
         "size_str": "static size_t size() {\n",
         "serialize_native_mem_str": "str.serialize(__MEMBERNAME__, __ENDIAN__);",
         "deserialize_native_mem_str": "str.deserialize(__MEMBERNAME__, __ENDIAN__);",

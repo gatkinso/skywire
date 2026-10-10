@@ -39,6 +39,7 @@
         "set_assignment_str":"structure->__MEMBERNAME__ = *value",
         "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
         "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
+        "deserialize_size_check_str":"if (cstream_available(str) < __CLASSNAME___Size()) return -1;\n",
 
         "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ ",
         "length_substr":"__LENGTH__",

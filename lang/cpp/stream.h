@@ -202,19 +202,30 @@ public:
         write((char*)&d, sizeof(double));
     }
 
-    void deserialize(char& d, Endianness)
+    bool deserialize(char& d, Endianness)
     {
-        read((char*)&d, sizeof(char));
+        if (read((char*)&d, sizeof(char)) != sizeof(char))
+        {
+            return false;
+        }
+        return true;
     }
 
-    void deserialize(signed char& d, Endianness)
+    bool deserialize(signed char& d, Endianness)
     {
-        read((char*)&d, sizeof(signed char));
+        if (read((char*)&d, sizeof(signed char)) != sizeof(signed char))
+        {
+            return false;
+        }
+        return true;
     }
 
-    void deserialize(int16_t& d, Endianness endian)
+    bool deserialize(int16_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(int16_t));
+        if (read((char*)&d, sizeof(int16_t)) != sizeof(int16_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -228,11 +239,15 @@ public:
             d = le16toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(int32_t& d, Endianness endian)
+    bool deserialize(int32_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(int32_t));
+        if (read((char*)&d, sizeof(int32_t)) != sizeof(int32_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -246,11 +261,15 @@ public:
             d = le32toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(int64_t& d, Endianness endian)
+    bool deserialize(int64_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(int64_t));
+        if (read((char*)&d, sizeof(int64_t)) != sizeof(int64_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -264,16 +283,24 @@ public:
             d = le64toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(unsigned char& d, Endianness)
+    bool deserialize(unsigned char& d, Endianness)
     {
-        read((char*)&d, sizeof(char));
+        if (read((char*)&d, sizeof(char)) != sizeof(char))
+        {
+            return false;
+        }
+        return true;
     }
 
-    void deserialize(uint16_t& d, Endianness endian)
+    bool deserialize(uint16_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(uint16_t));
+        if (read((char*)&d, sizeof(uint16_t)) != sizeof(uint16_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -287,11 +314,15 @@ public:
             d = le16toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(uint32_t& d, Endianness endian)
+    bool deserialize(uint32_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(uint32_t));
+        if (read((char*)&d, sizeof(uint32_t)) != sizeof(uint32_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -305,11 +336,15 @@ public:
             d = le32toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(uint64_t& d, Endianness endian)
+    bool deserialize(uint64_t& d, Endianness endian)
     {
-        read((char*)&d, sizeof(uint64_t));
+        if (read((char*)&d, sizeof(uint64_t)) != sizeof(uint64_t))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -323,11 +358,15 @@ public:
             d = le64toh(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(float& d, Endianness endian)
+    bool deserialize(float& d, Endianness endian)
     {
-        read((char*)&d, sizeof(float));
+        if (read((char*)&d, sizeof(float)) != sizeof(float))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -341,11 +380,15 @@ public:
             leftohf(d);
             break;
         };
+        return true;
     }
 
-    void deserialize(double& d, Endianness endian)
+    bool deserialize(double& d, Endianness endian)
     {
-        read((char*)&d, sizeof(double));
+        if (read((char*)&d, sizeof(double)) != sizeof(double))
+        {
+            return false;
+        }
         switch (endian)
         {
         case SW_BIG_ENDIAN_FLAG:
@@ -359,6 +402,7 @@ public:
             ledtohd(d);
             break;
         };
+        return true;
     }
 
     size_t write(const void* data, size_t len)
@@ -747,17 +791,17 @@ public:
         }
         return true;
     }
-    void deserialize(char& d, Endianness)
-    {
+    bool deserialize(char& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.read((char*)&d, sizeof(char));
+            return swstream_.deserialize(d, endian);
         } else {
-            pzstream_.read((char*)&d, sizeof(char));
+            pzstream_.deserialize(d, endian);
         }
+        return true;
     }
     bool deserialize(signed char& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -765,7 +809,7 @@ public:
     }
     bool deserialize(int16_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -773,7 +817,7 @@ public:
     }
     bool deserialize(int32_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -781,7 +825,7 @@ public:
     }
     bool deserialize(int64_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -789,7 +833,7 @@ public:
     }
     bool deserialize(unsigned char& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -797,7 +841,7 @@ public:
     }
     bool deserialize(uint16_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -805,7 +849,7 @@ public:
     }
     bool deserialize(uint32_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -813,7 +857,7 @@ public:
     }
     bool deserialize(uint64_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -821,7 +865,7 @@ public:
     }
     bool deserialize(float& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -829,7 +873,7 @@ public:
     }
     bool deserialize(double& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
-            swstream_.deserialize(d, endian);
+            return swstream_.deserialize(d, endian);
         } else {
             pzstream_.deserialize(d, endian);
         }
@@ -860,6 +904,11 @@ public:
         } else {
             return pzstream_.size();
         }
+    }
+    // True if len more bytes can be read. PZ messages are variable-length, so
+    // the check only applies to the fixed-size SW wire format.
+    bool can_read(size_t len) const {
+        return mode_ != SW || swstream_.byte_size() >= len;
     }
     size_t byte_size() const {
         if (mode_ == SW) {

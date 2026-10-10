@@ -67,7 +67,17 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
     ss_ << "        let output = " << classname << "()\n";
     ss_ << "        check(output.deserialize(stream), \"deserialize failed\")\n\n";
     ss_ << "        check(input.Equals(output), \"round-trip value mismatch\")\n";
-    ss_ << "        check(input.size() == output.size(), \"size mismatch\")\n";
+    ss_ << "        check(input.size() == output.size(), \"size mismatch\")\n\n";
+    // One byte short of a full message: deserialize must fail, consume
+    // nothing, and leave the destination untouched.
+    ss_ << "        let full = SWStream()\n";
+    ss_ << "        check(input.serialize(full), \"serialize failed\")\n";
+    ss_ << "        let short = SWStream()\n";
+    ss_ << "        short.write(full.read(input.size() - 1)!)\n";
+    ss_ << "        let untouched = " << classname << "()\n";
+    ss_ << "        check(!untouched.deserialize(short), \"short buffer accepted\")\n";
+    ss_ << "        check(untouched.Equals(" << classname << "()), \"short buffer modified the destination\")\n";
+    ss_ << "        check(short.remaining() == input.size() - 1, \"short buffer consumed bytes\")\n";
     ss_ << "        print(\"PASS " << classname << " round-trip\")\n";
     ss_ << "    }\n";
     ss_ << "}\n";
