@@ -51,7 +51,8 @@ private:
     std::string py3_str_ = "python3";
 
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests);
-    virtual void do_file_write(const std::string& outputdir, results_t& output_str_map, const std::string stencil_key, const std::string value_key, int& errorcode);
+    virtual bool validate_spec(int& errorcode);
+    virtual bool write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode);
 };
 
 }

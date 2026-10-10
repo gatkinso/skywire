@@ -214,6 +214,9 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
     insert_indents(1);
     gen_one_line("deserialize_str");
 
+    // Reject a short stream before touching any field, like the Go, Java and Python generators.
+    gen_one_line("deserialize_size_check_str", 2);
+
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");

@@ -38,22 +38,11 @@ protected:
     virtual bool test_serdes(int& errorcode);
     virtual bool test_size(int& errorcode);
     virtual bool test_equality(int& errorcode);
+    virtual bool test_short_buffer(int& errorcode);
+    virtual bool test_wire(int& errorcode);
 
     virtual bool do_sets(int& errorcode);
 
-private:
-    char BASECHAR = 1;
-    unsigned char BASEUCHAR = 2;
-    uint8_t BASEU8 = 3;
-    int8_t BASES8 = -4;
-    uint16_t BASEU16 = 5;
-    int16_t BASES16 = -6;
-    uint32_t BASEU32 = 7;
-    int32_t BASES32 = -8;
-    uint64_t BASEU64 = 9;
-    int64_t BASES64 = -10;
-    float BASEFLOAT = 11.1f;
-    double BASEDOUBLE = 12.2;
 };
 
 }

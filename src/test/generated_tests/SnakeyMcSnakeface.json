@@ -1,74 +1,93 @@
 {
-   "stringValues":{  
-      "classname":"SnakeyMcSnakeface",
-      "outputimplfilename":"SnakeyMcSnakeface.py",
-      "outputtestfilename":"SnakeyMcSnakefaceTest.py",
-      "namespace":"testspace",
+   "stringValues": {
+      "classname": "SnakeyMcSnakeface",
+      "outputimplfilename": "SnakeyMcSnakeface.py",
+      "outputtestfilename": "SnakeyMcSnakefaceTest.py",
+      "namespace": "testspace",
       "language": "python3",
       "lang_file": "lang.python3.json"
    },
-   "members":{
-      "100":{
-         "type":"double",
-         "name":"a_mydouble100",
-         "endian":1
-      },    
-      "200":{
-         "type":"uint32_t",
-         "name":"b_myuint32_200"
+   "members": {
+      "100": {
+         "type": "double",
+         "name": "a_mydouble100",
+         "endian": 1
       },
-      "201":{
-         "type":"int64_t",
-         "name":"c_myint64_201"
+      "200": {
+         "type": "uint32_t",
+         "name": "b_myuint32_200"
       },
-      "202":{
-         "type":"float",
-         "name":"d_myfloat202"
+      "201": {
+         "type": "int64_t",
+         "name": "c_myint64_201"
       },
-      "203":{
-         "type":"int16_t",
-         "name":"e_myint16_203",
-         "endian":1
+      "202": {
+         "type": "float",
+         "name": "d_myfloat202"
       },
-      "204":{
-         "type":"uint16_t",
-         "name":"f_myuint16_204"
+      "203": {
+         "type": "int16_t",
+         "name": "e_myint16_203",
+         "endian": 1
       },
-      "205":{
-         "type":"int32_t",
-         "name":"g_myint32_205",
-         "endian":1
+      "204": {
+         "type": "uint16_t",
+         "name": "f_myuint16_204"
       },
-      "206":{
-         "type":"uint64_t",
-         "name":"h_myuint64_206",
-         "endian":1
+      "205": {
+         "type": "int32_t",
+         "name": "g_myint32_205",
+         "endian": 1
       },
-      "301":{
-         "type":"char",
-         "name":"i_charcoal301"
+      "206": {
+         "type": "uint64_t",
+         "name": "h_myuint64_206",
+         "endian": 1
       },
-      "302":{
-         "type":"string",
-         "name":"j_mystring302",
-         "length":16
+      "301": {
+         "type": "char",
+         "name": "i_charcoal301"
       },
-      "303":{
-         "type":"unsigned char",
-         "name":"k_uchar303"
+      "302": {
+         "type": "string",
+         "name": "j_mystring302",
+         "length": 16
       },
-      "304":{
-         "type":"uint8_t",
-         "name":"l_myuint8_304"
+      "303": {
+         "type": "unsigned char",
+         "name": "k_uchar303"
       },
-      "305":{
-         "type":"int8_t",
-         "name":"m_myint8_305"
+      "304": {
+         "type": "uint8_t",
+         "name": "l_myuint8_304"
       },
-      "306":{
-         "type":"string",
-         "name":"n_shortstring306",
-         "length":4
+      "305": {
+         "type": "int8_t",
+         "name": "m_myint8_305"
+      },
+      "306": {
+         "type": "string",
+         "name": "n_shortstring306",
+         "length": 4
+      },
+      "1000": {
+         "type": "float",
+         "name": "o_myfloat1000",
+         "endian": 2
+      },
+      "2000": {
+         "type": "uint32_t",
+         "name": "p_myuint32_2000",
+         "endian": 1
+      },
+      "2010": {
+         "type": "int64_t",
+         "name": "q_myint64_2010",
+         "endian": 2
+      },
+      "2020": {
+         "type": "double",
+         "name": "r_mydouble2020"
       }
    }
 }

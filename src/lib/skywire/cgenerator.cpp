@@ -363,6 +363,9 @@ bool CGenerator::imp_deserialize(int& errorcode)
     insert_indents(1);
     ss_ << null_check_str;
 
+    // Reject a short stream before touching any field, like the Go, Java and Python generators.
+    gen_one_line_subst("deserialize_size_check_str", "classname", "classname_substr", 1);
+
     for (auto& member : ordered_members_)
     {
         std::string template_str = lang_spec_.get_value_string("read_native_template_str");

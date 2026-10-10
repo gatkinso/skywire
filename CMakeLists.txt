@@ -27,6 +27,27 @@ if (HAS_NO_UNUSED_VALUE)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-value>)
 endif()
 
+# Build every C and C++ target (wiregen, the runtimes and all tests) with
+# AddressSanitizer and UndefinedBehaviorSanitizer. Use a separate build
+# directory, e.g. cmake -DSKYWIRE_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug.
+option(SKYWIRE_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+
+if(SKYWIRE_SANITIZE)
+    if(MSVC)
+        # MSVC supports AddressSanitizer only.
+        add_compile_options(/fsanitize=address)
+    else()
+        set(SKYWIRE_SANITIZE_FLAGS
+            -fsanitize=address,undefined
+            -fno-sanitize-recover=all
+            -fno-omit-frame-pointer
+        )
+        add_compile_options(${SKYWIRE_SANITIZE_FLAGS})
+        add_link_options(${SKYWIRE_SANITIZE_FLAGS})
+    endif()
+    message(STATUS "Sanitizers enabled")
+endif()
+
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)

@@ -49,6 +49,11 @@ public final class SWStream {
         return buffer.count
     }
 
+    // Number of bytes not yet read.
+    public func remaining() -> Int {
+        return buffer.count - readPos
+    }
+
     // Pad or truncate a byte array to exactly `length` bytes (char[N] semantics).
     public static func fit(_ bytes: [UInt8], _ length: Int) -> [UInt8] {
         if bytes.count == length {
@@ -129,6 +134,7 @@ public final class SWStream {
     }
 
     // MARK: - signed integers (reinterpret through the unsigned path)
+    // A short read leaves value unchanged, as for the unsigned types.
 
     public func serialize(_ value: Int8, _ endian: Endianness) {
         write([UInt8(bitPattern: value)])
@@ -151,21 +157,15 @@ public final class SWStream {
     }
 
     public func deserialize(_ value: inout Int16, _ endian: Endianness) {
-        var u: UInt16 = 0
-        deserialize(&u, endian)
-        value = Int16(bitPattern: u)
+        if let b = read(2) { value = Int16(bitPattern: SWStream.fromBytes(b, endian) as UInt16) }
     }
 
     public func deserialize(_ value: inout Int32, _ endian: Endianness) {
-        var u: UInt32 = 0
-        deserialize(&u, endian)
-        value = Int32(bitPattern: u)
+        if let b = read(4) { value = Int32(bitPattern: SWStream.fromBytes(b, endian) as UInt32) }
     }
 
     public func deserialize(_ value: inout Int64, _ endian: Endianness) {
-        var u: UInt64 = 0
-        deserialize(&u, endian)
-        value = Int64(bitPattern: u)
+        if let b = read(8) { value = Int64(bitPattern: SWStream.fromBytes(b, endian) as UInt64) }
     }
 
     // MARK: - floating point (reinterpret through the unsigned path)
@@ -179,15 +179,11 @@ public final class SWStream {
     }
 
     public func deserialize(_ value: inout Float, _ endian: Endianness) {
-        var u: UInt32 = 0
-        deserialize(&u, endian)
-        value = Float(bitPattern: u)
+        if let b = read(4) { value = Float(bitPattern: SWStream.fromBytes(b, endian) as UInt32) }
     }
 
     public func deserialize(_ value: inout Double, _ endian: Endianness) {
-        var u: UInt64 = 0
-        deserialize(&u, endian)
-        value = Double(bitPattern: u)
+        if let b = read(8) { value = Double(bitPattern: SWStream.fromBytes(b, endian) as UInt64) }
     }
 
     // MARK: - fixed-length byte arrays (char[N], no byte swap)

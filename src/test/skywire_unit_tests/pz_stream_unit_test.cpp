@@ -8,7 +8,7 @@ protected:
     PZStreamUnitTest() {}
 };
 
-TEST_F(PZStreamUnitTest, DISABLED_Serialize)
+TEST_F(PZStreamUnitTest, Serialize)
 {
     skyloupe::Stream ss(0, 0, skyloupe::Stream::PZ);
     uint32_t ui32 = 0xCAFEBABE;

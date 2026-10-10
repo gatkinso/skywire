@@ -75,4 +75,4 @@ set_target_properties(${TARGETNAME} PROPERTIES FOLDER "Static Libs")
 
 add_dependencies(${TARGETNAME} skywireproto)
 
-target_link_libraries(${TARGETNAME} skywireproto specification protobuf::libprotobuf)
+target_link_libraries(${TARGETNAME} specification)
