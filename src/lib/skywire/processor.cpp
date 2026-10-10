@@ -154,6 +154,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     else if (lang == go_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::GoGenerator(msg_spec_, lang_spec_));
+
+        if (true == generate_tests)
+        {
+            test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::GoTestGenerator(msg_spec_, lang_spec_));
+        }
     }
     else if (lang == java_str_)
     {
@@ -166,6 +171,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     else if (lang == py3_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3Generator(msg_spec_, lang_spec_));
+
+        if (true == generate_tests)
+        {
+            test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3TestGenerator(msg_spec_, lang_spec_));
+        }
     }
     else
     {

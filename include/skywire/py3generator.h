@@ -31,25 +31,32 @@ public:
     bool generate(int& errorcode) override;
 
 protected:
-    virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
     virtual bool imp_banner(int& errorcode);
-    virtual bool imp_sentry(int& errorcode);
     virtual bool imp_includes(int& errorcode);
-    virtual bool imp_namespace(int& errorcode);
     virtual bool imp_classname(int& errorcode);
-    virtual bool imp_public(int& errorcode);
-    virtual bool imp_private(int& errorcode);
     virtual bool imp_cons(int& errorcode);
-    virtual bool imp_des(int& errorcode);
-    virtual bool imp_get_functions(int& errorcode);
-    virtual bool imp_set_functions(int& errorcode);
     virtual bool imp_serialize(int& errorcode);
     virtual bool imp_deserialize(int& errorcode);
     virtual bool imp_size(int& errorcode);
     virtual bool imp_equals(int& errorcode);
+    virtual bool imp_dunders(int& errorcode);
     virtual bool imp_print(int& errorcode);
+    virtual bool imp_get_functions(int& errorcode);
+    virtual bool imp_set_functions(int& errorcode);
+
+    // struct format for one native member, e.g. ">I" or "16s".
+    std::string py_format(const member_desc_t& member);
+    // Wire size of a native member in bytes; 0 for user-defined types.
+    unsigned int py_size(const member_desc_t& member);
+
+private:
+    std::string classname_;
+
+    void method(const std::string& def_key, const std::string& doc_key = "");
+    void line(const std::string& text, unsigned int indents = 2);
+    std::string subst(std::string template_str, const member_desc_t& member);
 };
 
 }
