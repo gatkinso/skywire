@@ -18,7 +18,7 @@
 #include <string>
 #include "generator.h"
 
-namespace skyloupe 
+namespace skyloupe
 {
 
 class JavaGenerator : public Generator
@@ -29,14 +29,44 @@ public:
 
     bool generate(int& errorcode) override;
 
-private:
-    virtual bool do_header(int& errorcode);
+    // How a native member travels through a ByteBuffer. Java has no unsigned
+    // types, so the Java type can be wider than the wire type.
+    struct wire_t
+    {
+        std::string type;       // Java type on the wire: byte, short, int, long, float, double
+        std::string accessor;   // ByteBuffer get/put suffix: "", Short, Int, Long, Float, Double
+        unsigned int bits;
+    };
+
+    // Wire type of a native member type; bits is 0 for strings and user types.
+    static wire_t java_wire(const std::string& type);
+
+protected:
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool imp_base(int& errorcode);
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_package(int& errorcode);
+    virtual bool imp_imports(int& errorcode);
+    virtual bool imp_class(int& errorcode);
+
+    std::string imp_fields();
+    std::string imp_serialize();
+    std::string imp_deserialize();
+    std::string imp_size();
+    std::string imp_equals();
+    std::string imp_hashcode();
+    std::string imp_tostring();
+    std::string imp_get_set_functions();
+
+    std::string java_type(const std::string& type);
+    std::string java_endian(unsigned int endian_flag);
+    bool is_widened(const std::string& type);
 
 private:
     std::string classname_;
+
+    std::string block(const std::string block_id, const std::string& body);
+    std::string subst(std::string template_str, const member_desc_t& member);
 };
 
 }
