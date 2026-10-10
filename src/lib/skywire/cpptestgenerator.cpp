@@ -15,7 +15,9 @@
 
 #include <regex>
 #include <map>
+#include <cstdio>
 #include "cpptestgenerator.h"
+#include "test_values.h"
 
 namespace skyloupe
 {
@@ -45,6 +47,7 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_size(errorcode);
     test_equality(errorcode);
     test_short_buffer(errorcode);
+    test_wire(errorcode);
 
     header_string.append(ss_.str());
 
@@ -62,6 +65,8 @@ bool CppTestGenerator::test_includes(int& errorcode)
 
     ss_ << "#include <gmock/gmock.h>" << std::endl
         << "#include <gtest/gtest.h>" << std::endl
+        << "#include <cstdint>" << std::endl
+        << "#include <cstring>" << std::endl
         << "#include \"";
     ss_ << hdr_name << "\"" << std::endl << std::endl;
 
@@ -163,29 +168,22 @@ bool CppTestGenerator::test_equality(int& errorcode)
     return true;
 }
 
+// Every member gets the value shared by all the test generators.
 bool CppTestGenerator::do_sets(int& errorcode)
 {
-    int sign = 1;
-    int i = 1;
     for (auto& member : ordered_members_)
     {
-        insert_indents(1);
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
 
-             if (std::get<member_type>(member.second) == "char")          ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << (int)i++*BASECHAR << ");\n";
-        else if (std::get<member_type>(member.second) == "unsigned char") ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*BASEUCHAR << ");\n";
-        else if (std::get<member_type>(member.second) == "uint8_t")       ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*BASEU8 << ");\n";
-        else if (std::get<member_type>(member.second) == "int8_t")        ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASES8 << ");\n";
-        else if (std::get<member_type>(member.second) == "uint16_t")      ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*BASEU16 << ");\n";
-        else if (std::get<member_type>(member.second) == "int16_t")       ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASES16 << ");\n";
-        else if (std::get<member_type>(member.second) == "uint32_t")      ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*BASEU32 << ");\n";
-        else if (std::get<member_type>(member.second) == "int32_t")       ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASES32 << ");\n";
-        else if (std::get<member_type>(member.second) == "uint64_t")      ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*BASEU64 << ");\n";
-        else if (std::get<member_type>(member.second) == "int64_t")       ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASES64 << ");\n";
-        else if (std::get<member_type>(member.second) == "float")         ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASEFLOAT << "f);\n";
-        else if (std::get<member_type>(member.second) == "double")        ss_ << "in.Set_" << std::get<member_name>(member.second) << "(" << i++*sign*BASEDOUBLE << ");\n";
-        else if (std::get<member_type>(member.second) == "string")        ss_ << "in.Set_" << std::get<member_name>(member.second) << "(\"skywire\");\n";
-
-        sign *= -1;
+        if (is_string_type(type))
+        {
+            ss_ << "    in.Set_" << name << "(\"" << test_values::string_value() << "\");\n";
+        }
+        else if (test_values::literal(type))
+        {
+            ss_ << "    in.Set_" << name << "(" << test_values::literal(type) << ");\n";
+        }
     }
 
     return true;
@@ -215,6 +213,50 @@ bool CppTestGenerator::test_short_buffer(int& errorcode)
     ss_ << "    ASSERT_FALSE(out.deserialize(stream));\n";
     ss_ << "    ASSERT_EQ(out, in);\n";
     ss_ << "    ASSERT_EQ(stream.byte_size(), in.size() - 1);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// Compares the serialized bytes with the ones computed by wiregen, so every
+// language is checked against the same expected wire bytes.
+bool CppTestGenerator::test_wire(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    std::vector<uint8_t> wire;
+    for (auto& member : ordered_members_)
+    {
+        if (!test_values::encode(std::get<member_type>(member.second), std::get<member_endianness>(member.second),
+                                 std::get<member_length>(member.second), wire))
+        {
+            // A user-defined member has no shared test value.
+            return true;
+        }
+    }
+
+    ss_ << "TEST(" << testname << ", Wire)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " in;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    static const uint8_t want[] = {";
+    for (size_t i = 0; i < wire.size(); i++)
+    {
+        ss_ << ((i % 8 == 0) ? "\n        " : " ");
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", wire[i]);
+        ss_ << hex;
+    }
+    ss_ << "\n    };\n\n";
+    ss_ << "    skyloupe::Stream stream;\n";
+    ss_ << "    ASSERT_TRUE(in.serialize(stream));\n";
+    ss_ << "    ASSERT_EQ(sizeof(want), stream.byte_size());\n";
+    ss_ << "    ASSERT_EQ(0, std::memcmp(stream.data(), want, sizeof(want)));\n";
     ss_ << "}\n\n";
 
     return true;

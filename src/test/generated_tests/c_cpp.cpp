@@ -21,6 +21,77 @@
 #include "StructyMcStructface.h"
 #include "ClassyMcClassface.h"
 
+// Fills every member with a value that varies with i, so each message in a
+// run is different.
+static void fill(StructyMcStructface& s, uint32_t i)
+{
+    const int sign = (i % 2) ? -1 : 1;
+
+    std::memset(&s, 0, sizeof(s));
+    s.a_mydouble100 = sign*i*109.8;
+    s.b_myuint32_200 = i*49;
+    s.c_myint64_201 = sign*static_cast<int64_t>(i)*-80;
+    s.d_myfloat202 = sign*i*66.6f;
+    s.e_myint16_203 = static_cast<int16_t>(sign*static_cast<int>(i));
+    s.f_myuint16_204 = static_cast<uint16_t>(i*61);
+    s.g_myint32_205 = sign*static_cast<int32_t>(i)*1001;
+    s.h_myuint64_206 = static_cast<uint64_t>(i)*12000000000ull;
+    s.i_charcoal301 = static_cast<char>(i%128);
+    strncpy(s.j_mystring302, "skywire", 16);
+    s.k_uchar303 = static_cast<unsigned char>(i%256);
+    s.l_myuint8_304 = static_cast<uint8_t>(255 - i%256);
+    s.m_myint8_305 = static_cast<int8_t>(-sign*static_cast<int>(i%128));
+    strncpy(s.n_shortstring306, "skywire", 4);
+    s.o_myfloat1000 = static_cast<float>(i);
+    s.p_myuint32_2000 = i;
+    s.q_myint64_2010 = -static_cast<int64_t>(i);
+    s.r_mydouble2020 = static_cast<double>(i)/3;
+}
+
+static void copy(testspace::ClassyMcClassface& c, const StructyMcStructface& s)
+{
+    c.Set_a_mydouble100(s.a_mydouble100);
+    c.Set_b_myuint32_200(s.b_myuint32_200);
+    c.Set_c_myint64_201(s.c_myint64_201);
+    c.Set_d_myfloat202(s.d_myfloat202);
+    c.Set_e_myint16_203(s.e_myint16_203);
+    c.Set_f_myuint16_204(s.f_myuint16_204);
+    c.Set_g_myint32_205(s.g_myint32_205);
+    c.Set_h_myuint64_206(s.h_myuint64_206);
+    c.Set_i_charcoal301(s.i_charcoal301);
+    c.Set_j_mystring302("skywire");
+    c.Set_k_uchar303(s.k_uchar303);
+    c.Set_l_myuint8_304(s.l_myuint8_304);
+    c.Set_m_myint8_305(s.m_myint8_305);
+    c.Set_n_shortstring306("skywire");
+    c.Set_o_myfloat1000(s.o_myfloat1000);
+    c.Set_p_myuint32_2000(s.p_myuint32_2000);
+    c.Set_q_myint64_2010(s.q_myint64_2010);
+    c.Set_r_mydouble2020(s.r_mydouble2020);
+}
+
+static void expect_same(const StructyMcStructface& s, const testspace::ClassyMcClassface& c)
+{
+    EXPECT_EQ(s.a_mydouble100, c.Get_a_mydouble100());
+    EXPECT_EQ(s.b_myuint32_200, c.Get_b_myuint32_200());
+    EXPECT_EQ(s.c_myint64_201, c.Get_c_myint64_201());
+    EXPECT_EQ(s.d_myfloat202, c.Get_d_myfloat202());
+    EXPECT_EQ(s.e_myint16_203, c.Get_e_myint16_203());
+    EXPECT_EQ(s.f_myuint16_204, c.Get_f_myuint16_204());
+    EXPECT_EQ(s.g_myint32_205, c.Get_g_myint32_205());
+    EXPECT_EQ(s.h_myuint64_206, c.Get_h_myuint64_206());
+    EXPECT_EQ(s.i_charcoal301, c.Get_i_charcoal301());
+    EXPECT_EQ(0, std::memcmp(s.j_mystring302, c.Get_j_mystring302(), 16));
+    EXPECT_EQ(s.k_uchar303, c.Get_k_uchar303());
+    EXPECT_EQ(s.l_myuint8_304, c.Get_l_myuint8_304());
+    EXPECT_EQ(s.m_myint8_305, c.Get_m_myint8_305());
+    EXPECT_EQ(0, std::memcmp(s.n_shortstring306, c.Get_n_shortstring306(), 4));
+    EXPECT_EQ(s.o_myfloat1000, c.Get_o_myfloat1000());
+    EXPECT_EQ(s.p_myuint32_2000, c.Get_p_myuint32_2000());
+    EXPECT_EQ(s.q_myint64_2010, c.Get_q_myint64_2010());
+    EXPECT_EQ(s.r_mydouble2020, c.Get_r_mydouble2020());
+}
+
 class CandCpp : public ::testing::Test
 {
 protected:
@@ -36,44 +107,22 @@ TEST_F(CandCpp, SerDes)
     Cstream cs;
     cstream_init(&cs, 1024);
 
-    int sign = -1;
     for (uint32_t i = 0; i < NUM; i++)
     {
-        sign *= -1;
-        structy[i].a_myfloat100 = static_cast<float>(i);
-        structy[i].b_myuint32_200 = i;
-        structy[i].c_myint64_201 = i;
-        structy[i].d_myDoubleBubble202 = (double)i;
-        structy[i].e_charcoal = i%256;
-        strncpy(structy[i].j_mystring302, "skywire", 16);
-        structy[i].k_myint8_303 = static_cast<int8_t>(-sign*(int)(i%128));
-        structy[i].f_myfloat1000 = sign*i*66.6f;
-        structy[i].g_myuint32_2000 = i*49;
-        structy[i].h_myint64_2010 = sign*i*-80;
-        structy[i].i_myDoubleBubble2020 = sign*i*109.8;
-
+        fill(structy[i], i);
         ASSERT_EQ(0, StructyMcStructface_Serialize(&structy[i], &cs));
     }
 
-    skyloupe::Stream str(cs.size_);
-    str.write(cs.buffer_, cs.size_);
+    const size_t bytes = cstream_available(&cs);
+    ASSERT_EQ(bytes, NUM*StructyMcStructface_Size());
+
+    skyloupe::Stream str(bytes);
+    str.write(cs.head_, bytes);
 
     for (uint32_t i = 0; i < NUM; i++)
     {
-        bool success = classy[i].deserialize(str);
-        ASSERT_TRUE(success);
-
-        ASSERT_EQ(structy[i].a_myfloat100, classy[i].Get_a_myfloat100());
-        ASSERT_EQ(structy[i].b_myuint32_200, classy[i].Get_b_myuint32_200());
-        ASSERT_EQ(structy[i].c_myint64_201, classy[i].Get_c_myint64_201());
-        ASSERT_EQ(structy[i].d_myDoubleBubble202, classy[i].Get_d_myDoubleBubble202());
-        ASSERT_EQ(structy[i].e_charcoal, classy[i].Get_e_charcoal());
-        ASSERT_EQ(0, std::strncmp(structy[i].j_mystring302, classy[i].Get_j_mystring302(), 16));
-        ASSERT_EQ(structy[i].k_myint8_303, classy[i].Get_k_myint8_303());
-        ASSERT_EQ(structy[i].f_myfloat1000, classy[i].Get_f_myfloat1000());
-        ASSERT_EQ(structy[i].g_myuint32_2000, classy[i].Get_g_myuint32_2000());
-        ASSERT_EQ(structy[i].h_myint64_2010, classy[i].Get_h_myint64_2010());
-        ASSERT_EQ(structy[i].i_myDoubleBubble2020, classy[i].Get_i_myDoubleBubble2020());
+        ASSERT_TRUE(classy[i].deserialize(str));
+        expect_same(structy[i], classy[i]);
     }
 
     cstream_fini(&cs);
@@ -90,39 +139,17 @@ TEST_F(CandCpp, StreamCompare)
     cstream_init(&cs, StructyMcStructface_Size());
     skyloupe::Stream str(cs.size_);
 
-    const int i = 107;
     StructyMcStructface structy;
     testspace::ClassyMcClassface classy;
 
-    structy.a_myfloat100 = static_cast<float>(i);
-    structy.b_myuint32_200 = i;
-    structy.c_myint64_201 = i;
-    structy.d_myDoubleBubble202 = (double)i;
-    structy.e_charcoal = i % 256;
-    strncpy(structy.j_mystring302, "skywire", 16);
-    structy.k_myint8_303 = -i;
-    structy.f_myfloat1000 = i*66.6f;
-    structy.g_myuint32_2000 = i * 49;
-    structy.h_myint64_2010 = i*-80;
-    structy.i_myDoubleBubble2020 = i*109.8;
-
-    classy.Set_a_myfloat100(static_cast<float>(structy.a_myfloat100));
-    classy.Set_b_myuint32_200(structy.b_myuint32_200);
-    classy.Set_c_myint64_201(structy.c_myint64_201);
-    classy.Set_d_myDoubleBubble202(static_cast<double>(structy.d_myDoubleBubble202));
-    classy.Set_e_charcoal(structy.e_charcoal);
-    classy.Set_j_mystring302("skywire");
-    classy.Set_k_myint8_303(structy.k_myint8_303);
-    classy.Set_f_myfloat1000(structy.f_myfloat1000);
-    classy.Set_g_myuint32_2000(structy.g_myuint32_2000);
-    classy.Set_h_myint64_2010(structy.h_myint64_2010);
-    classy.Set_i_myDoubleBubble2020(structy.i_myDoubleBubble2020);
+    fill(structy, 107);
+    copy(classy, structy);
 
     ASSERT_EQ(0, StructyMcStructface_Serialize(&structy, &cs));
     ASSERT_EQ(true, classy.serialize(str));
     ASSERT_EQ(str.byte_size(), StructyMcStructface_Size());
     ASSERT_EQ(str.byte_size(), testspace::ClassyMcClassface::size());
-    ASSERT_EQ(0, std::memcmp(cs.buffer_, str.data(), str.byte_size()));
+    ASSERT_EQ(0, std::memcmp(cs.head_, str.data(), str.byte_size()));
 
     cstream_fini(&cs);
 }

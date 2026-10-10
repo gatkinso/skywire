@@ -116,7 +116,7 @@ if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
-target_link_libraries(${TARGETNAME} specification skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS} protobuf::libprotobuf)
+target_link_libraries(${TARGETNAME} skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 

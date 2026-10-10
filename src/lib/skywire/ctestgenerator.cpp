@@ -15,7 +15,9 @@
 
 #include <regex>
 #include <map>
+#include <cstdio>
 #include "ctestgenerator.h"
+#include "test_values.h"
 
 namespace skyloupe
 {
@@ -45,6 +47,7 @@ bool CTestGenerator::do_test_implementation(int& errorcode)
     test_size(errorcode);
     test_equality(errorcode);
     test_short_buffer(errorcode);
+    test_wire(errorcode);
 
     header_string.append(ss_.str());
 
@@ -211,6 +214,67 @@ bool CTestGenerator::test_short_buffer(int& errorcode)
     ss_ << "    ASSERT_EQ(" << classname << "_Size() - 1, cstream_available(&cs));\n\n";
     ss_ << "    cstream_fini(&cs);\n";
     ss_ << "    cstream_fini(&full);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// Sets every member to the value shared by all the test generators and
+// compares the serialized bytes with the ones computed by wiregen, so every
+// language is checked against the same expected wire bytes.
+bool CTestGenerator::test_wire(int& errorcode)
+{
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    std::vector<uint8_t> wire;
+    for (auto& member : ordered_members_)
+    {
+        if (!test_values::encode(std::get<member_type>(member.second), std::get<member_endianness>(member.second),
+                                 std::get<member_length>(member.second), wire))
+        {
+            // A user-defined member has no shared test value.
+            return true;
+        }
+    }
+
+    ss_ << "TEST(" << testname << ", Wire)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+
+        if (is_string_type(type))
+        {
+            ss_ << "    strncpy(in." << name << ", \"" << test_values::string_value() << "\", "
+                << std::get<member_length>(member.second) << ");\n";
+        }
+        else
+        {
+            ss_ << "    in." << name << " = " << test_values::literal(type) << ";\n";
+        }
+    }
+
+    ss_ << "\n";
+    ss_ << "    static const uint8_t want[] = {";
+    for (size_t i = 0; i < wire.size(); i++)
+    {
+        ss_ << ((i % 8 == 0) ? "\n        " : " ");
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", wire[i]);
+        ss_ << hex;
+    }
+    ss_ << "\n    };\n\n";
+    ss_ << "    Cstream cs;\n";
+    ss_ << "    cstream_init(&cs, 128);\n";
+    ss_ << "    ASSERT_EQ(0, " << classname << "_Serialize(&in, &cs));\n";
+    ss_ << "    ASSERT_EQ(sizeof(want), cstream_available(&cs));\n";
+    ss_ << "    ASSERT_EQ(0, std::memcmp(cs.head_, want, sizeof(want)));\n";
+    ss_ << "    cstream_fini(&cs);\n";
     ss_ << "}\n\n";
 
     return true;

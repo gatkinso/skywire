@@ -43,7 +43,7 @@ add_executable(${TARGETNAME} ${_SOURCES})
 
 add_dependencies(${TARGETNAME} skywire specification cli)
 
-target_link_libraries(${TARGETNAME} skywire specification cli protobuf::libprotobuf)
+target_link_libraries(${TARGETNAME} skywire cli)
 
 if(MSVC)
     set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${TARGETNAME}.exe)

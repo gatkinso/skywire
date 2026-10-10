@@ -39,6 +39,7 @@ protected:
     virtual bool test_size(int& errorcode);
     virtual bool test_equality(int& errorcode);
     virtual bool test_short_buffer(int& errorcode);
+    virtual bool test_wire(int& errorcode);
 
     virtual bool do_sets(int& errorcode);
 
