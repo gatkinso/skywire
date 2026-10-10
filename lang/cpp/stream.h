@@ -45,6 +45,13 @@ public:
         write((char*)&d, sizeof(char));
     }
 
+    // int8_t is signed char, a distinct type from char. Without this overload
+    // it promotes to int and serializes as 4 bytes.
+    void serialize(signed char d, Endianness)
+    {
+        write((char*)&d, sizeof(signed char));
+    }
+
     void serialize(int16_t d, Endianness endian)
     {
         switch (endian)
@@ -197,6 +204,11 @@ public:
     void deserialize(char& d, Endianness)
     {
         read((char*)&d, sizeof(char));
+    }
+
+    void deserialize(signed char& d, Endianness)
+    {
+        read((char*)&d, sizeof(signed char));
     }
 
     void deserialize(int16_t& d, Endianness endian)
@@ -438,6 +450,11 @@ public:
         write((char*)&d, sizeof(char));
     }
 
+    void serialize(signed char d, Endianness)
+    {
+        write((char*)&d, sizeof(signed char));
+    }
+
     void serialize(int16_t d, Endianness) { }
 
     void serialize(int32_t d, Endianness)
@@ -480,6 +497,11 @@ public:
     void deserialize(char& d, Endianness)
     {
         read((char*)&d, sizeof(char));
+    }
+
+    void deserialize(signed char& d, Endianness)
+    {
+        read((char*)&d, sizeof(signed char));
     }
 
     void deserialize(int16_t& d, Endianness) { }
@@ -604,6 +626,14 @@ public:
         }
         return true;
     }
+    bool serialize(signed char d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.serialize(d, endian);
+        } else {
+            pzstream_.serialize(d, endian);
+        }
+        return true;
+    }
     bool serialize(int16_t d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
@@ -683,6 +713,14 @@ public:
         } else {
             pzstream_.read((char*)&d, sizeof(char));
         }
+    }
+    bool deserialize(signed char& d, Endianness endian = Endianness::Big) {
+        if (mode_ == SW) {
+            swstream_.deserialize(d, endian);
+        } else {
+            pzstream_.deserialize(d, endian);
+        }
+        return true;
     }
     bool deserialize(int16_t& d, Endianness endian = Endianness::Big) {
         if (mode_ == SW) {
