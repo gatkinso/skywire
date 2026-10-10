@@ -19,7 +19,7 @@
 #include <functional>
 #include "generator.h"
 
-namespace skyloupe 
+namespace skyloupe
 {
 
 class GoGenerator : public Generator
@@ -31,23 +31,29 @@ public:
     bool generate(int& errorcode) override;
 
  protected:
-    virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool imp_b0(int& errorcode);
-    virtual bool imp_b1(int& errorcode);
-    virtual bool imp_b2(int& errorcode);
-    virtual bool imp_b3(int& errorcode);
-    virtual bool imp_b4(int& errorcode);
-    virtual bool imp_b5(int& errorcode);
-    virtual bool imp_b6(int& errorcode);
-    virtual bool imp_b7(int& errorcode);
-    virtual bool imp_b8(int& errorcode);
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_package(int& errorcode);
+    virtual bool imp_imports(int& errorcode);
+    virtual bool imp_struct(int& errorcode);
+    virtual bool imp_serialize(int& errorcode);
+    virtual bool imp_deserialize(int& errorcode);
+    virtual bool imp_equals(int& errorcode);
+    virtual bool imp_size(int& errorcode);
+    virtual bool imp_get_functions(int& errorcode);
+    virtual bool imp_set_functions(int& errorcode);
+
+    std::string go_type(const std::string& type);
+    std::string go_endian(unsigned int endian_flag);
+    unsigned int go_bits(const std::string& type);
+    bool is_float_type(const std::string& type);
 
 private:
     std::string classname_;
 
     bool do_block(const std::string block_id, std::function<std::string()> builder);
+    std::string subst(std::string template_str, const member_desc_t& member);
 };
 
 }
