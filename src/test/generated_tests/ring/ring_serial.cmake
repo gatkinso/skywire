@@ -27,6 +27,10 @@
 #  Optional -D variables: EXE_SUFFIX
 #
 
+# Script mode starts with every policy at OLD; match the project's minimum so
+# IN_LIST and the other newer features behave the same on every CMake version.
+cmake_minimum_required(VERSION 3.28)
+
 set(all_langs cpp c java swift go python)
 
 set(display_cpp "C++")
