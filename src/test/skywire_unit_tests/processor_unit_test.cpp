@@ -308,3 +308,32 @@ TEST_F(ProcessorValidationTest, MissingOutputFilenameWritesNothing)
 
     fs::remove_all(dir);
 }
+
+TEST_F(ProcessorValidationTest, RelayOnlyWhenRelayFileNamed)
+{
+    generate_tests = true;
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
+    ASSERT_EQ(output_str_map.count("relay"), 0u);
+
+    output_str_map.clear();
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
+    ASSERT_EQ(output_str_map.count("relay"), 1u);
+    ASSERT_NE(output_str_map["relay"].find("int main("), std::string::npos);
+}
+
+TEST_F(ProcessorValidationTest, RejectsPathTraversalInRelayFilename)
+{
+    expect_rejected(make_spec(good_members, R"(,"outputrelayfilename":"../relay.cpp")"));
+}
+
+TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
+{
+    // A user-defined member has no shared test value, so a relay cannot check it.
+    const std::string members = R"({"1":{"type":"OtherMessage","name":"nested"}})";
+    generate_tests = true;
+    ASSERT_TRUE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
+
+    output_str_map.clear();
+    ASSERT_FALSE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
+    ASSERT_NE(errorcode & SW_FILE_IMP, 0u);
+}

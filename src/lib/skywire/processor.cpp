@@ -37,6 +37,7 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "header", "outputheaderfilename" },
     { "implementation", "outputimplfilename" },
     { "unittest", "outputtestfilename" },
+    { "relay", "outputrelayfilename" },
 };
 
 std::string printable(const std::string& value)
@@ -165,6 +166,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 
     std::unique_ptr<skyloupe::Generator> genny;
     std::unique_ptr<skyloupe::Generator> test_genny;
+    std::unique_ptr<skyloupe::Generator> relay_genny;
+
+    // A spec that names a relay file also gets the cross-language relay program
+    // (see relaygenerators.h) whenever tests are generated.
+    const bool generate_relay = generate_tests && msg_spec_.get_proto().string_values().count("outputrelayfilename") != 0;
 
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
@@ -176,6 +182,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::SwiftTestGenerator(msg_spec_, lang_spec_));
         }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::SwiftRelayGenerator(msg_spec_, lang_spec_));
+        }
     }
     else if (lang == c_str_)
     {
@@ -184,6 +195,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         if (true == generate_tests)
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CTestGenerator(msg_spec_, lang_spec_));
+        }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CRelayGenerator(msg_spec_, lang_spec_));
         }
     }
     else if (lang == cpp_str_)
@@ -194,6 +210,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppTestGenerator(msg_spec_, lang_spec_));
         }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppRelayGenerator(msg_spec_, lang_spec_));
+        }
     }
     else if (lang == go_str_)
     {
@@ -203,6 +224,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::GoTestGenerator(msg_spec_, lang_spec_));
         }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::GoRelayGenerator(msg_spec_, lang_spec_));
+        }
     }
     else if (lang == java_str_)
     {
@@ -211,6 +237,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         if (true == generate_tests)
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaTestGenerator(msg_spec_, lang_spec_));
+        }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaRelayGenerator(msg_spec_, lang_spec_));
         }
     }
     else if (lang == proto3_str_)
@@ -225,6 +256,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3TestGenerator(msg_spec_, lang_spec_));
         }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3RelayGenerator(msg_spec_, lang_spec_));
+        }
     }
     else
     {
@@ -238,6 +274,10 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     {
         success = test_genny->generate(errorcode);
     }
+    if (true == success && relay_genny)
+    {
+        success = relay_genny->generate(errorcode);
+    }
 
     if (success)
     {
@@ -247,6 +287,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             auto t2 = test_genny->get_results();
             output_str_map.insert(t2.begin(), t2.end());
+        }
+        if (relay_genny)
+        {
+            auto t3 = relay_genny->get_results();
+            output_str_map.insert(t3.begin(), t3.end());
         }
     }
     // end temporary

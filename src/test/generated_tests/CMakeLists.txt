@@ -176,3 +176,7 @@ add_test(NAME skywire_generated_tests:JavaRoundTrip
 
 set_tests_properties(skywire_generated_tests:JavaRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "JAVA_TOOLCHAIN_NOT_FOUND")
+
+# Cross-language serial test: one message relayed through every language in a
+# random order (see ring/README.md).
+add_subdirectory(ring)
