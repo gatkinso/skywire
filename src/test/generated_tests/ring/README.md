@@ -52,8 +52,9 @@ language into `<build>/ring/specs/<lang>.json`. Tags are declared out of order
 and differ in digit count, so wire order must follow the numeric tag.
 Native endianness is left out because it is host-dependent.
 
-`RingyMcRingface.bin` (110 bytes) was written with Python's `struct`,
-independently of every generator:
+`RingyMcRingface.bin` (110 bytes) is written by
+[`scripts/make_ring_bin.py`](../../../../scripts/README.md), using Python's
+`struct` and independently of every generator. The script prints this table:
 
 | Offset | Member | Bytes |
 |---:|---|---|
@@ -81,4 +82,19 @@ independently of every generator:
 | 100 | `str_exact` [7] "skywire" | `73 6b 79 77 69 72 65` (no terminator) |
 | 107 | `str_truncated` [3] "sky" | `73 6b 79` |
 
-If the test values change, regenerate the file to match.
+## Changing the message
+
+After you add members or types, or change a test value, regenerate the file
+with `python3 scripts/make_ring_bin.py`, update the table above, and commit both.
+`scripts/README.md` gives the steps for adding a type. To check the file is
+current without writing it, run `python3 scripts/make_ring_bin.py --check`.
+
+Each test value is written in two places on purpose:
+`src/lib/skywire/test_values.cpp` sets the values the relays check against, and
+the `TYPES` table in `make_ring_bin.py` sets the values written to the `.bin`.
+A new type needs the **same value** in both. The duplication keeps the `.bin`
+independent of wiregen: if wiregen's encoder and the file came from the same
+code, a bug in that code would make them agree on the wrong bytes. If the two
+values disagree, or the `.bin` is not regenerated, the serial test fails at its
+first step. The relay reports either `input is N bytes, size() is M` or the
+name of the member whose value differs.
