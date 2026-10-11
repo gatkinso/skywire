@@ -1,8 +1,6 @@
 {
    "stringValues": {
       "classname": "ClassyMcClassface",
-      "outputheaderfilename": "ClassyMcClassface.h",
-      "outputtestfilename": "ClassyMcClassfaceTest.cpp",
       "namespace": "testspace"
    },
    "members": {

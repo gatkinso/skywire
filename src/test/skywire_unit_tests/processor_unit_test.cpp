@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <set>
 #include "skywire/processor.h"
 #include "skywire/skywire.h"
 
@@ -442,4 +443,91 @@ TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
     output_str_map.clear();
     ASSERT_FALSE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_NE(errorcode & SW_FILE_IMP, 0u);
+}
+
+// Output file names: the lang file gives a {classname} pattern for each
+// output, and a name in the spec takes its place.
+class ProcessorFilenameTest : public ProcessorUnitTest
+{
+protected:
+    std::filesystem::path dir;
+
+    void SetUp() override
+    {
+        // ctest runs each test in its own process, in parallel.
+        dir = std::filesystem::temp_directory_path() /
+              (std::string("skywire_filenames_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
+        std::filesystem::remove_all(dir);
+        std::filesystem::create_directories(dir);
+        outputdir = dir.string();
+        generate_tests = true;
+        write_to_file = true;
+    }
+
+    void TearDown() override
+    {
+        std::filesystem::remove_all(dir);
+    }
+
+    static std::string patterned_lang()
+    {
+        std::string lang = lang_str;
+        const std::string key = "\"language\": \"c++\",";
+        lang.insert(lang.find(key) + key.size(),
+                    R"("outputheaderfilename": "{classname}.h",)"
+                    R"("outputtestfilename": "{classname}Test.cpp",)"
+                    R"("outputrelayfilename": "{classname}Relay.cpp",)");
+        return lang;
+    }
+
+    static std::string spec(const std::string& file_values = "")
+    {
+        return R"({"stringValues":{"classname":"TestClass","namespace":"testspace")" + file_values +
+               R"(},"members":)" + good_members + R"(,"includes":["<stdint.h>"]})";
+    }
+
+    bool run(const std::string& msg)
+    {
+        Processor p;
+        return p.process_string(msg, patterned_lang(), output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+    }
+
+    std::set<std::string> written() const
+    {
+        std::set<std::string> names;
+        for (const auto& entry : std::filesystem::directory_iterator(dir))
+        {
+            names.insert(entry.path().filename().string());
+        }
+        return names;
+    }
+};
+
+TEST_F(ProcessorFilenameTest, NamesComeFromLangFile)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+    // The relay pattern names the relay's file but does not ask for a relay.
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, SpecNameReplacesPattern)
+{
+    ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"Wire.h")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "Wire.h", "TestClassTest.cpp" }));
+    // The test includes the header by its actual name.
+    ASSERT_NE(output_str_map["unittest"].find("Wire.h"), std::string::npos);
+}
+
+TEST_F(ProcessorFilenameTest, SpecNameMayUsePattern)
+{
+    ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"{classname}_wire.h","outputrelayfilename":"{classname}_relay.cpp")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass_wire.h", "TestClassTest.cpp", "TestClass_relay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, ExpandedNameIsStillValidated)
+{
+    ASSERT_FALSE(run(spec(R"(,"outputheaderfilename":"../{classname}.h")")));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(written().empty());
 }

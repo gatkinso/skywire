@@ -1,6 +1,9 @@
 {
     "stringValues": {
         "language": "swift",
+        "outputimplfilename": "{classname}.swift",
+        "outputtestfilename": "{classname}_test.swift",
+        "outputrelayfilename": "{classname}Relay.swift",
 
         "banner_str":"// This is the generated Swift file\n\n",
 

@@ -1,8 +1,6 @@
 {
    "stringValues": {
       "classname": "GopherMcGoface",
-      "outputimplfilename": "GopherMcGoface.go",
-      "outputtestfilename": "GopherMcGoface_test.go",
       "namespace": "testspace"
    },
    "members": {

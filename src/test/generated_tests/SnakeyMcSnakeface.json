@@ -1,8 +1,6 @@
 {
    "stringValues": {
       "classname": "SnakeyMcSnakeface",
-      "outputimplfilename": "SnakeyMcSnakeface.py",
-      "outputtestfilename": "SnakeyMcSnakefaceTest.py",
       "namespace": "testspace"
    },
    "members": {

@@ -238,8 +238,8 @@ std::filesystem::path executable_dir(const char* argv0)
         return exe.parent_path();
     }
 #endif
-    fs::path exe = fs::absolute(argv0, ec);
-    return ec ? fs::path(".") : exe.parent_path();
+    fs::path from_argv = fs::absolute(argv0, ec);
+    return ec ? fs::path(".") : from_argv.parent_path();
 }
 
 bool read_text_file(const std::string& pathname, std::string& text)

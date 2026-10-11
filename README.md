@@ -185,7 +185,6 @@ with the file Example.json....
     {
        "stringValues":{  
           "classname":"Example",
-          "outputheaderfilename":"Example.h",
           "outputtestfilename":"ExampleUnitTest.cpp",
           "namespace":"SomeNamespace"
        },
@@ -321,8 +320,6 @@ To generate the message in C, run wiregen with `--language c` and this file:
 {
    "stringValues":{  
       "classname":"Example",
-      "outputheaderfilename":"Example.h",
-      "outputcfilename":"Example.c",
       "namespace":"SomeNamespace",
       "outputtestfilename":"ExampleUnitTest.cpp"
    },
@@ -346,6 +343,9 @@ To generate the message in C, run wiregen with `--language c` and this file:
 
 ````
 
+The output file names come from the lang file (see 7.1); this spec names only
+the test file, to replace the lang file's `ExampleTest.cpp`.
+
 Keep in mind the JSON values are case sensitive.  You should get the files:
     Example.c
     Example.h
@@ -361,6 +361,25 @@ Customization of generated code can be performed in the lang.xxx.json files.
 Each lang file names the language it is for in its `"language"` value, which
 selects the generator. wiregen ignores (with a warning) a `"language"` value in a
 message specification.
+
+The lang file also names each output file, with `{classname}` standing for the
+message's `classname`:
+
+| Language | Header (`outputheaderfilename`) | Implementation (`outputimplfilename`) | Test (`outputtestfilename`) | Relay (`outputrelayfilename`) |
+|----------|-------------|---------------------|-------------------------|------------------------|
+| c        | `{classname}.h` | `{classname}.c`     | `{classname}Test.cpp`   | `{classname}Relay.c`   |
+| c++      | `{classname}.h` |                     | `{classname}Test.cpp`   | `{classname}Relay.cpp` |
+| go       |                 | `{classname}.go`    | `{classname}_test.go`   | `{classname}Relay.go`  |
+| java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
+| proto3   |                 | `{classname}.proto` |                         |                        |
+| python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
+| swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
+
+A message specification may set any of these keys to use a different name for
+that one message; its value may also use `{classname}`. A name must be a plain
+file name (no directories). Java requires a public class's file to be named
+after the class, so the Java generator names the test and relay classes after
+their files.
 
 More detail on this to come.
 

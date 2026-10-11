@@ -46,6 +46,19 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "relay", "outputrelayfilename" },
 };
 
+// Output file names may contain this, which is replaced by the spec's classname.
+const std::string classname_token = "{classname}";
+
+std::string expand_filename(std::string pattern, const std::string& classname)
+{
+    for (auto pos = pattern.find(classname_token); pos != std::string::npos;
+         pos = pattern.find(classname_token, pos + classname.size()))
+    {
+        pattern.replace(pos, classname_token.size(), classname);
+    }
+    return pattern;
+}
+
 std::string printable(const std::string& value)
 {
     std::string out(value);
@@ -162,6 +175,12 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 {
     bool success = false;
 
+    // Decided before the lang file's names are filled in, so its relay
+    // pattern alone does not ask for a relay.
+    const bool spec_names_relay = msg_spec_.get_proto().string_values().count("outputrelayfilename") != 0;
+
+    resolve_output_filenames();
+
     if (false == validate_spec(errorcode))
     {
         return success;
@@ -196,7 +215,7 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 
     // A spec that names a relay file also gets the cross-language relay program
     // (see relaygenerators.h) whenever tests are generated.
-    const bool generate_relay = generate_tests && msg_spec_.get_proto().string_values().count("outputrelayfilename") != 0;
+    const bool generate_relay = generate_tests && spec_names_relay;
 
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
@@ -323,6 +342,33 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     // end temporary
 
     return success;
+}
+
+void Processor::resolve_output_filenames()
+{
+    // The lang file gives each output a file name pattern (".h", "_test.go",
+    // ...); a name in the spec takes its place. Either may use {classname}.
+    auto& values = *msg_spec_.get_proto_ref().mutable_string_values();
+    const auto& patterns = lang_spec_.get_proto().string_values();
+
+    auto classname_value = values.find("classname");
+    const std::string classname = classname_value == values.end() ? "" : classname_value->second;
+
+    for (const auto& slot : output_slots)
+    {
+        auto value = values.find(slot.second);
+        if (value != values.end())
+        {
+            value->second = expand_filename(value->second, classname);
+            continue;
+        }
+
+        auto pattern = patterns.find(slot.second);
+        if (pattern != patterns.end())
+        {
+            values[slot.second] = expand_filename(pattern->second, classname);
+        }
+    }
 }
 
 bool Processor::validate_spec(int& errorcode)

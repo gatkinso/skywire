@@ -1,8 +1,6 @@
 {
    "stringValues": {
       "classname": "CoffeeMcCofface",
-      "outputimplfilename": "CoffeeMcCofface.java",
-      "outputtestfilename": "CoffeeMcCoffaceTest.java",
       "namespace": "testspace"
    },
    "members": {

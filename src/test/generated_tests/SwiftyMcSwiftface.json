@@ -1,8 +1,6 @@
 {
    "stringValues": {
       "classname": "SwiftyMcSwiftface",
-      "outputimplfilename": "SwiftyMcSwiftface.swift",
-      "outputtestfilename": "SwiftyMcSwiftface_test.swift",
       "namespace": "testspace"
    },
    "members": {

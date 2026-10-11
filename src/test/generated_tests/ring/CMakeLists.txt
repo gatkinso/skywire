@@ -21,7 +21,8 @@ set(RING_DIR ${PROJECT_BINARY_DIR}/ring)
 set(RING_SPEC_DIR ${RING_DIR}/specs)
 
 # Instantiates RingyMcRingface.json.in for one language, so every language
-# shares one member list by construction.
+# shares one member list by construction. Output file names come from each
+# lang file; only the relay is named here, which is what asks for one.
 function(ring_spec lang namespace includes)
     set(RING_NAMESPACE ${namespace})
     set(RING_INCLUDES "${includes}")
@@ -37,30 +38,17 @@ function(ring_spec lang namespace includes)
 endfunction()
 
 ring_spec(c ring [=["\"cstream.h\""]=]
-    outputheaderfilename=RingyMcRingface.h
-    outputimplfilename=RingyMcRingface.c
-    outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.c)
 ring_spec(cpp ring [=["\"streamable.h\"", "<stdint.h>"]=]
-    outputheaderfilename=RingyMcRingface.h
-    outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.cpp)
 ring_spec(swift ring [=["Foundation"]=]
-    outputimplfilename=RingyMcRingface.swift
-    outputtestfilename=RingyMcRingface_test.swift
     outputrelayfilename=ring_relay.swift)
 # The Go relay is a command, so the generated code is in package main.
 ring_spec(go main ""
-    outputimplfilename=RingyMcRingface.go
-    outputtestfilename=RingyMcRingface_test.go
     outputrelayfilename=ring_relay.go)
 ring_spec(java ring ""
-    outputimplfilename=RingyMcRingface.java
-    outputtestfilename=RingyMcRingfaceTest.java
     outputrelayfilename=RingRelay.java)
 ring_spec(python ring ""
-    outputimplfilename=RingyMcRingface.py
-    outputtestfilename=RingyMcRingfaceTest.py
     outputrelayfilename=ring_relay.py)
 
 # The C and C++ relays build with the project; the other languages are

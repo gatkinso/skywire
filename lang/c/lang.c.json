@@ -1,6 +1,10 @@
 {
     "stringValues": {
         "language": "c",
+        "outputheaderfilename": "{classname}.h",
+        "outputimplfilename": "{classname}.c",
+        "outputtestfilename": "{classname}Test.cpp",
+        "outputrelayfilename": "{classname}Relay.c",
 
         "banner_h_str":"// This is the generated .h file\n\n",
         "banner_c_str":"// This is the generated .c file\n\n",

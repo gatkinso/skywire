@@ -1,9 +1,6 @@
 {
    "stringValues": {
       "classname": "StructyMcStructface",
-      "outputheaderfilename": "StructyMcStructface.h",
-      "outputimplfilename": "StructyMcStructface.c",
-      "outputtestfilename": "StructyMcStructfaceTest.cpp",
       "namespace": "testspace"
    },
    "members": {

@@ -1,6 +1,9 @@
 {
     "stringValues": {
         "language": "c++",
+        "outputheaderfilename": "{classname}.h",
+        "outputtestfilename": "{classname}Test.cpp",
+        "outputrelayfilename": "{classname}Relay.cpp",
 
         "banner_str":"// This is the generated file\n\n",
         "sentry_str":"#pragma once\n\n",
