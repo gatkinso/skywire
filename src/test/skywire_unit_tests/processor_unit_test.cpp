@@ -271,6 +271,40 @@ TEST_F(ProcessorValidationTest, RejectsUnknownEndian)
     expect_rejected(make_spec(R"({"1":{"type":"float","name":"a","endian":3}})"));
 }
 
+static std::string member_with_tag(const std::string& tag)
+{
+    return R"({")" + tag + R"(":{"type":"float","name":"a"}})";
+}
+
+TEST_F(ProcessorValidationTest, AcceptsProtobufFieldNumbers)
+{
+    for (const char* tag : { "1", "18999", "20000", "536870911" })
+    {
+        SCOPED_TRACE(tag);
+        ASSERT_TRUE(run(make_spec(member_with_tag(tag))));
+    }
+}
+
+TEST_F(ProcessorValidationTest, RejectsTagZero)
+{
+    expect_rejected(make_spec(member_with_tag("0")));
+}
+
+TEST_F(ProcessorValidationTest, RejectsProtobufReservedTags)
+{
+    for (const char* tag : { "19000", "19500", "19999" })
+    {
+        SCOPED_TRACE(tag);
+        output_str_map.clear();
+        expect_rejected(make_spec(member_with_tag(tag)));
+    }
+}
+
+TEST_F(ProcessorValidationTest, RejectsTagAboveProtobufMaximum)
+{
+    expect_rejected(make_spec(member_with_tag("536870912")));
+}
+
 TEST_F(ProcessorValidationTest, RejectsBadClassname)
 {
     std::string spec = make_spec(good_members);

@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <vector>
 #include <cstring>
+#include <stdexcept>
 #include <string>
 #include "sw_endian.h"
 #include <protozero/pbf_writer.hpp>
@@ -530,57 +531,57 @@ public:
     // Protobuf has no 8- or 16-bit scalars, so those travel as int32/uint32.
     void serialize(char d, Endianness)
     {
-        writer_.add_int32(current_tag_++, d);
+        writer_.add_int32(next_tag(), d);
     }
 
     void serialize(signed char d, Endianness)
     {
-        writer_.add_int32(current_tag_++, d);
+        writer_.add_int32(next_tag(), d);
     }
 
     void serialize(int16_t d, Endianness)
     {
-        writer_.add_int32(current_tag_++, d);
+        writer_.add_int32(next_tag(), d);
     }
 
     void serialize(int32_t d, Endianness)
     {
-        writer_.add_int32(current_tag_++, d);
+        writer_.add_int32(next_tag(), d);
     }
 
     void serialize(int64_t d, Endianness)
     {
-        writer_.add_int64(current_tag_++, d);
+        writer_.add_int64(next_tag(), d);
     }
 
     void serialize(unsigned char d, Endianness)
     {
-        writer_.add_uint32(current_tag_++, d);
+        writer_.add_uint32(next_tag(), d);
     }
 
     void serialize(uint16_t d, Endianness)
     {
-        writer_.add_uint32(current_tag_++, d);
+        writer_.add_uint32(next_tag(), d);
     }
 
     void serialize(uint32_t d, Endianness)
     {
-        writer_.add_uint32(current_tag_++, d);
+        writer_.add_uint32(next_tag(), d);
     }
 
     void serialize(uint64_t d, Endianness)
     {
-        writer_.add_uint64(current_tag_++, d);
+        writer_.add_uint64(next_tag(), d);
     }
 
     void serialize(float d, Endianness)
     {
-        writer_.add_float(current_tag_++, d);
+        writer_.add_float(next_tag(), d);
     }
 
     void serialize(double d, Endianness)
     {
-        writer_.add_double(current_tag_++, d);
+        writer_.add_double(next_tag(), d);
     }
 
     // Each returns false, leaving d unchanged, when no field is left to read.
@@ -669,7 +670,7 @@ public:
             return 0;
         }
 
-        writer_.add_bytes(current_tag_++, static_cast<const char*>(data), len);
+        writer_.add_bytes(next_tag(), static_cast<const char*>(data), len);
         return len;
     }
 
@@ -732,6 +733,27 @@ public:
     }
 
 protected:
+    // Field numbers run 1, 2, 3... in call order, skipping the range protobuf
+    // reserves (19000-19999). Throws std::out_of_range past the largest one.
+    protozero::pbf_tag_type next_tag()
+    {
+        if (current_tag_ > max_field_number)
+        {
+            throw std::out_of_range("PZStream: too many fields for one protobuf message");
+        }
+
+        protozero::pbf_tag_type tag = current_tag_++;
+        if (current_tag_ == first_reserved_field_number)
+        {
+            current_tag_ = last_reserved_field_number + 1;
+        }
+        return tag;
+    }
+
+    static constexpr protozero::pbf_tag_type max_field_number = (1u << 29) - 1;
+    static constexpr protozero::pbf_tag_type first_reserved_field_number = 19000;
+    static constexpr protozero::pbf_tag_type last_reserved_field_number = 19999;
+
     size_t pos_;
     size_t expand_size_;
     std::string& buffer_;
