@@ -38,6 +38,12 @@ set(_GENERATORS
              proto3generator.cpp
              py3generator.cpp
              py3testgenerator.cpp
+             crelaygenerator.cpp
+             cpprelaygenerator.cpp
+             gorelaygenerator.cpp
+             javarelaygenerator.cpp
+             py3relaygenerator.cpp
+             swiftrelaygenerator.cpp
              swiftgenerator.cpp
              swifttestgenerator.cpp
              test_values.cpp
@@ -52,6 +58,7 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/proto3generator.h
              ${TARGET_INC_DIR}/py3generator.h
              ${TARGET_INC_DIR}/py3testgenerator.h
+             ${TARGET_INC_DIR}/relaygenerators.h
              ${TARGET_INC_DIR}/swiftgenerator.h
              ${TARGET_INC_DIR}/swifttestgenerator.h
              ${TARGET_INC_DIR}/test_values.h
