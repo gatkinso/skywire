@@ -16,7 +16,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <set>
+#include <sstream>
+#include <vector>
 #include "skywire/processor.h"
+#include "skywire/skywire.h"
 
 using namespace skyloupe;
 std::string msg_str =
@@ -25,9 +29,7 @@ std::string msg_str =
       \"classname\":\"TestClass\",                    \
       \"outputheaderfilename\":\"TestClass++.h\",     \
       \"outputtestfilename\":\"TestClassTest++.cpp\", \
-      \"namespace\":\"testspace\",                    \
-      \"language\": \"c++\",                          \
-      \"lang_file\": \"lang.cpp.json\"                \
+      \"namespace\":\"testspace\"                     \
    },                                                 \
    \"members\":{                                      \
       \"1\":{                                         \
@@ -45,6 +47,7 @@ std::string msg_str =
 std::string lang_str =
 "{                                                                                                                                        \
     \"stringValues\": {                                                                                                                   \
+        \"language\": \"c++\",                                                                                                            \
         \"banner_str\":\"// This is the generated go file\n\",                                                                            \
         \"include_substr\":  \"__INCLUDEFILE__\",                                                                                         \
         \"structname_substr\":\"__STRUCTNAME__\",                                                                                         \
@@ -97,6 +100,7 @@ protected:
     std::string outputdir;
     int errorcode = SW_SUCCESS;
     bool generate_tests = false;
+    bool generate_relay = false;
     bool write_to_file = false;
 
     std::string msgpathname;
@@ -168,7 +172,7 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankMsgFilenamne)
 {
     Processor p;
 
-    bool ret = p.process_file(msgpathname, langpathname, outputdir, errorcode, generate_tests, write_to_file);
+    bool ret = p.process_file(msgpathname, langpathname, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
     ASSERT_FALSE(ret);
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
@@ -179,7 +183,7 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankLangFilenamne)
 
     msgpathname = "not blank";
 
-    bool ret = p.process_file(msgpathname, langpathname, outputdir, errorcode, generate_tests, write_to_file);
+    bool ret = p.process_file(msgpathname, langpathname, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
     ASSERT_FALSE(ret);
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
@@ -189,7 +193,7 @@ static std::string make_spec(const std::string& members,
                              const std::string& extra_values = "",
                              const std::string& includes = R"(["<stdint.h>"])")
 {
-    return R"({"stringValues":{"classname":"TestClass","namespace":"testspace","language":"c++",)"
+    return R"({"stringValues":{"classname":"TestClass","namespace":"testspace",)"
            R"("outputheaderfilename":"TestClass.h")" + extra_values + R"(},"members":)" + members +
            R"(,"includes":)" + includes + "}";
 }
@@ -202,7 +206,7 @@ protected:
     bool run(const std::string& spec)
     {
         Processor p;
-        return p.process_string(spec, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+        return p.process_string(spec, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
     }
 
     void expect_rejected(const std::string& spec)
@@ -228,6 +232,78 @@ TEST_F(ProcessorValidationTest, AcceptsQualifiedNamespace)
     spec = make_spec(good_members);
     spec.replace(spec.find("testspace"), 9, "acme::wire");
     ASSERT_TRUE(run(spec));
+}
+
+// The target language is the lang file's, never the message spec's.
+TEST_F(ProcessorValidationTest, LanguageComesFromLangFile)
+{
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"language":"swift")")));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+    ASSERT_EQ(output_str_map.count("header"), 1u);           // C++ writes a header,
+    ASSERT_EQ(output_str_map.count("implementation"), 0u);   // Swift an implementation.
+}
+
+TEST_F(ProcessorValidationTest, RejectsLangFileWithoutLanguage)
+{
+    std::string lang = lang_str;
+    const std::string language = R"("language": "c++",)";
+    lang.erase(lang.find(language), language.size());
+
+    Processor p;
+    ASSERT_FALSE(p.process_string(make_spec(good_members), lang, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_UNKNOWNLANG);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorValidationTest, AcceptsLangFileForExpectedLanguage)
+{
+    Processor p;
+    p.set_language("c++");
+    ASSERT_TRUE(p.process_string(make_spec(good_members), lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+}
+
+TEST_F(ProcessorValidationTest, RejectsLangFileForAnotherLanguage)
+{
+    Processor p;
+    p.set_language("swift");
+    ASSERT_FALSE(p.process_string(make_spec(good_members), lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_UNKNOWNLANG);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST(FindLanguage, NamesAndAliases)
+{
+    std::string language, lang_filename;
+
+    ASSERT_TRUE(find_language("c++", language, lang_filename));
+    ASSERT_EQ(language, "c++");
+    ASSERT_EQ(lang_filename, "lang.cpp.json");
+
+    ASSERT_TRUE(find_language("cpp", language, lang_filename));
+    ASSERT_EQ(language, "c++");
+    ASSERT_EQ(lang_filename, "lang.cpp.json");
+
+    ASSERT_TRUE(find_language("python", language, lang_filename));
+    ASSERT_EQ(language, "python3");
+    ASSERT_EQ(lang_filename, "lang.python3.json");
+
+    for (const char* name : { "c", "go", "java", "proto3", "python3", "swift" })
+    {
+        ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
+        ASSERT_EQ(language, name);
+    }
+}
+
+TEST(FindLanguage, RejectsUnknown)
+{
+    std::string language = "unchanged", lang_filename = "unchanged";
+
+    ASSERT_FALSE(find_language("cobol", language, lang_filename));
+    ASSERT_FALSE(find_language("", language, lang_filename));
+    ASSERT_FALSE(find_language("C++", language, lang_filename));
+    ASSERT_EQ(language, "unchanged");
+    ASSERT_EQ(lang_filename, "unchanged");
 }
 
 TEST_F(ProcessorValidationTest, RejectsPathTraversalInOutputFilename)
@@ -343,13 +419,14 @@ TEST_F(ProcessorValidationTest, MissingOutputFilenameWritesNothing)
     fs::remove_all(dir);
 }
 
-TEST_F(ProcessorValidationTest, RelayOnlyWhenRelayFileNamed)
+TEST_F(ProcessorValidationTest, RelayOnlyWhenAskedFor)
 {
     generate_tests = true;
-    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_EQ(output_str_map.count("relay"), 0u);
 
     output_str_map.clear();
+    generate_relay = true;
     ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_EQ(output_str_map.count("relay"), 1u);
     ASSERT_NE(output_str_map["relay"].find("int main("), std::string::npos);
@@ -368,6 +445,229 @@ TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
     ASSERT_TRUE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
 
     output_str_map.clear();
+    generate_relay = true;
     ASSERT_FALSE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_NE(errorcode & SW_FILE_IMP, 0u);
+}
+
+// Output file names: the lang file gives a {classname} pattern for each
+// output, and a name in the spec takes its place.
+class ProcessorFilenameTest : public ProcessorUnitTest
+{
+protected:
+    std::filesystem::path dir;
+
+    void SetUp() override
+    {
+        // ctest runs each test in its own process, in parallel.
+        dir = std::filesystem::temp_directory_path() /
+              (std::string("skywire_filenames_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
+        std::filesystem::remove_all(dir);
+        std::filesystem::create_directories(dir);
+        outputdir = dir.string();
+        generate_tests = true;
+        write_to_file = true;
+    }
+
+    void TearDown() override
+    {
+        std::filesystem::remove_all(dir);
+    }
+
+    static std::string patterned_lang()
+    {
+        std::string lang = lang_str;
+        const std::string key = "\"language\": \"c++\",";
+        lang.insert(lang.find(key) + key.size(),
+                    R"("outputheaderfilename": "{classname}.h",)"
+                    R"("outputtestfilename": "{classname}Test.cpp",)"
+                    R"("outputrelayfilename": "{classname}Relay.cpp",)");
+        return lang;
+    }
+
+    static std::string spec(const std::string& file_values = "")
+    {
+        return R"({"stringValues":{"classname":"TestClass","namespace":"testspace")" + file_values +
+               R"(},"members":)" + good_members + R"(,"includes":["<stdint.h>"]})";
+    }
+
+    bool run(const std::string& msg)
+    {
+        Processor p;
+        return p.process_string(msg, patterned_lang(), output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
+    }
+
+    std::set<std::string> written() const
+    {
+        std::set<std::string> names;
+        for (const auto& entry : std::filesystem::directory_iterator(dir))
+        {
+            names.insert(entry.path().filename().string());
+        }
+        return names;
+    }
+};
+
+TEST_F(ProcessorFilenameTest, NamesComeFromLangFile)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+    // The relay pattern names the relay's file but does not ask for a relay.
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, RelayFlagAddsRelay)
+{
+    generate_relay = true;
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp", "TestClassRelay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, RelayNeedsNoTests)
+{
+    generate_tests = false;
+    generate_relay = true;
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassRelay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, SpecRelayNameDoesNotAskForRelay)
+{
+    ASSERT_TRUE(run(spec(R"(,"outputrelayfilename":"Relay.cpp")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, SpecNameReplacesPattern)
+{
+    ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"Wire.h")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "Wire.h", "TestClassTest.cpp" }));
+    // The test includes the header by its actual name.
+    ASSERT_NE(output_str_map["unittest"].find("Wire.h"), std::string::npos);
+}
+
+TEST_F(ProcessorFilenameTest, SpecNameMayUsePattern)
+{
+    generate_relay = true;
+    ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"{classname}_wire.h","outputrelayfilename":"{classname}_relay.cpp")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass_wire.h", "TestClassTest.cpp", "TestClass_relay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, ExpandedNameIsStillValidated)
+{
+    ASSERT_FALSE(run(spec(R"(,"outputheaderfilename":"../{classname}.h")")));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(written().empty());
+}
+
+// Defaults the lang file supplies (runtime includes) and the --namespace
+// override, so one spec serves every language.
+class ProcessorDefaultsTest : public ProcessorUnitTest
+{
+protected:
+    std::string name_space;
+
+    static std::string lang(const std::string& includes = R"(["\"streamable.h\"", "<stdint.h>"])")
+    {
+        std::string lang = lang_str;
+        const std::string key = "\"language\": \"c++\",";
+        lang.insert(lang.find(key) + key.size(),
+                    R"("sentry_str": "#pragma once\n",)"
+                    R"("include_str": "#include __INCLUDEFILE__\n",)"
+                    R"("namespace_str": "namespace __NAMESPACE__ {\n",)");
+        if (false == includes.empty())
+        {
+            lang.insert(lang.find('{') + 1, R"("includes": )" + includes + ",");
+        }
+        return lang;
+    }
+
+    static std::string spec(const std::string& includes = "", const std::string& name_space = R"("namespace":"testspace",)")
+    {
+        return R"({"stringValues":{)" + name_space + R"("classname":"TestClass","outputheaderfilename":"TestClass.h"},)"
+               R"("members":)" + good_members + (includes.empty() ? "" : R"(,"includes":)" + includes) + "}";
+    }
+
+    bool run(const std::string& msg, const std::string& lang_file = lang())
+    {
+        Processor p;
+        p.set_namespace(name_space);
+        return p.process_string(msg, lang_file, output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
+    }
+
+    // The header's #include lines, in order.
+    std::vector<std::string> includes()
+    {
+        std::vector<std::string> lines;
+        std::istringstream header(output_str_map["header"]);
+        for (std::string line; std::getline(header, line);)
+        {
+            if (line.rfind("#include ", 0) == 0)
+            {
+                lines.push_back(line.substr(9));
+            }
+        }
+        return lines;
+    }
+};
+
+TEST_F(ProcessorDefaultsTest, SpecNeedsNoIncludes)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"streamable.h\"", "<stdint.h>" }));
+}
+
+TEST_F(ProcessorDefaultsTest, SpecIncludesFollowLangIncludes)
+{
+    ASSERT_TRUE(run(spec(R"(["<stdint.h>", "\"extra.h\""])")));
+    // The lang file's come first, and one the spec repeats appears once.
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"streamable.h\"", "<stdint.h>", "\"extra.h\"" }));
+}
+
+TEST_F(ProcessorDefaultsTest, LangWithoutIncludesUsesSpecs)
+{
+    ASSERT_TRUE(run(spec(R"(["\"extra.h\""])"), lang("")));
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"extra.h\"" }));
+}
+
+TEST_F(ProcessorDefaultsTest, LangIncludesAreValidated)
+{
+    ASSERT_FALSE(run(spec(), lang(R"(["\"a.h\"\n#define x"])")));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceFromSpec)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_NE(output_str_map["header"].find("namespace testspace {"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceOverridesSpec)
+{
+    name_space = "other";
+    ASSERT_TRUE(run(spec()));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
+    ASSERT_EQ(output_str_map["header"].find("testspace"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceWithoutSpecNamespace)
+{
+    name_space = "other";
+    ASSERT_TRUE(run(spec("", "")));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceIsValidated)
+{
+    name_space = "other { evil";
+    ASSERT_FALSE(run(spec()));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorDefaultsTest, LibraryPassesNamespace)
+{
+    ASSERT_TRUE(skyloupe::process_string(spec(), output_str_map, lang(), "c++", outputdir, errorcode,
+                                         generate_tests, write_to_file, generate_relay, "other"));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
 }

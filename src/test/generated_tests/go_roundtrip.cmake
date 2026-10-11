@@ -34,7 +34,7 @@ file(WRITE ${OUTDIR}/go.mod "module wiregen/generated\n\ngo 1.21\n")
 
 execute_process(
     COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --langfile ${LANGFILE} --generate_tests --write_to_file
+            --lang_file ${LANGFILE} --generate_tests --write_to_file
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)
     message(FATAL_ERROR "wiregen failed (${rc})")

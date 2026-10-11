@@ -13,8 +13,8 @@ ctest -R skywire_ring -V
 
 ## What is checked
 
-At every hop, the language's generated **relay** program (`wiregen` writes it
-when a spec names `outputrelayfilename` and tests are generated):
+At every hop, the language's generated **relay** program (`wiregen` writes it,
+as `RingyMcRingfaceRelay.*`, when given `--generate_relay`):
 
 1. Checks the input is exactly `size()` bytes. A byte short or a byte extra fails.
 2. Deserializes it and checks that every byte was consumed.
@@ -47,8 +47,9 @@ and fewer than two languages reports the test as Skipped.
 
 ## The message
 
-`RingyMcRingface.json.in` is the one member list. CMake instantiates it per
-language into `<build>/ring/specs/<lang>.json`. Tags are declared out of order
+`RingyMcRingface.json` is the one spec for every language. It names no files
+and no includes: those come from each language's lang file. The Go relay is a
+command, so the driver generates Go with `--namespace main`. Tags are declared out of order
 and differ in digit count, so wire order must follow the numeric tag.
 Native endianness is left out because it is host-dependent.
 

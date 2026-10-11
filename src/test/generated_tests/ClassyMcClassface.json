@@ -1,11 +1,7 @@
 {
    "stringValues": {
       "classname": "ClassyMcClassface",
-      "outputheaderfilename": "ClassyMcClassface.h",
-      "outputtestfilename": "ClassyMcClassfaceTest.cpp",
-      "namespace": "testspace",
-      "language": "c++",
-      "lang_file": "lang.cpp.json"
+      "namespace": "testspace"
    },
    "members": {
       "100": {
@@ -89,9 +85,5 @@
          "type": "double",
          "name": "r_mydouble2020"
       }
-   },
-   "includes": [
-      "\"streamable.h\"",
-      "<stdint.h>"
-   ]
+   }
 }

@@ -4,9 +4,7 @@
       "outputimplfilename":"TestClass.proto",
       "outputtestfilename":"TestClassTest.proto",
       "namespace": "testspace",
-      "language": "proto3",
-      "option": "XXX",
-      "lang_file": "lang.proto3.json"
+      "option": "XXX"
    },
    "members":{
       "1":{

@@ -1,5 +1,11 @@
 {
     "stringValues": {
+        "language": "c",
+        "outputheaderfilename": "{classname}.h",
+        "outputimplfilename": "{classname}.c",
+        "outputtestfilename": "{classname}Test.cpp",
+        "outputrelayfilename": "{classname}Relay.c",
+
         "banner_h_str":"// This is the generated .h file\n\n",
         "banner_c_str":"// This is the generated .c file\n\n",
         "sentry_top_str":"#ifndef ___CLASSNAME___h\n#define ___CLASSNAME___h\n\n",
@@ -52,6 +58,7 @@
         "get_string_assignment_str":"memcpy(value, structure->__MEMBERNAME__, __LENGTH__)",
         "set_string_assignment_str":"strncpy(structure->__MEMBERNAME__, value, __LENGTH__)"
     },
+    "includes": [ "\"cstream.h\"" ],
     "native_types":[
         "char",
         "unsigned char",

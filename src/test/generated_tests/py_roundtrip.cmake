@@ -28,7 +28,7 @@ get_filename_component(classname ${SPEC} NAME_WE)
 
 execute_process(
     COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --langfile ${LANGFILE} --generate_tests --write_to_file
+            --lang_file ${LANGFILE} --generate_tests --write_to_file
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)
     message(FATAL_ERROR "wiregen failed (${rc})")

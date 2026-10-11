@@ -4,9 +4,7 @@
       "outputheaderfilename":"TestClass.h",
       "outputimplfilename":"TestClass.c",
       "outputtestfilename":"TestClassTest.cpp",
-      "namespace":"testspace",
-      "language": "c",
-      "lang_file": "lang.c.json"
+      "namespace":"testspace"
    },
    "members":{
       "1":{

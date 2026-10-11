@@ -1,11 +1,7 @@
 {
    "stringValues": {
       "classname": "CoffeeMcCofface",
-      "outputimplfilename": "CoffeeMcCofface.java",
-      "outputtestfilename": "CoffeeMcCoffaceTest.java",
-      "namespace": "testspace",
-      "language": "java",
-      "lang_file": "lang.java.json"
+      "namespace": "testspace"
    },
    "members": {
       "100": {

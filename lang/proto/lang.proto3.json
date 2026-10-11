@@ -1,5 +1,8 @@
 {
     "stringValues": {
+        "language": "proto3",
+        "outputimplfilename": "{classname}.proto",
+
         "banner_str":"// This is the generated .proto v3 file\n",
         "syntax_str": "syntax = \"proto3\";\n",
         "include_str":"import \"__INCLUDEFILE__\";\n",

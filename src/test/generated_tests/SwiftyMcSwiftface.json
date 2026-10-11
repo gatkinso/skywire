@@ -1,11 +1,7 @@
 {
    "stringValues": {
       "classname": "SwiftyMcSwiftface",
-      "outputimplfilename": "SwiftyMcSwiftface.swift",
-      "outputtestfilename": "SwiftyMcSwiftface_test.swift",
-      "namespace": "testspace",
-      "language": "swift",
-      "lang_file": "lang.swift.json"
+      "namespace": "testspace"
    },
    "members": {
       "100": {
@@ -89,8 +85,5 @@
          "type": "double",
          "name": "r_mydouble2020"
       }
-   },
-   "includes": [
-      "Foundation"
-   ]
+   }
 }

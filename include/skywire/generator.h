@@ -29,7 +29,6 @@ namespace skyloupe
 class Generator
 {
 public:
-    static const std::multimap<std::string, std::string> GeneratorTypes;
     enum member_index { member_type = 0, member_name = 1, member_endianness = 2, member_length = 3 };
     typedef std::tuple<std::string, std::string, unsigned int, unsigned int> member_desc_t;
 

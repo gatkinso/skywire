@@ -155,11 +155,48 @@ and `scripts/README.md`.
 
 # [5.0] Deploying and running
 
-    wiregen.exe --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory
+    wiregen.exe --language c++ --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory --write_to_file
 
-# [6.0] Configuration files 
+The message specification does not say which language to generate; the command
+line does. `--language` takes one of `c`, `c++` (or `cpp`), `go`, `java`,
+`proto3`, `python3` (or `python`) and `swift`, and uses that language's lang
+file from the directory wiregen is installed in. `--lang_file <path>` uses a
+different lang file instead (for example a customized copy); on its own it also
+sets the language, since every lang file names its language. If both are given
+they must agree. (`--langfile` is the old spelling of `--lang_file`.)
 
-TODO
+`--namespace <name>` replaces the specification's `namespace` (the C++
+namespace, or the Go, Java or Python package), so one specification can be
+generated into different namespaces. The specification need not have a
+namespace at all when the command line gives one.
+
+Without `--write_to_file` the generated code is printed to standard output.
+
+# [6.0] Command-line options
+
+| Option | Effect |
+|---|---|
+| `--input_file <file>` | The message specification to read. |
+| `--input_str <json>` | The message specification, given on the command line instead. |
+| `--language <name>` | The language to generate, using its lang file installed next to wiregen: `c`, `c++` (or `cpp`), `go`, `java`, `proto3`, `python3` (or `python`), `swift`. |
+| `--lang_file <file>` | A lang file to use instead of the installed one (`--langfile` is the old spelling). |
+| `--langspec <json>` | Lang file contents, given on the command line instead. |
+| `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
+| `--generate_tests` | Also generate unit tests (see 7.1). |
+| `--generate_relay` | Also generate a relay program (see 7.1). |
+| `--write_to_file` | Write the generated files. Without it they are printed to standard output. |
+| `--outdir <dir>` | The directory to write the files to (default: the current directory). |
+| `--silent` | Do not print the success or failure summary. |
+| `--version` | Print wiregen's version and exit. |
+| `--help` | Print the options and exit. |
+
+If an option is given twice, the last one wins. An unknown option, an option missing its
+value, or a value given to an option that takes none is an error, and wiregen
+generates nothing. With no arguments wiregen prints its options. On failure the
+exit status is non-zero.
+
+The version is the `VERSION` in the top-level `CMakeLists.txt`; the library
+reports it as `skyloupe::version()`.
 
 # [7.0] Syntax Overview
 
@@ -167,7 +204,7 @@ As stated above, the input to wiregen is a JSON file,  For example:
 
 Invoking wiregen like so: (the example is Windows-centric)
 
-    wiregen.exe --generate_tests --input_file e:\example.json --outdir e:\
+    wiregen.exe --language c++ --generate_tests --input_file e:\example.json --outdir e:\ --write_to_file
 
 with the file Example.json....
 
@@ -175,11 +212,8 @@ with the file Example.json....
     {
        "stringValues":{  
           "classname":"Example",
-          "outputheaderfilename":"Example.h",
           "outputtestfilename":"ExampleUnitTest.cpp",
-          "namespace":"SomeNamespace",
-          "language": "c++",
-          "lang_file": "lang.cpp.json"
+          "namespace":"SomeNamespace"
        },
        "members":{  
           "100":{  
@@ -192,11 +226,7 @@ with the file Example.json....
              "name":"myuint32_200",
              "endian":0
           },      
-       },
-       "includes":[  
-          "\"cstream.h\"",
-          "<stdint.h>"
-       ]
+       }
     }
 ```
 
@@ -207,7 +237,7 @@ with the file Example.json....
 
     #pragma once
 
-    #include "cstream.h"
+    #include "streamable.h"
     #include <stdint.h>
 
     namespace SomeNamespace {
@@ -307,17 +337,13 @@ numbers, so a tag must be a valid field number: from 1 to 536870911, and not
 19000–19999, which protobuf reserves. wiregen rejects any other tag as an
 invalid specification.
 
-To generate the message in C use this file:
+To generate the message in C, run wiregen with `--language c` and this file:
 
 ````
 {
    "stringValues":{  
       "classname":"Example",
-      "outputheaderfilename":"Example.h",
-      "outputcfilename":"Example.c",
       "namespace":"SomeNamespace",
-      "language": "c",
-      "lang_file": "lang.c.json",
       "outputtestfilename":"ExampleUnitTest.cpp"
    },
    "members":{  
@@ -331,14 +357,13 @@ To generate the message in C use this file:
          "name":"myuint32_200",
          "endian":0
       },
-   },
-   "includes":[  
-      "\"cstream.h\"",
-      "<stdint.h>"
-   ]
+   }
 }
 
 ````
+
+The output file names come from the lang file (see 7.1); this spec names only
+the test file, to replace the lang file's `ExampleTest.cpp`.
 
 Keep in mind the JSON values are case sensitive.  You should get the files:
     Example.c
@@ -352,8 +377,49 @@ source for verification of this.
 
 Customization of generated code can be performed in the lang.xxx.json files.
 
-Note the to generate appropriate code, the proper language must be specified in
-the message JSON file.
+Each lang file names the language it is for in its `"language"` value, which
+selects the generator. wiregen ignores (with a warning) a `"language"` value in a
+message specification.
+
+The lang file also names each output file, with `{classname}` standing for the
+message's `classname`:
+
+| Language | Header (`outputheaderfilename`) | Implementation (`outputimplfilename`) | Test (`outputtestfilename`) | Relay (`outputrelayfilename`) |
+|----------|-------------|---------------------|-------------------------|------------------------|
+| c        | `{classname}.h` | `{classname}.c`     | `{classname}Test.cpp`   | `{classname}Relay.c`   |
+| c++      | `{classname}.h` |                     | `{classname}Test.cpp`   | `{classname}Relay.cpp` |
+| go       |                 | `{classname}.go`    | `{classname}_test.go`   | `{classname}Relay.go`  |
+| java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
+| proto3   |                 | `{classname}.proto` |                         |                        |
+| python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
+| swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
+
+A message specification may set any of these keys to use a different name for
+that one message; its value may also use `{classname}`. A name must be a plain
+file name (no directories). Java requires a public class's file to be named
+after the class, so the Java generator names the test and relay classes after
+their files.
+
+`--generate_tests` writes the unit test file, and `--generate_relay` writes the
+relay: a small program that reads a serialized message from a file, checks
+every member against shared test values, and writes it back out. The
+cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
+every language. Naming a test or relay file in a specification does not by itself
+generate that file; only the flags do. proto3 has neither.
+
+The lang file also lists the includes (imports) its generated code always needs,
+such as the language's runtime. They come first in the generated file, followed
+by any `includes` in the specification that are not already listed. A
+specification needs `includes` only for something of its own, such as the header
+of another message it contains.
+
+| Language | Lang file `includes` |
+|----------|----------------------|
+| c        | `"cstream.h"` |
+| c++      | `"streamable.h"`, `<stdint.h>` |
+| swift    | `Foundation` |
+
+The Go, Java and Python generators add the imports their code uses themselves.
 
 More detail on this to come.
 

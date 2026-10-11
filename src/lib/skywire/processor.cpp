@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <algorithm>
 #include <regex>
 #include <set>
 #include "file_writer.h"
@@ -46,6 +47,19 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "relay", "outputrelayfilename" },
 };
 
+// Output file names may contain this, which is replaced by the spec's classname.
+const std::string classname_token = "{classname}";
+
+std::string expand_filename(std::string pattern, const std::string& classname)
+{
+    for (auto pos = pattern.find(classname_token); pos != std::string::npos;
+         pos = pattern.find(classname_token, pos + classname.size()))
+    {
+        pattern.replace(pos, classname_token.size(), classname);
+    }
+    return pattern;
+}
+
 std::string printable(const std::string& value)
 {
     std::string out(value);
@@ -68,7 +82,7 @@ bool spec_error(int& errorcode, const std::string& what)
 
 }
 
-bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -101,7 +115,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
         return success;
     }
 
-    bool ret = process(output_str_map, errorcode, generate_tests);
+    bool ret = process(output_str_map, errorcode, generate_tests, generate_relay);
 
     if (true == ret && true == write_to_file && false == output_str_map.empty())
     {
@@ -111,7 +125,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
     return ret;
 }
 
-bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -140,12 +154,11 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
     if (false == lang_spec_.read_file(langpathname))
     {
         errorcode |= SW_FILEREADERROR;
-        std::cerr << "Error reading land file: " << langpathname << std::endl;
+        std::cerr << "Error reading lang file: " << langpathname << std::endl;
         return success;
     }
 
-    results_t output_str_map;
-    success = process(output_str_map, errorcode, generate_tests);
+    success = process(output_str_map, errorcode, generate_tests, generate_relay);
     if (false == success)
     {
         return success;
@@ -159,24 +172,49 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
     return success;
 }
 
-bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests)
+bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay)
 {
     bool success = false;
+
+    if (false == namespace_.empty())
+    {
+        (*msg_spec_.get_proto_ref().mutable_string_values())["namespace"] = namespace_;
+    }
+
+    resolve_output_filenames();
+    resolve_includes();
 
     if (false == validate_spec(errorcode))
     {
         return success;
     }
 
-    std::string lang = msg_spec_.get_value_string(language_key_);
+    // The language belongs to the lang file, so one message spec serves every language.
+    std::string lang = lang_spec_.get_value_string(language_key_);
+
+    if (lang.empty())
+    {
+        errorcode |= SW_UNKNOWNLANG;
+        std::cerr << "The lang file does not name a language (its \"" << language_key_ << "\" value)" << std::endl;
+        return success;
+    }
+
+    if (false == expected_language_.empty() && lang != expected_language_)
+    {
+        errorcode |= SW_UNKNOWNLANG;
+        std::cerr << "The lang file is for " << lang << ", not " << expected_language_ << std::endl;
+        return success;
+    }
+
+    if (msg_spec_.get_proto().string_values().count(language_key_) != 0)
+    {
+        std::cerr << "Warning: the specification's \"" << language_key_ << "\" value is ignored; "
+                  << "the language comes from the lang file" << std::endl;
+    }
 
     std::unique_ptr<skyloupe::Generator> genny;
     std::unique_ptr<skyloupe::Generator> test_genny;
     std::unique_ptr<skyloupe::Generator> relay_genny;
-
-    // A spec that names a relay file also gets the cross-language relay program
-    // (see relaygenerators.h) whenever tests are generated.
-    const bool generate_relay = generate_tests && msg_spec_.get_proto().string_values().count("outputrelayfilename") != 0;
 
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?
@@ -303,6 +341,60 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     // end temporary
 
     return success;
+}
+
+void Processor::resolve_output_filenames()
+{
+    // The lang file gives each output a file name pattern (".h", "_test.go",
+    // ...); a name in the spec takes its place. Either may use {classname}.
+    auto& values = *msg_spec_.get_proto_ref().mutable_string_values();
+    const auto& patterns = lang_spec_.get_proto().string_values();
+
+    auto classname_value = values.find("classname");
+    const std::string classname = classname_value == values.end() ? "" : classname_value->second;
+
+    for (const auto& slot : output_slots)
+    {
+        auto value = values.find(slot.second);
+        if (value != values.end())
+        {
+            value->second = expand_filename(value->second, classname);
+            continue;
+        }
+
+        auto pattern = patterns.find(slot.second);
+        if (pattern != patterns.end())
+        {
+            values[slot.second] = expand_filename(pattern->second, classname);
+        }
+    }
+}
+
+void Processor::resolve_includes()
+{
+    // The lang file lists what generated code always includes (its runtime
+    // headers); the spec's own includes follow, without repeats.
+    const auto& defaults = lang_spec_.get_proto().includes();
+    if (defaults.empty())
+    {
+        return;
+    }
+
+    auto& includes = *msg_spec_.get_proto_ref().mutable_includes();
+    std::vector<std::string> merged(defaults.begin(), defaults.end());
+    for (const auto& include : includes)
+    {
+        if (std::find(merged.begin(), merged.end(), include) == merged.end())
+        {
+            merged.push_back(include);
+        }
+    }
+
+    includes.Clear();
+    for (const auto& include : merged)
+    {
+        includes.Add()->assign(include);
+    }
 }
 
 bool Processor::validate_spec(int& errorcode)

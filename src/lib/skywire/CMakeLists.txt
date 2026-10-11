@@ -78,6 +78,9 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
 
+# wiregen --version and skyloupe::version() report the project version.
+target_compile_definitions(${TARGETNAME} PRIVATE SKYWIRE_VERSION="${PROJECT_VERSION}")
+
 set_target_properties(${TARGETNAME} PROPERTIES FOLDER "Static Libs")
 
 add_dependencies(${TARGETNAME} skywireproto)
