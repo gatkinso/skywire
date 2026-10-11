@@ -106,3 +106,46 @@ add_test(NAME wiregen_cli:NoLanguage
     COMMAND wiregen --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:NoLanguage PROPERTIES
     PASS_REGULAR_EXPRESSION "Choose a language")
+
+# --namespace replaces the spec's namespace.
+add_test(NAME wiregen_cli:Namespace
+    COMMAND wiregen --language c++ --namespace other --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:Namespace PROPERTIES
+    PASS_REGULAR_EXPRESSION "namespace other")
+
+add_test(NAME wiregen_cli:Version
+    COMMAND wiregen --version)
+set_tests_properties(wiregen_cli:Version PROPERTIES
+    PASS_REGULAR_EXPRESSION "^wiregen ${PROJECT_VERSION}\n$")
+
+add_test(NAME wiregen_cli:Help
+    COMMAND wiregen --help)
+set_tests_properties(wiregen_cli:Help PROPERTIES
+    PASS_REGULAR_EXPRESSION "--namespace name")
+
+# Every argument must mean something: a removed (--config) or misspelled
+# option, a missing value, or a value given to a flag is an error.
+add_test(NAME wiregen_cli:NoArguments
+    COMMAND wiregen)
+add_test(NAME wiregen_cli:UnknownOptionFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --config settings.json)
+add_test(NAME wiregen_cli:MissingValueFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --outdir)
+add_test(NAME wiregen_cli:FlagValueFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
+set_tests_properties(wiregen_cli:NoArguments wiregen_cli:UnknownOptionFails
+                     wiregen_cli:MissingValueFails wiregen_cli:FlagValueFails PROPERTIES
+    WILL_FAIL TRUE)
+
+add_test(NAME wiregen_cli:UnknownOption
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --config settings.json)
+set_tests_properties(wiregen_cli:UnknownOption PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unknown option: --config")
+add_test(NAME wiregen_cli:MissingValue
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --outdir)
+set_tests_properties(wiregen_cli:MissingValue PROPERTIES
+    PASS_REGULAR_EXPRESSION "--outdir needs a value")
+add_test(NAME wiregen_cli:FlagValue
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
+set_tests_properties(wiregen_cli:FlagValue PROPERTIES
+    PASS_REGULAR_EXPRESSION "--silent takes no value")

@@ -34,4 +34,7 @@ namespace skyloupe
 
     // The accepted language names, for messages.
     std::string language_names();
+
+    // The skywire version, e.g. "0.9.0".
+    const char* version();
 }

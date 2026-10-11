@@ -65,6 +65,11 @@ const LanguageName language_table[] = {
 
 }
 
+const char* version()
+{
+    return SKYWIRE_VERSION;
+}
+
 bool find_language(const std::string& name, std::string& language, std::string& lang_filename)
 {
     for (const auto& entry : language_table)

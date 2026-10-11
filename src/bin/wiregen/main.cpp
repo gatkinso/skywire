@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #if defined(_WIN32)
@@ -30,7 +31,6 @@
 using namespace skyloupe;
 
 qwikpirate::ArgVee cmdargs;
-std::string config_pathname = "settings.json";
 std::string input_filename;
 std::string input_str;
 std::string output_directory = ".";
@@ -45,44 +45,40 @@ bool generate_relay = false;
 bool file_mode = false;
 bool write_to_file = false;
 
+void print_help()
+{
+    std::cout << "Use: wiregen --language name --input_file spec.json [options]" << std::endl
+              << "     wiregen --language name --input_str json_spec [options]" << std::endl
+              << std::endl
+              << "  --input_file filename     message specification to read" << std::endl
+              << "  --input_str json          message specification given on the command line" << std::endl
+              << "  --language name           language to generate: " << language_names() << std::endl
+              << "                            (uses the lang file installed next to wiregen)" << std::endl
+              << "  --lang_file filename      lang file to use instead of the installed one" << std::endl
+              << "                            (--langfile is the old spelling)" << std::endl
+              << "  --langspec json           lang file contents to use instead of a file" << std::endl
+              << "  --namespace name          namespace (package) to generate into, replacing the spec's" << std::endl
+              << "  --generate_tests          also generate unit tests" << std::endl
+              << "  --generate_relay          also generate a relay program (cross-language test)" << std::endl
+              << "  --write_to_file           write the generated files (otherwise print them)" << std::endl
+              << "  --outdir directoryname    directory to write the files to (default: .)" << std::endl
+              << "  --silent                  do not print the success or failure summary" << std::endl
+              << "  --version                 print the version and exit" << std::endl
+              << "  --help                    print this help and exit" << std::endl;
+}
+
 void cli_callback(const std::string& flag, const std::string& value, void* param)
 {
     if (flag.compare("--help") == 0)
     {
-        std::cout << "Use: wiregen  (no paramters)               -- defaults to using settings.json" << std::endl
-                  << "     wiregen --version                     -- prints version and exits" << std::endl
-                  << "     wiregen --config filename             -- launches using fiename for configuration file" << std::endl
-                  << "     wiregen --input_file filename         -- launches using filename for input" << std::endl
-                  << "     wiregen --input_str json_msg_spec     -- launches using provided json string for input" << std::endl
-                  << "     wiregen --outdir directoryname        -- directory to write generated file(s) to" << std::endl
-                  << "     wiregen --language name               -- language to generate: " << language_names() << std::endl
-                  << "                                              (uses the lang file installed next to wiregen)" << std::endl
-                  << "     wiregen --lang_file filename          -- lang file to use instead of the installed one" << std::endl
-                  << "     wiregen --langspec string             -- lang file contents to use instead of a file" << std::endl
-                  << "     wiregen --namespace name              -- namespace (package) to generate into, replacing the spec's" << std::endl
-                  << "     wiregen --generate_tests              -- generate unit tests" << std::endl
-                  << "     wiregen --generate_relay              -- generate a relay program (cross-language test)" << std::endl
-                  << "     wiregen --silent                      -- no output displayed" << std::endl
-                  << "     wiregen --write_to_file               -- write output to file (if absent outputs to stdout)" << std::endl;
+        print_help();
         exit(0);
     }
 
     if (flag.compare("--version") == 0)
     {
-        std::cout << "TODO not yet implemented" << std::endl;
+        std::cout << "wiregen " << skyloupe::version() << std::endl;
         exit(0);
-    }
-
-    if (flag.compare("--config") == 0)
-    {
-        if (false == value.empty())
-        {
-            config_pathname = value;
-        }
-        else
-        {
-            std::cout << "Need a file name for --config switch" << std::endl;
-        }
     }
 
     if (flag.compare("--input_file") == 0)
@@ -206,27 +202,90 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
     }    
 }
 
+const char* const value_options[] = {
+    "--input_file", "--input_str", "--outdir", "--language", "--lang_file", "--langfile", "--langspec", "--namespace",
+};
+
+const char* const flag_options[] = {
+    "--help", "--version", "--generate_tests", "--generate_relay", "--silent", "--write_to_file",
+};
+
 bool process_cmd_line(int argc, const char* argv[])
 {
     std::vector<std::string> cli_errors_;
+    std::set<std::string> flags(std::begin(flag_options), std::end(flag_options));
+    std::set<std::string> values(std::begin(value_options), std::end(value_options));
 
-    cmdargs.setOption("--help", true, true, cli_callback);
-    cmdargs.setOption("--version", true, true, cli_callback);
-    cmdargs.setOption("--config", true, false, cli_callback);
-    cmdargs.setOption("--input_file", true, false, cli_callback);
-    cmdargs.setOption("--input_str", true, false, cli_callback);
-    cmdargs.setOption("--outdir", true, false, cli_callback);
-    cmdargs.setOption("--language", true, false, cli_callback);
-    cmdargs.setOption("--lang_file", true, false, cli_callback);
-    cmdargs.setOption("--langfile", true, false, cli_callback);
-    cmdargs.setOption("--langspec", true, false, cli_callback);
-    cmdargs.setOption("--namespace", true, false, cli_callback);
-    cmdargs.setOption("--generate_tests", true, true, cli_callback);
-    cmdargs.setOption("--generate_relay", true, true, cli_callback);
-    cmdargs.setOption("--silent", true, true, cli_callback);
-    cmdargs.setOption("--write_to_file", true, true, cli_callback);
+    // Callbacks run in this order, so --help and --version come first.
+    for (const char* option : flag_options)
+    {
+        cmdargs.setOption(option, true, true, cli_callback);
+    }
 
-    bool ret = cmdargs.parse(argc, argv, cli_errors_);
+    for (const char* option : value_options)
+    {
+        cmdargs.setOption(option, true, false, cli_callback);
+    }
+
+    // The parser accepts any flag and does not say which one lacks a value,
+    // so check the arguments here first; a removed or misspelled option must
+    // not be ignored.
+    bool ret = true;
+    for (int i = 1; i < argc; i++)
+    {
+        const std::string arg(argv[i]);
+        const bool next_is_value = i + 1 < argc && std::string(argv[i + 1]).rfind("--", 0) != 0;
+
+        if (values.count(arg) != 0)
+        {
+            if (false == next_is_value)
+            {
+                std::cout << arg << " needs a value (see wiregen --help)" << std::endl;
+                ret = false;
+            }
+            else
+            {
+                i++;
+            }
+        }
+        else if (flags.count(arg) != 0)
+        {
+            if (next_is_value)
+            {
+                std::cout << arg << " takes no value, but was given " << argv[i + 1] << std::endl;
+                ret = false;
+                i++;
+            }
+        }
+        else if (arg.rfind("--", 0) == 0)
+        {
+            std::cout << "Unknown option: " << arg << " (see wiregen --help)" << std::endl;
+            ret = false;
+            if (next_is_value)
+            {
+                i++;   // most likely its value
+            }
+        }
+        else
+        {
+            std::cout << "Unexpected argument: " << arg << " (see wiregen --help)" << std::endl;
+            ret = false;
+        }
+    }
+
+    if (ret)
+    {
+        ret = cmdargs.parse(argc, argv, cli_errors_);
+        for (const auto& error : cli_errors_)
+        {
+            std::cout << error << std::endl;
+        }
+    }
+
+    if (false == ret)
+    {
+        return ret;
+    }
 
     cmdargs.apply();
 
@@ -285,6 +344,12 @@ int main(int argc, const char* argv[])
 {
     bool success = false;
     int errorcode = -1;
+
+    if (argc < 2)
+    {
+        print_help();
+        return 1;
+    }
 
     success = process_cmd_line(argc, argv);
     if (false == success)
@@ -362,4 +427,4 @@ int main(int argc, const char* argv[])
     return (errorcode & 0xFF) != 0 ? (errorcode & 0xFF) : 1;
 }
 
-//bin/wiregen --language c++ --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"outputheaderfilename\":\"Classy.h\",\"outputtestfilename\":\"ClassyTest.cpp\",\"namespace\":\"testy\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}},\"includes\":[\"<streamable.h>\",\"<stdint.h>\"]}"
+//bin/wiregen --language c++ --generate_tests --input_str "{\"stringValues\":{\"classname\":\"Classy\",\"namespace\":\"testy\"},\"members\":{\"100\":{\"type\":\"float\",\"name\":\"a\"},\"200\":{\"type\":\"uint32_t\",\"name\":\"b\"}}}"

@@ -172,9 +172,31 @@ namespace at all when the command line gives one.
 
 Without `--write_to_file` the generated code is printed to standard output.
 
-# [6.0] Configuration files 
+# [6.0] Command-line options
 
-TODO
+| Option | Effect |
+|---|---|
+| `--input_file <file>` | The message specification to read. |
+| `--input_str <json>` | The message specification, given on the command line instead. |
+| `--language <name>` | The language to generate, using its lang file installed next to wiregen: `c`, `c++` (or `cpp`), `go`, `java`, `proto3`, `python3` (or `python`), `swift`. |
+| `--lang_file <file>` | A lang file to use instead of the installed one (`--langfile` is the old spelling). |
+| `--langspec <json>` | Lang file contents, given on the command line instead. |
+| `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
+| `--generate_tests` | Also generate unit tests (see 7.1). |
+| `--generate_relay` | Also generate a relay program (see 7.1). |
+| `--write_to_file` | Write the generated files. Without it they are printed to standard output. |
+| `--outdir <dir>` | The directory to write the files to (default: the current directory). |
+| `--silent` | Do not print the success or failure summary. |
+| `--version` | Print wiregen's version and exit. |
+| `--help` | Print the options and exit. |
+
+If an option is given twice, the last one wins. An unknown option, an option missing its
+value, or a value given to an option that takes none is an error, and wiregen
+generates nothing. With no arguments wiregen prints its options. On failure the
+exit status is non-zero.
+
+The version is the `VERSION` in the top-level `CMakeLists.txt`; the library
+reports it as `skyloupe::version()`.
 
 # [7.0] Syntax Overview
 
