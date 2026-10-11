@@ -40,6 +40,7 @@ std::string lang_file;
 std::string langspec;
 bool silent = false;
 bool generate_tests = false;
+bool generate_relay = false;
 bool file_mode = false;
 bool write_to_file = false;
 
@@ -58,6 +59,7 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
                   << "     wiregen --lang_file filename          -- lang file to use instead of the installed one" << std::endl
                   << "     wiregen --langspec string             -- lang file contents to use instead of a file" << std::endl
                   << "     wiregen --generate_tests              -- generate unit tests" << std::endl
+                  << "     wiregen --generate_relay              -- generate a relay program (cross-language test)" << std::endl
                   << "     wiregen --silent                      -- no output displayed" << std::endl
                   << "     wiregen --write_to_file               -- write output to file (if absent outputs to stdout)" << std::endl;
         exit(0);
@@ -173,6 +175,14 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
+    if (flag.compare("--generate_relay") == 0)
+    {
+        if (false != value.empty())
+        {
+            generate_relay = true;
+        }
+    }
+
     if (flag.compare("--write_to_file") == 0)
     {
         if (false != value.empty())
@@ -197,6 +207,7 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--langfile", true, false, cli_callback);
     cmdargs.setOption("--langspec", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);
+    cmdargs.setOption("--generate_relay", true, true, cli_callback);
     cmdargs.setOption("--silent", true, true, cli_callback);
     cmdargs.setOption("--write_to_file", true, true, cli_callback);
 
@@ -292,7 +303,7 @@ int main(int argc, const char* argv[])
 
     if (true == file_mode)
     {
-        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file);
+        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay);
     } 
     else
     {
@@ -302,7 +313,7 @@ int main(int argc, const char* argv[])
             return SW_FILEREADERROR;
         }
 
-        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file);
+        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file, generate_relay);
     }
 
     if (false == write_to_file)

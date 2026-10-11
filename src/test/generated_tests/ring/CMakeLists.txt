@@ -22,47 +22,33 @@ set(RING_SPEC_DIR ${RING_DIR}/specs)
 
 # Instantiates RingyMcRingface.json.in for one language, so every language
 # shares one member list by construction. Output file names come from each
-# lang file; only the relay is named here, which is what asks for one.
+# lang file.
 function(ring_spec lang namespace includes)
     set(RING_NAMESPACE ${namespace})
     set(RING_INCLUDES "${includes}")
-    set(RING_FILES "")
-    foreach(pair ${ARGN})
-        string(REPLACE "=" ";" kv ${pair})
-        list(GET kv 0 key)
-        list(GET kv 1 value)
-        string(APPEND RING_FILES "      \"${key}\": \"${value}\",\n")
-    endforeach()
-    string(REGEX REPLACE "\n$" "" RING_FILES "${RING_FILES}")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json.in ${RING_SPEC_DIR}/${lang}.json @ONLY)
 endfunction()
 
-ring_spec(c ring [=["\"cstream.h\""]=]
-    outputrelayfilename=ring_relay.c)
-ring_spec(cpp ring [=["\"streamable.h\"", "<stdint.h>"]=]
-    outputrelayfilename=ring_relay.cpp)
-ring_spec(swift ring [=["Foundation"]=]
-    outputrelayfilename=ring_relay.swift)
+ring_spec(c ring [=["\"cstream.h\""]=])
+ring_spec(cpp ring [=["\"streamable.h\"", "<stdint.h>"]=])
+ring_spec(swift ring [=["Foundation"]=])
 # The Go relay is a command, so the generated code is in package main.
-ring_spec(go main ""
-    outputrelayfilename=ring_relay.go)
-ring_spec(java ring ""
-    outputrelayfilename=RingRelay.java)
-ring_spec(python ring ""
-    outputrelayfilename=ring_relay.py)
+ring_spec(go main "")
+ring_spec(java ring "")
+ring_spec(python ring "")
 
 # The C and C++ relays build with the project; the other languages are
 # generated and compiled by ring_serial.cmake when the test runs.
 foreach(lang c cpp)
     if(lang STREQUAL "c")
         set(langfile ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json)
-        set(outputs ${RING_DIR}/c/RingyMcRingface.h ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/ring_relay.c)
-        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/ring_relay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(outputs ${RING_DIR}/c/RingyMcRingface.h ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c)
+        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     else()
         set(langfile ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json)
-        set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/ring_relay.cpp)
+        set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp)
         # stream.h swaps float/double bytes with sw_swap32/64 from cstream.c.
-        set(sources ${RING_DIR}/cpp/ring_relay.cpp ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     endif()
 
     file(MAKE_DIRECTORY ${RING_DIR}/${lang})
@@ -73,7 +59,7 @@ foreach(lang c cpp)
         ARGS    --input_file ${RING_SPEC_DIR}/${lang}.json
                 --outdir ${RING_DIR}/${lang}
                 --language ${lang}
-                --generate_tests
+                --generate_relay
                 --write_to_file)
 
     add_executable(ring_relay_${lang} ${sources})

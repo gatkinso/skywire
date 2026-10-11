@@ -81,7 +81,7 @@ bool spec_error(int& errorcode, const std::string& what)
 
 }
 
-bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool Processor::process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -114,7 +114,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
         return success;
     }
 
-    bool ret = process(output_str_map, errorcode, generate_tests);
+    bool ret = process(output_str_map, errorcode, generate_tests, generate_relay);
 
     if (true == ret && true == write_to_file && false == output_str_map.empty())
     {
@@ -124,7 +124,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
     return ret;
 }
 
-bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -157,7 +157,7 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
         return success;
     }
 
-    success = process(output_str_map, errorcode, generate_tests);
+    success = process(output_str_map, errorcode, generate_tests, generate_relay);
     if (false == success)
     {
         return success;
@@ -171,13 +171,9 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
     return success;
 }
 
-bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests)
+bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay)
 {
     bool success = false;
-
-    // Decided before the lang file's names are filled in, so its relay
-    // pattern alone does not ask for a relay.
-    const bool spec_names_relay = msg_spec_.get_proto().string_values().count("outputrelayfilename") != 0;
 
     resolve_output_filenames();
 
@@ -212,10 +208,6 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
     std::unique_ptr<skyloupe::Generator> genny;
     std::unique_ptr<skyloupe::Generator> test_genny;
     std::unique_ptr<skyloupe::Generator> relay_genny;
-
-    // A spec that names a relay file also gets the cross-language relay program
-    // (see relaygenerators.h) whenever tests are generated.
-    const bool generate_relay = generate_tests && spec_names_relay;
 
     // temporary - replace with factory, dynamic language definition via json
     //             maybe a plugin for each language?

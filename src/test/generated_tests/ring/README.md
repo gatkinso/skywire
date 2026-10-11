@@ -13,8 +13,8 @@ ctest -R skywire_ring -V
 
 ## What is checked
 
-At every hop, the language's generated **relay** program (`wiregen` writes it
-when a spec names `outputrelayfilename` and tests are generated):
+At every hop, the language's generated **relay** program (`wiregen` writes it,
+as `RingyMcRingfaceRelay.*`, when given `--generate_relay`):
 
 1. Checks the input is exactly `size()` bytes. A byte short or a byte extra fails.
 2. Deserializes it and checks that every byte was consumed.

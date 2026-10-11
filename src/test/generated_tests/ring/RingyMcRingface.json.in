@@ -1,7 +1,6 @@
 {
    "stringValues": {
       "classname": "RingyMcRingface",
-@RING_FILES@
       "namespace": "@RING_NAMESPACE@"
    },
    "members": {

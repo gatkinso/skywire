@@ -30,8 +30,8 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
-    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
+    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
     // The target language is the one the lang file names; when set, it must be this one.
     void set_language(const std::string& language) { expected_language_ = language; }
 
@@ -50,7 +50,7 @@ private:
     std::string proto3_str_ = "proto3";
     std::string py3_str_ = "python3";
 
-    virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests);
+    virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     virtual void resolve_output_filenames();
     virtual bool validate_spec(int& errorcode);
     virtual bool write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode);

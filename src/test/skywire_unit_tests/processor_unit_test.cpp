@@ -98,6 +98,7 @@ protected:
     std::string outputdir;
     int errorcode = SW_SUCCESS;
     bool generate_tests = false;
+    bool generate_relay = false;
     bool write_to_file = false;
 
     std::string msgpathname;
@@ -203,7 +204,7 @@ protected:
     bool run(const std::string& spec)
     {
         Processor p;
-        return p.process_string(spec, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+        return p.process_string(spec, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
     }
 
     void expect_rejected(const std::string& spec)
@@ -416,13 +417,14 @@ TEST_F(ProcessorValidationTest, MissingOutputFilenameWritesNothing)
     fs::remove_all(dir);
 }
 
-TEST_F(ProcessorValidationTest, RelayOnlyWhenRelayFileNamed)
+TEST_F(ProcessorValidationTest, RelayOnlyWhenAskedFor)
 {
     generate_tests = true;
-    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_EQ(output_str_map.count("relay"), 0u);
 
     output_str_map.clear();
+    generate_relay = true;
     ASSERT_TRUE(run(make_spec(good_members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_EQ(output_str_map.count("relay"), 1u);
     ASSERT_NE(output_str_map["relay"].find("int main("), std::string::npos);
@@ -441,6 +443,7 @@ TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
     ASSERT_TRUE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
 
     output_str_map.clear();
+    generate_relay = true;
     ASSERT_FALSE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
     ASSERT_NE(errorcode & SW_FILE_IMP, 0u);
 }
@@ -489,7 +492,7 @@ protected:
     bool run(const std::string& msg)
     {
         Processor p;
-        return p.process_string(msg, patterned_lang(), output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+        return p.process_string(msg, patterned_lang(), output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
     }
 
     std::set<std::string> written() const
@@ -511,6 +514,27 @@ TEST_F(ProcessorFilenameTest, NamesComeFromLangFile)
     ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp" }));
 }
 
+TEST_F(ProcessorFilenameTest, RelayFlagAddsRelay)
+{
+    generate_relay = true;
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp", "TestClassRelay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, RelayNeedsNoTests)
+{
+    generate_tests = false;
+    generate_relay = true;
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassRelay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, SpecRelayNameDoesNotAskForRelay)
+{
+    ASSERT_TRUE(run(spec(R"(,"outputrelayfilename":"Relay.cpp")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "TestClass.h", "TestClassTest.cpp" }));
+}
+
 TEST_F(ProcessorFilenameTest, SpecNameReplacesPattern)
 {
     ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"Wire.h")")));
@@ -521,6 +545,7 @@ TEST_F(ProcessorFilenameTest, SpecNameReplacesPattern)
 
 TEST_F(ProcessorFilenameTest, SpecNameMayUsePattern)
 {
+    generate_relay = true;
     ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"{classname}_wire.h","outputrelayfilename":"{classname}_relay.cpp")")));
     ASSERT_EQ(written(), (std::set<std::string>{ "TestClass_wire.h", "TestClassTest.cpp", "TestClass_relay.cpp" }));
 }

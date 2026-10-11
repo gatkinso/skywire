@@ -63,7 +63,7 @@ function(generate lang)
     file(MAKE_DIRECTORY ${WORKDIR}/${lang})
     run_checked("wiregen (${lang})"
         ${WIREGEN} --input_file ${SPEC_DIR}/${lang}.json --outdir ${WORKDIR}/${lang}
-                   --language ${lang} --generate_tests --write_to_file)
+                   --language ${lang} --generate_relay --write_to_file)
 endfunction()
 
 file(REMOVE_RECURSE ${WORKDIR})
@@ -83,7 +83,7 @@ if(SWIFTC_EXECUTABLE)
     set(dir ${WORKDIR}/swift)
     run_checked("swiftc"
         ${SWIFTC_EXECUTABLE} -o ${dir}/ring_relay${EXE_SUFFIX}
-        ${LANG_DIR}/swift/SWStream.swift ${dir}/RingyMcRingface.swift ${dir}/ring_relay.swift)
+        ${LANG_DIR}/swift/SWStream.swift ${dir}/RingyMcRingface.swift ${dir}/RingyMcRingfaceRelay.swift)
     set(relay_swift ${dir}/ring_relay${EXE_SUFFIX})
     list(APPEND available swift)
 else()
@@ -143,8 +143,8 @@ if(JAVAC_EXECUTABLE AND JAVA_EXECUTABLE AND javac_rc EQUAL 0)
     file(MAKE_DIRECTORY ${dir}/classes)
     run_checked("javac"
         ${JAVAC_EXECUTABLE} -Xlint:all -Werror -d ${dir}/classes
-        ${dir}/RingyMcRingface.java ${dir}/RingRelay.java)
-    set(relay_java ${JAVA_EXECUTABLE} -cp ${dir}/classes ring.RingRelay)
+        ${dir}/RingyMcRingface.java ${dir}/RingyMcRingfaceRelay.java)
+    set(relay_java ${JAVA_EXECUTABLE} -cp ${dir}/classes ring.RingyMcRingfaceRelay)
     list(APPEND available java)
 else()
     skip_lang(java "no JDK on PATH")
@@ -158,7 +158,7 @@ if(PYTHON3_EXECUTABLE)
 endif()
 if(PYTHON3_EXECUTABLE AND py_rc EQUAL 0)
     generate(python)
-    set(relay_python ${PYTHON3_EXECUTABLE} ${WORKDIR}/python/ring_relay.py)
+    set(relay_python ${PYTHON3_EXECUTABLE} ${WORKDIR}/python/RingyMcRingfaceRelay.py)
     list(APPEND available python)
 else()
     skip_lang(python "python3 not on PATH")

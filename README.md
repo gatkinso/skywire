@@ -381,6 +381,13 @@ file name (no directories). Java requires a public class's file to be named
 after the class, so the Java generator names the test and relay classes after
 their files.
 
+`--generate_tests` writes the unit test file, and `--generate_relay` writes the
+relay: a small program that reads a serialized message from a file, checks
+every member against shared test values, and writes it back out. The
+cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
+every language. Naming a test or relay file in a specification does not by itself
+generate that file; only the flags do. proto3 has neither.
+
 More detail on this to come.
 
 # [Appendix] Credits
