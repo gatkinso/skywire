@@ -25,5 +25,6 @@
 #include "proto3generator.h"
 #include "py3generator.h"
 #include "py3testgenerator.h"
+#include "relaygenerators.h"
 #include "swiftgenerator.h"
 #include "swifttestgenerator.h"

@@ -147,6 +147,12 @@ type
 
 to run them.
 
+`skywire_ring:Serial` passes one serialized message through the generated code
+of every language (C, C++, Swift, Go, Java and Python), in a random order each
+run. Each step checks the message for corruption or loss. Its input file is
+written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
+and `scripts/README.md`.
+
 # [5.0] Deploying and running
 
     wiregen.exe --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory
