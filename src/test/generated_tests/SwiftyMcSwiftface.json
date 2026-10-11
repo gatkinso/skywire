@@ -3,8 +3,7 @@
       "classname": "SwiftyMcSwiftface",
       "outputimplfilename": "SwiftyMcSwiftface.swift",
       "outputtestfilename": "SwiftyMcSwiftface_test.swift",
-      "namespace": "testspace",
-      "language": "swift"
+      "namespace": "testspace"
    },
    "members": {
       "100": {

@@ -3,8 +3,7 @@
       "classname": "CoffeeMcCofface",
       "outputimplfilename": "CoffeeMcCofface.java",
       "outputtestfilename": "CoffeeMcCoffaceTest.java",
-      "namespace": "testspace",
-      "language": "java"
+      "namespace": "testspace"
    },
    "members": {
       "100": {

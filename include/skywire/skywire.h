@@ -22,7 +22,15 @@
 
 namespace skyloupe
 {
-    bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+    // language may be empty; otherwise the lang file must be for that language.
+    bool process_file(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langfile, const std::string& language, int& errorcode, bool generate_tests = true, bool write_to_file = false);
 
-    bool process_string(const std::string& input_msg_str, results_t& output_str_map, const std::string& langstring, const std::string& outdirname, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+    bool process_string(const std::string& input_msg_str, results_t& output_str_map, const std::string& langstring, const std::string& language, const std::string& outdirname, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+
+    // Looks up a language name (or alias such as "cpp") for the language its
+    // lang file declares and that lang file's name, e.g. "cpp" -> "c++", "lang.cpp.json".
+    bool find_language(const std::string& name, std::string& language, std::string& lang_filename);
+
+    // The accepted language names, for messages.
+    std::string language_names();
 }

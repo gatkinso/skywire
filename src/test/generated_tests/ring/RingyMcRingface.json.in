@@ -2,8 +2,7 @@
    "stringValues": {
       "classname": "RingyMcRingface",
 @RING_FILES@
-      "namespace": "@RING_NAMESPACE@",
-      "language": "@RING_LANGUAGE@"
+      "namespace": "@RING_NAMESPACE@"
    },
    "members": {
       "1002": { "type": "string",        "name": "str_truncated", "length": 3 },

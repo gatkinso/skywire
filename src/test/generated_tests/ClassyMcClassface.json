@@ -3,8 +3,7 @@
       "classname": "ClassyMcClassface",
       "outputheaderfilename": "ClassyMcClassface.h",
       "outputtestfilename": "ClassyMcClassfaceTest.cpp",
-      "namespace": "testspace",
-      "language": "c++"
+      "namespace": "testspace"
    },
    "members": {
       "100": {

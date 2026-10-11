@@ -1,5 +1,7 @@
 {
     "stringValues": {
+        "language": "swift",
+
         "banner_str":"// This is the generated Swift file\n\n",
 
         "import_str":"import __INCLUDEFILE__\n",

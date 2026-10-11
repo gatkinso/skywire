@@ -1,5 +1,7 @@
 {
     "stringValues": {
+        "language": "c",
+
         "banner_h_str":"// This is the generated .h file\n\n",
         "banner_c_str":"// This is the generated .c file\n\n",
         "sentry_top_str":"#ifndef ___CLASSNAME___h\n#define ___CLASSNAME___h\n\n",

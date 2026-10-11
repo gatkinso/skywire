@@ -22,8 +22,7 @@ set(RING_SPEC_DIR ${RING_DIR}/specs)
 
 # Instantiates RingyMcRingface.json.in for one language, so every language
 # shares one member list by construction.
-function(ring_spec lang language namespace includes)
-    set(RING_LANGUAGE ${language})
+function(ring_spec lang namespace includes)
     set(RING_NAMESPACE ${namespace})
     set(RING_INCLUDES "${includes}")
     set(RING_FILES "")
@@ -37,29 +36,29 @@ function(ring_spec lang language namespace includes)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json.in ${RING_SPEC_DIR}/${lang}.json @ONLY)
 endfunction()
 
-ring_spec(c c ring [=["\"cstream.h\""]=]
+ring_spec(c ring [=["\"cstream.h\""]=]
     outputheaderfilename=RingyMcRingface.h
     outputimplfilename=RingyMcRingface.c
     outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.c)
-ring_spec(cpp c++ ring [=["\"streamable.h\"", "<stdint.h>"]=]
+ring_spec(cpp ring [=["\"streamable.h\"", "<stdint.h>"]=]
     outputheaderfilename=RingyMcRingface.h
     outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.cpp)
-ring_spec(swift swift ring [=["Foundation"]=]
+ring_spec(swift ring [=["Foundation"]=]
     outputimplfilename=RingyMcRingface.swift
     outputtestfilename=RingyMcRingface_test.swift
     outputrelayfilename=ring_relay.swift)
 # The Go relay is a command, so the generated code is in package main.
-ring_spec(go go main ""
+ring_spec(go main ""
     outputimplfilename=RingyMcRingface.go
     outputtestfilename=RingyMcRingface_test.go
     outputrelayfilename=ring_relay.go)
-ring_spec(java java ring ""
+ring_spec(java ring ""
     outputimplfilename=RingyMcRingface.java
     outputtestfilename=RingyMcRingfaceTest.java
     outputrelayfilename=RingRelay.java)
-ring_spec(python python3 ring ""
+ring_spec(python ring ""
     outputimplfilename=RingyMcRingface.py
     outputtestfilename=RingyMcRingfaceTest.py
     outputrelayfilename=ring_relay.py)
@@ -85,7 +84,7 @@ foreach(lang c cpp)
         COMMAND $<TARGET_FILE:wiregen>
         ARGS    --input_file ${RING_SPEC_DIR}/${lang}.json
                 --outdir ${RING_DIR}/${lang}
-                --langfile ${langfile}
+                --language ${lang}
                 --generate_tests
                 --write_to_file)
 

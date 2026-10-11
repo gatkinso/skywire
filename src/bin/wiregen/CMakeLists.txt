@@ -60,14 +60,35 @@ endif(UNIX)
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy ${TGT_NAME} ${DST_NAME})
 
+# wiregen --language looks for the lang files in its own directory, so they are
+# copied next to both built copies of wiregen and installed beside it.
+get_property(MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(MULTI_CONFIG)
+    set(LANG_DIRS ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG> ${CMAKE_BINARY_DIR}/bin)
+else()
+    set(LANG_DIRS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR}/bin)
+endif()
+
+set(LANG_COPIES)
 foreach(LANG_FILE ${DEPLOY_JSONS})
+    get_filename_component(LANG_NAME ${LANG_FILE} NAME)
+    set(COPIES)
+    set(COMMANDS)
+    foreach(LANG_DIR ${LANG_DIRS})
+        list(APPEND COPIES ${LANG_DIR}/${LANG_NAME})
+        list(APPEND COMMANDS COMMAND ${CMAKE_COMMAND} -E make_directory ${LANG_DIR})
+        list(APPEND COMMANDS COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE} ${LANG_DIR}/${LANG_NAME})
+    endforeach()
     add_custom_command(
-            TARGET ${TARGETNAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-                    ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
-                    ${CMAKE_CURRENT_BINARY_DIR}/${LANG_FILE})
+            OUTPUT  ${COPIES}
+            DEPENDS ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
+            ${COMMANDS})
+    list(APPEND LANG_COPIES ${COPIES})
     set(DEPLOY_FILES ${DEPLOY_FILES} ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE})
 endforeach(LANG_FILE)
+
+add_custom_target(wiregen_lang_files ALL DEPENDS ${LANG_COPIES})
+add_dependencies(${TARGETNAME} wiregen_lang_files)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     foreach(_FILE ${DEBUG_JSONS})

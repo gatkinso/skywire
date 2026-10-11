@@ -57,13 +57,13 @@ function(run_checked what)
     endif()
 endfunction()
 
-# Generates one language's code; langfile is relative to LANG_DIR.
-function(generate lang langfile)
+# Generates one language's code with the lang file installed next to wiregen.
+function(generate lang)
     file(REMOVE_RECURSE ${WORKDIR}/${lang})
     file(MAKE_DIRECTORY ${WORKDIR}/${lang})
     run_checked("wiregen (${lang})"
         ${WIREGEN} --input_file ${SPEC_DIR}/${lang}.json --outdir ${WORKDIR}/${lang}
-                   --langfile ${LANG_DIR}/${langfile} --generate_tests --write_to_file)
+                   --language ${lang} --generate_tests --write_to_file)
 endfunction()
 
 file(REMOVE_RECURSE ${WORKDIR})
@@ -79,7 +79,7 @@ list(APPEND available c cpp)
 # Swift
 find_program(SWIFTC_EXECUTABLE swiftc)
 if(SWIFTC_EXECUTABLE)
-    generate(swift swift/lang.swift.json)
+    generate(swift)
     set(dir ${WORKDIR}/swift)
     run_checked("swiftc"
         ${SWIFTC_EXECUTABLE} -o ${dir}/ring_relay${EXE_SUFFIX}
@@ -99,7 +99,7 @@ if(GO_EXECUTABLE)
     string(REGEX REPLACE "^go([0-9]+\\.[0-9]+).*" "\\1" go_version_num "${go_version}")
 endif()
 if(GO_EXECUTABLE AND go_version_num VERSION_GREATER_EQUAL 1.21)
-    generate(go go/lang.go.json)
+    generate(go)
     set(dir ${WORKDIR}/go)
     file(WRITE ${dir}/go.mod "module wiregen/ring\n\ngo 1.21\n")
     get_filename_component(go_bindir ${GO_EXECUTABLE} DIRECTORY)
@@ -138,7 +138,7 @@ if(JAVAC_EXECUTABLE AND JAVA_EXECUTABLE)
         RESULT_VARIABLE javac_rc OUTPUT_QUIET ERROR_QUIET)
 endif()
 if(JAVAC_EXECUTABLE AND JAVA_EXECUTABLE AND javac_rc EQUAL 0)
-    generate(java java/lang.java.json)
+    generate(java)
     set(dir ${WORKDIR}/java)
     file(MAKE_DIRECTORY ${dir}/classes)
     run_checked("javac"
@@ -157,7 +157,7 @@ if(PYTHON3_EXECUTABLE)
         RESULT_VARIABLE py_rc OUTPUT_QUIET ERROR_QUIET)
 endif()
 if(PYTHON3_EXECUTABLE AND py_rc EQUAL 0)
-    generate(python python/lang.python3.json)
+    generate(python)
     set(relay_python ${PYTHON3_EXECUTABLE} ${WORKDIR}/python/ring_relay.py)
     list(APPEND available python)
 else()

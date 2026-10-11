@@ -155,7 +155,17 @@ and `scripts/README.md`.
 
 # [5.0] Deploying and running
 
-    wiregen.exe --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory
+    wiregen.exe --language c++ --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory --write_to_file
+
+The message specification does not say which language to generate; the command
+line does. `--language` takes one of `c`, `c++` (or `cpp`), `go`, `java`,
+`proto3`, `python3` (or `python`) and `swift`, and uses that language's lang
+file from the directory wiregen is installed in. `--lang_file <path>` uses a
+different lang file instead (for example a customized copy); on its own it also
+sets the language, since every lang file names its language. If both are given
+they must agree. (`--langfile` is the old spelling of `--lang_file`.)
+
+Without `--write_to_file` the generated code is printed to standard output.
 
 # [6.0] Configuration files 
 
@@ -167,7 +177,7 @@ As stated above, the input to wiregen is a JSON file,  For example:
 
 Invoking wiregen like so: (the example is Windows-centric)
 
-    wiregen.exe --generate_tests --input_file e:\example.json --outdir e:\
+    wiregen.exe --language c++ --generate_tests --input_file e:\example.json --outdir e:\ --write_to_file
 
 with the file Example.json....
 
@@ -177,8 +187,7 @@ with the file Example.json....
           "classname":"Example",
           "outputheaderfilename":"Example.h",
           "outputtestfilename":"ExampleUnitTest.cpp",
-          "namespace":"SomeNamespace",
-          "language": "c++"
+          "namespace":"SomeNamespace"
        },
        "members":{  
           "100":{  
@@ -306,7 +315,7 @@ numbers, so a tag must be a valid field number: from 1 to 536870911, and not
 19000–19999, which protobuf reserves. wiregen rejects any other tag as an
 invalid specification.
 
-To generate the message in C use this file:
+To generate the message in C, run wiregen with `--language c` and this file:
 
 ````
 {
@@ -315,7 +324,6 @@ To generate the message in C use this file:
       "outputheaderfilename":"Example.h",
       "outputcfilename":"Example.c",
       "namespace":"SomeNamespace",
-      "language": "c",
       "outputtestfilename":"ExampleUnitTest.cpp"
    },
    "members":{  
@@ -350,8 +358,9 @@ source for verification of this.
 
 Customization of generated code can be performed in the lang.xxx.json files.
 
-Note the to generate appropriate code, the proper language must be specified in
-the message JSON file.
+Each lang file names the language it is for in its `"language"` value, which
+selects the generator. wiregen ignores (with a warning) a `"language"` value in a
+message specification.
 
 More detail on this to come.
 

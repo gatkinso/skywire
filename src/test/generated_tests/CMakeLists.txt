@@ -54,7 +54,7 @@ foreach(WG_C ${WG_C_FILES})
         COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_C}.json
                 --outdir ${WG_C_DIR}
-                --langfile ${CMAKE_SOURCE_DIR}/lang/c/lang.c.json
+                --language c
                 --generate_tests
                 --write_to_file)
     set(WG_C_RESULTS ${WG_C_RESULTS}
@@ -74,7 +74,7 @@ foreach(WG_CPP ${WG_CPP_FILES})
         COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
                 --outdir ${WG_CPP_DIR}
-                --langfile ${CMAKE_SOURCE_DIR}/lang/cpp/lang.cpp.json
+                --language c++
                 --generate_tests
                 --write_to_file)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}

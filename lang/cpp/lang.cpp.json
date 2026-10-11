@@ -1,5 +1,7 @@
 {
     "stringValues": {
+        "language": "c++",
+
         "banner_str":"// This is the generated file\n\n",
         "sentry_str":"#pragma once\n\n",
         "include_str":"#include __INCLUDEFILE__\n",

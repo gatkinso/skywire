@@ -3,8 +3,7 @@
       "classname":"TestClass",
       "outputheaderfilename":"TestClass++.h",
       "outputtestfilename":"TestClassTest++.cpp",
-      "namespace":"testspace",
-      "language": "c++"
+      "namespace":"testspace"
    },
    "members":{
       "1":{

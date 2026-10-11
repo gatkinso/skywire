@@ -3,8 +3,7 @@
       "classname": "GopherMcGoface",
       "outputimplfilename": "GopherMcGoface.go",
       "outputtestfilename": "GopherMcGoface_test.go",
-      "namespace": "testspace",
-      "language": "go"
+      "namespace": "testspace"
    },
    "members": {
       "100": {

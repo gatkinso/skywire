@@ -111,7 +111,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
     return ret;
 }
 
-bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool Processor::process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
 {
     errorcode = SW_SUCCESS;
     bool success = false;
@@ -140,11 +140,10 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
     if (false == lang_spec_.read_file(langpathname))
     {
         errorcode |= SW_FILEREADERROR;
-        std::cerr << "Error reading land file: " << langpathname << std::endl;
+        std::cerr << "Error reading lang file: " << langpathname << std::endl;
         return success;
     }
 
-    results_t output_str_map;
     success = process(output_str_map, errorcode, generate_tests);
     if (false == success)
     {
@@ -168,7 +167,28 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         return success;
     }
 
-    std::string lang = msg_spec_.get_value_string(language_key_);
+    // The language belongs to the lang file, so one message spec serves every language.
+    std::string lang = lang_spec_.get_value_string(language_key_);
+
+    if (lang.empty())
+    {
+        errorcode |= SW_UNKNOWNLANG;
+        std::cerr << "The lang file does not name a language (its \"" << language_key_ << "\" value)" << std::endl;
+        return success;
+    }
+
+    if (false == expected_language_.empty() && lang != expected_language_)
+    {
+        errorcode |= SW_UNKNOWNLANG;
+        std::cerr << "The lang file is for " << lang << ", not " << expected_language_ << std::endl;
+        return success;
+    }
+
+    if (msg_spec_.get_proto().string_values().count(language_key_) != 0)
+    {
+        std::cerr << "Warning: the specification's \"" << language_key_ << "\" value is ignored; "
+                  << "the language comes from the lang file" << std::endl;
+    }
 
     std::unique_ptr<skyloupe::Generator> genny;
     std::unique_ptr<skyloupe::Generator> test_genny;

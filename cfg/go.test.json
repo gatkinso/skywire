@@ -3,8 +3,7 @@
       "classname":"TestClass",
       "outputimplfilename":"TestClass.go",
       "outputtestfilename":"TestClassTest.go",
-      "namespace":"testspace",
-      "language": "go"
+      "namespace":"testspace"
    },
    "members":{
       "1":{

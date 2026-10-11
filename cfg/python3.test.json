@@ -2,8 +2,7 @@
    "stringValues":{
       "classname":"TestClass",
       "outputimplfilename":"TestClass.py",
-      "namespace":"testspace",
-      "language": "python3"
+      "namespace":"testspace"
    },
    "members":{
       "1":{

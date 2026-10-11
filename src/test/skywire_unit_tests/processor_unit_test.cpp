@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include "skywire/processor.h"
+#include "skywire/skywire.h"
 
 using namespace skyloupe;
 std::string msg_str =
@@ -25,8 +26,7 @@ std::string msg_str =
       \"classname\":\"TestClass\",                    \
       \"outputheaderfilename\":\"TestClass++.h\",     \
       \"outputtestfilename\":\"TestClassTest++.cpp\", \
-      \"namespace\":\"testspace\",                    \
-      \"language\": \"c++\"                           \
+      \"namespace\":\"testspace\"                     \
    },                                                 \
    \"members\":{                                      \
       \"1\":{                                         \
@@ -44,6 +44,7 @@ std::string msg_str =
 std::string lang_str =
 "{                                                                                                                                        \
     \"stringValues\": {                                                                                                                   \
+        \"language\": \"c++\",                                                                                                            \
         \"banner_str\":\"// This is the generated go file\n\",                                                                            \
         \"include_substr\":  \"__INCLUDEFILE__\",                                                                                         \
         \"structname_substr\":\"__STRUCTNAME__\",                                                                                         \
@@ -167,7 +168,7 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankMsgFilenamne)
 {
     Processor p;
 
-    bool ret = p.process_file(msgpathname, langpathname, outputdir, errorcode, generate_tests, write_to_file);
+    bool ret = p.process_file(msgpathname, langpathname, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
     ASSERT_FALSE(ret);
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
@@ -178,7 +179,7 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankLangFilenamne)
 
     msgpathname = "not blank";
 
-    bool ret = p.process_file(msgpathname, langpathname, outputdir, errorcode, generate_tests, write_to_file);
+    bool ret = p.process_file(msgpathname, langpathname, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
     ASSERT_FALSE(ret);
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
@@ -188,7 +189,7 @@ static std::string make_spec(const std::string& members,
                              const std::string& extra_values = "",
                              const std::string& includes = R"(["<stdint.h>"])")
 {
-    return R"({"stringValues":{"classname":"TestClass","namespace":"testspace","language":"c++",)"
+    return R"({"stringValues":{"classname":"TestClass","namespace":"testspace",)"
            R"("outputheaderfilename":"TestClass.h")" + extra_values + R"(},"members":)" + members +
            R"(,"includes":)" + includes + "}";
 }
@@ -227,6 +228,78 @@ TEST_F(ProcessorValidationTest, AcceptsQualifiedNamespace)
     spec = make_spec(good_members);
     spec.replace(spec.find("testspace"), 9, "acme::wire");
     ASSERT_TRUE(run(spec));
+}
+
+// The target language is the lang file's, never the message spec's.
+TEST_F(ProcessorValidationTest, LanguageComesFromLangFile)
+{
+    ASSERT_TRUE(run(make_spec(good_members, R"(,"language":"swift")")));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+    ASSERT_EQ(output_str_map.count("header"), 1u);           // C++ writes a header,
+    ASSERT_EQ(output_str_map.count("implementation"), 0u);   // Swift an implementation.
+}
+
+TEST_F(ProcessorValidationTest, RejectsLangFileWithoutLanguage)
+{
+    std::string lang = lang_str;
+    const std::string language = R"("language": "c++",)";
+    lang.erase(lang.find(language), language.size());
+
+    Processor p;
+    ASSERT_FALSE(p.process_string(make_spec(good_members), lang, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_UNKNOWNLANG);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorValidationTest, AcceptsLangFileForExpectedLanguage)
+{
+    Processor p;
+    p.set_language("c++");
+    ASSERT_TRUE(p.process_string(make_spec(good_members), lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+}
+
+TEST_F(ProcessorValidationTest, RejectsLangFileForAnotherLanguage)
+{
+    Processor p;
+    p.set_language("swift");
+    ASSERT_FALSE(p.process_string(make_spec(good_members), lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_UNKNOWNLANG);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST(FindLanguage, NamesAndAliases)
+{
+    std::string language, lang_filename;
+
+    ASSERT_TRUE(find_language("c++", language, lang_filename));
+    ASSERT_EQ(language, "c++");
+    ASSERT_EQ(lang_filename, "lang.cpp.json");
+
+    ASSERT_TRUE(find_language("cpp", language, lang_filename));
+    ASSERT_EQ(language, "c++");
+    ASSERT_EQ(lang_filename, "lang.cpp.json");
+
+    ASSERT_TRUE(find_language("python", language, lang_filename));
+    ASSERT_EQ(language, "python3");
+    ASSERT_EQ(lang_filename, "lang.python3.json");
+
+    for (const char* name : { "c", "go", "java", "proto3", "python3", "swift" })
+    {
+        ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
+        ASSERT_EQ(language, name);
+    }
+}
+
+TEST(FindLanguage, RejectsUnknown)
+{
+    std::string language = "unchanged", lang_filename = "unchanged";
+
+    ASSERT_FALSE(find_language("cobol", language, lang_filename));
+    ASSERT_FALSE(find_language("", language, lang_filename));
+    ASSERT_FALSE(find_language("C++", language, lang_filename));
+    ASSERT_EQ(language, "unchanged");
+    ASSERT_EQ(lang_filename, "unchanged");
 }
 
 TEST_F(ProcessorValidationTest, RejectsPathTraversalInOutputFilename)

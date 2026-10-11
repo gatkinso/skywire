@@ -31,15 +31,16 @@ public:
     virtual ~Processor() {}
 
     virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
-    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
-    void set_langfile(const std::string& filename) { language_file_ = filename; }
+    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
+    // The target language is the one the lang file names; when set, it must be this one.
+    void set_language(const std::string& language) { expected_language_ = language; }
 
 private:
     Specification msg_spec_;
     Specification lang_spec_;
 
     std::string language_key_ = "language";
-    std::string language_file_;
+    std::string expected_language_;
 
     std::string swift_str_ = "swift";
     std::string c_str_ = "c";
