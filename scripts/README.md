@@ -10,7 +10,7 @@
 The cross-language serial test (`skywire_ring:Serial`, see
 [`src/test/generated_tests/ring/README.md`](../src/test/generated_tests/ring/README.md))
 starts from a checked-in serialized message, `RingyMcRingface.bin`. This script
-writes that file from the spec template `RingyMcRingface.json.in`.
+writes that file from the ring spec `RingyMcRingface.json`.
 
 The bytes come from Python's `struct` module, not from wiregen or any generated
 code. That keeps the file an independent reference: a bug in wiregen's own
@@ -29,7 +29,7 @@ Options:
 
 | Option | Default |
 |---|---|
-| `--spec <file>` | `src/test/generated_tests/ring/RingyMcRingface.json.in` |
+| `--spec <file>` | `src/test/generated_tests/ring/RingyMcRingface.json` |
 | `--out <file>` | `src/test/generated_tests/ring/RingyMcRingface.bin` |
 | `--check` | Compare with `--out` instead of writing it. |
 
@@ -40,7 +40,7 @@ table, or if a member uses `endian: 2` (native), which has no fixed wire bytes.
 
 A new member of a type the script already knows:
 
-1. Add the member to `RingyMcRingface.json.in`.
+1. Add the member to `RingyMcRingface.json`.
 2. Run `make_ring_bin.py`, check the printed offsets, update the table in the
    ring README, and commit the new `.bin`.
 
@@ -49,7 +49,7 @@ A new type:
 1. Add its test value to `src/lib/skywire/test_values.cpp`.
 2. Add a row to `TYPES` in `make_ring_bin.py`: the `struct` format code and the
    **same value** as in step 1.
-3. Add members using it to `RingyMcRingface.json.in`, preferably one big-endian
+3. Add members using it to `RingyMcRingface.json`, preferably one big-endian
    (`endian: 0`) and one little-endian (`endian: 1`).
 4. Run `make_ring_bin.py`, check the printed offsets, update the table in the
    ring README, and commit the new `.bin`.

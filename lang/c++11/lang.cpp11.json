@@ -1,5 +1,9 @@
 {
     "stringValues": {
+        "language": "c++11",
+        "outputheaderfilename": "{classname}.h",
+        "outputtestfilename": "{classname}Test.cpp",
+
         "banner_str":"// This is the generated file",
         "sentry_str":"#pragma once",
         "include_str":"#include __INCLUDEFILE__",

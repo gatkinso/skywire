@@ -1,12 +1,7 @@
 {
    "stringValues": {
       "classname": "StructyMcStructface",
-      "outputheaderfilename": "StructyMcStructface.h",
-      "outputimplfilename": "StructyMcStructface.c",
-      "outputtestfilename": "StructyMcStructfaceTest.cpp",
-      "namespace": "testspace",
-      "language": "c",
-      "lang_file": "lang.c.json"
+      "namespace": "testspace"
    },
    "members": {
       "100": {
@@ -92,7 +87,6 @@
       }
    },
    "includes": [
-      "\"cstream.h\"",
       "<stdint.h>"
    ]
 }

@@ -1,5 +1,10 @@
 {
     "stringValues": {
+        "language": "swift",
+        "outputimplfilename": "{classname}.swift",
+        "outputtestfilename": "{classname}_test.swift",
+        "outputrelayfilename": "{classname}Relay.swift",
+
         "banner_str":"// This is the generated Swift file\n\n",
 
         "import_str":"import __INCLUDEFILE__\n",
@@ -59,6 +64,7 @@
         "double":"Double",
         "string":"[UInt8]"
     },
+    "includes": [ "Foundation" ],
     "native_types":[
         "char",
         "unsigned char",

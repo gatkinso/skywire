@@ -27,27 +27,28 @@ endif()
 
 message("Using ${JAVAC_EXECUTABLE} (${javac_version})")
 
-# The package and test class come from the spec; javac wants the class's
-# public name to match its file.
+# The package comes from the spec; the test class is named by the lang
+# file's test file pattern, {classname}Test.java.
 file(READ ${SPEC} spec_json)
 string(JSON package GET "${spec_json}" stringValues namespace)
-string(JSON impl_file GET "${spec_json}" stringValues outputimplfilename)
-string(JSON test_file GET "${spec_json}" stringValues outputtestfilename)
-get_filename_component(test_class ${test_file} NAME_WE)
+string(JSON classname GET "${spec_json}" stringValues classname)
+set(test_class ${classname}Test)
 
 file(REMOVE_RECURSE ${OUTDIR})
 file(MAKE_DIRECTORY ${OUTDIR}/classes)
 
 execute_process(
     COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --langfile ${LANGFILE} --generate_tests --write_to_file
+            --lang_file ${LANGFILE} --generate_tests --write_to_file
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)
     message(FATAL_ERROR "wiregen failed (${rc})")
 endif()
 
+file(GLOB java_files RELATIVE ${OUTDIR} ${OUTDIR}/*.java)
+
 execute_process(
-    COMMAND ${JAVAC_EXECUTABLE} -Xlint:all -Werror -d classes ${impl_file} ${test_file}
+    COMMAND ${JAVAC_EXECUTABLE} -Xlint:all -Werror -d classes ${java_files}
     WORKING_DIRECTORY ${OUTDIR}
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)

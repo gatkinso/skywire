@@ -19,22 +19,80 @@
 namespace skyloupe
 {
 
-bool process_file(const std::string& pathname, const std::string& outdirname, const std::string& langfile, int& errorcode, bool generate_tests, bool write_to_file)
+bool process_file(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langfile, const std::string& language, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay, const std::string& name_space)
 {
     skyloupe::Processor processor;
+    processor.set_language(language);
+    processor.set_namespace(name_space);
 
-    bool success = processor.process_file(pathname, langfile, outdirname, errorcode, generate_tests, write_to_file);
+    bool success = processor.process_file(pathname, langfile, output_str_map, outdirname, errorcode, generate_tests, write_to_file, generate_relay);
 
     return success;
 }
 
-bool process_string(const std::string& input_str, results_t& output_str_map, const std::string& langstring, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file)
+bool process_string(const std::string& input_str, results_t& output_str_map, const std::string& langstring, const std::string& language, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay, const std::string& name_space)
 {
     skyloupe::Processor processor;
+    processor.set_language(language);
+    processor.set_namespace(name_space);
 
-    bool success = processor.process_string(input_str, langstring, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+    bool success = processor.process_string(input_str, langstring, output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
 
     return success;
+}
+
+namespace
+{
+
+struct LanguageName
+{
+    const char* name;
+    const char* language;
+    const char* lang_filename;
+};
+
+const LanguageName language_table[] = {
+    { "c",       "c",       "lang.c.json" },
+    { "c++",     "c++",     "lang.cpp.json" },
+    { "cpp",     "c++",     "lang.cpp.json" },
+    { "go",      "go",      "lang.go.json" },
+    { "java",    "java",    "lang.java.json" },
+    { "proto3",  "proto3",  "lang.proto3.json" },
+    { "python3", "python3", "lang.python3.json" },
+    { "python",  "python3", "lang.python3.json" },
+    { "swift",   "swift",   "lang.swift.json" },
+};
+
+}
+
+const char* version()
+{
+    return SKYWIRE_VERSION;
+}
+
+bool find_language(const std::string& name, std::string& language, std::string& lang_filename)
+{
+    for (const auto& entry : language_table)
+    {
+        if (name == entry.name)
+        {
+            language = entry.language;
+            lang_filename = entry.lang_filename;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::string language_names()
+{
+    std::string names;
+    for (const auto& entry : language_table)
+    {
+        names += (names.empty() ? "" : ", ") + std::string(entry.name);
+    }
+    return names;
 }
 
 }

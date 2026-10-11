@@ -30,17 +30,20 @@ public:
     Processor() {}
     virtual ~Processor() {}
 
-    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
-    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false);
-    void set_langfile(const std::string& filename) { language_file_ = filename; }
+    virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
+    virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
+    // The target language is the one the lang file names; when set, it must be this one.
+    void set_language(const std::string& language) { expected_language_ = language; }
+    // When set, replaces the specification's namespace.
+    void set_namespace(const std::string& name_space) { namespace_ = name_space; }
 
 private:
     Specification msg_spec_;
     Specification lang_spec_;
 
     std::string language_key_ = "language";
-    std::string language_file_key_ = "lang_file";
-    std::string language_file_;
+    std::string expected_language_;
+    std::string namespace_;
 
     std::string swift_str_ = "swift";
     std::string c_str_ = "c";
@@ -50,7 +53,9 @@ private:
     std::string proto3_str_ = "proto3";
     std::string py3_str_ = "python3";
 
-    virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests);
+    virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
+    virtual void resolve_output_filenames();
+    virtual void resolve_includes();
     virtual bool validate_spec(int& errorcode);
     virtual bool write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode);
 };

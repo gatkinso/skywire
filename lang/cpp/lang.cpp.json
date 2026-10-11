@@ -1,5 +1,10 @@
 {
     "stringValues": {
+        "language": "c++",
+        "outputheaderfilename": "{classname}.h",
+        "outputtestfilename": "{classname}Test.cpp",
+        "outputrelayfilename": "{classname}Relay.cpp",
+
         "banner_str":"// This is the generated file\n\n",
         "sentry_str":"#pragma once\n\n",
         "include_str":"#include __INCLUDEFILE__\n",
@@ -43,6 +48,7 @@
         "get_string_str":"const char* Get___MEMBERNAME__() const { return __MEMBERNAME__; } // __LENGTH__ bytes; not NUL-terminated when full\n",
         "set_string_str":"void Set___MEMBERNAME__(const char* newval) { strncpy(__MEMBERNAME__, newval, __LENGTH__); }\n"
     },
+    "includes": [ "\"streamable.h\"", "<stdint.h>" ],
     "native_types":[
         "char",
         "unsigned char",

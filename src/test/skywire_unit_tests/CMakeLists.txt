@@ -71,3 +71,81 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/${INVALID_UNIT_TEST_JSON})
 
 
+
+# How wiregen picks its lang file: --language finds the one next to wiregen,
+# --lang_file (or the old --langfile) replaces it, and the two must agree.
+set(CLI_SPEC ${PROJECT_SOURCE_DIR}/src/test/generated_tests/ClassyMcClassface.json)
+
+add_test(NAME wiregen_cli:Language
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC})
+add_test(NAME wiregen_cli:LanguageAlias
+    COMMAND wiregen --language cpp --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:Language wiregen_cli:LanguageAlias PROPERTIES
+    PASS_REGULAR_EXPRESSION "class ClassyMcClassface")
+
+add_test(NAME wiregen_cli:LangFile
+    COMMAND wiregen --lang_file ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})
+add_test(NAME wiregen_cli:LangfileOldSpelling
+    COMMAND wiregen --langfile ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})
+add_test(NAME wiregen_cli:LangFileReplacesInstalled
+    COMMAND wiregen --language c --lang_file ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:LangFile wiregen_cli:LangfileOldSpelling wiregen_cli:LangFileReplacesInstalled PROPERTIES
+    PASS_REGULAR_EXPRESSION "extern \"C\"")
+
+add_test(NAME wiregen_cli:LanguageMismatch
+    COMMAND wiregen --language c --lang_file ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:LanguageMismatch PROPERTIES
+    PASS_REGULAR_EXPRESSION "lang file is for c\\+\\+, not c")
+
+add_test(NAME wiregen_cli:UnknownLanguage
+    COMMAND wiregen --language cobol --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:UnknownLanguage PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unknown language: cobol")
+
+add_test(NAME wiregen_cli:NoLanguage
+    COMMAND wiregen --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:NoLanguage PROPERTIES
+    PASS_REGULAR_EXPRESSION "Choose a language")
+
+# --namespace replaces the spec's namespace.
+add_test(NAME wiregen_cli:Namespace
+    COMMAND wiregen --language c++ --namespace other --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:Namespace PROPERTIES
+    PASS_REGULAR_EXPRESSION "namespace other")
+
+add_test(NAME wiregen_cli:Version
+    COMMAND wiregen --version)
+set_tests_properties(wiregen_cli:Version PROPERTIES
+    PASS_REGULAR_EXPRESSION "^wiregen ${PROJECT_VERSION}\n$")
+
+add_test(NAME wiregen_cli:Help
+    COMMAND wiregen --help)
+set_tests_properties(wiregen_cli:Help PROPERTIES
+    PASS_REGULAR_EXPRESSION "--namespace name")
+
+# Every argument must mean something: a removed (--config) or misspelled
+# option, a missing value, or a value given to a flag is an error.
+add_test(NAME wiregen_cli:NoArguments
+    COMMAND wiregen)
+add_test(NAME wiregen_cli:UnknownOptionFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --config settings.json)
+add_test(NAME wiregen_cli:MissingValueFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --outdir)
+add_test(NAME wiregen_cli:FlagValueFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
+set_tests_properties(wiregen_cli:NoArguments wiregen_cli:UnknownOptionFails
+                     wiregen_cli:MissingValueFails wiregen_cli:FlagValueFails PROPERTIES
+    WILL_FAIL TRUE)
+
+add_test(NAME wiregen_cli:UnknownOption
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --config settings.json)
+set_tests_properties(wiregen_cli:UnknownOption PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unknown option: --config")
+add_test(NAME wiregen_cli:MissingValue
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --outdir)
+set_tests_properties(wiregen_cli:MissingValue PROPERTIES
+    PASS_REGULAR_EXPRESSION "--outdir needs a value")
+add_test(NAME wiregen_cli:FlagValue
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
+set_tests_properties(wiregen_cli:FlagValue PROPERTIES
+    PASS_REGULAR_EXPRESSION "--silent takes no value")

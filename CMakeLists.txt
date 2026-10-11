@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-project(skywire)
+project(skywire VERSION 0.9.0)
 
 include(TestBigEndian)
 include (CTest)

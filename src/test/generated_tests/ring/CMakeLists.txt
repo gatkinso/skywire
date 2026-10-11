@@ -18,76 +18,33 @@
 #  README.md.
 
 set(RING_DIR ${PROJECT_BINARY_DIR}/ring)
-set(RING_SPEC_DIR ${RING_DIR}/specs)
-
-# Instantiates RingyMcRingface.json.in for one language, so every language
-# shares one member list by construction.
-function(ring_spec lang language lang_file namespace includes)
-    set(RING_LANGUAGE ${language})
-    set(RING_LANG_FILE ${lang_file})
-    set(RING_NAMESPACE ${namespace})
-    set(RING_INCLUDES "${includes}")
-    set(RING_FILES "")
-    foreach(pair ${ARGN})
-        string(REPLACE "=" ";" kv ${pair})
-        list(GET kv 0 key)
-        list(GET kv 1 value)
-        string(APPEND RING_FILES "      \"${key}\": \"${value}\",\n")
-    endforeach()
-    string(REGEX REPLACE "\n$" "" RING_FILES "${RING_FILES}")
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json.in ${RING_SPEC_DIR}/${lang}.json @ONLY)
-endfunction()
-
-ring_spec(c c lang.c.json ring [=["\"cstream.h\""]=]
-    outputheaderfilename=RingyMcRingface.h
-    outputimplfilename=RingyMcRingface.c
-    outputtestfilename=RingyMcRingfaceTest.cpp
-    outputrelayfilename=ring_relay.c)
-ring_spec(cpp c++ lang.cpp.json ring [=["\"streamable.h\"", "<stdint.h>"]=]
-    outputheaderfilename=RingyMcRingface.h
-    outputtestfilename=RingyMcRingfaceTest.cpp
-    outputrelayfilename=ring_relay.cpp)
-ring_spec(swift swift lang.swift.json ring [=["Foundation"]=]
-    outputimplfilename=RingyMcRingface.swift
-    outputtestfilename=RingyMcRingface_test.swift
-    outputrelayfilename=ring_relay.swift)
-# The Go relay is a command, so the generated code is in package main.
-ring_spec(go go lang.go.json main ""
-    outputimplfilename=RingyMcRingface.go
-    outputtestfilename=RingyMcRingface_test.go
-    outputrelayfilename=ring_relay.go)
-ring_spec(java java lang.java.json ring ""
-    outputimplfilename=RingyMcRingface.java
-    outputtestfilename=RingyMcRingfaceTest.java
-    outputrelayfilename=RingRelay.java)
-ring_spec(python python3 lang.python3.json ring ""
-    outputimplfilename=RingyMcRingface.py
-    outputtestfilename=RingyMcRingfaceTest.py
-    outputrelayfilename=ring_relay.py)
+# One spec serves every language: file names and runtime includes come from
+# each lang file.
+set(RING_SPEC ${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json)
 
 # The C and C++ relays build with the project; the other languages are
 # generated and compiled by ring_serial.cmake when the test runs.
 foreach(lang c cpp)
     if(lang STREQUAL "c")
         set(langfile ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json)
-        set(outputs ${RING_DIR}/c/RingyMcRingface.h ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/ring_relay.c)
-        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/ring_relay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(outputs ${RING_DIR}/c/RingyMcRingface.h ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c)
+        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     else()
         set(langfile ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json)
-        set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/ring_relay.cpp)
+        set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp)
         # stream.h swaps float/double bytes with sw_swap32/64 from cstream.c.
-        set(sources ${RING_DIR}/cpp/ring_relay.cpp ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     endif()
 
     file(MAKE_DIRECTORY ${RING_DIR}/${lang})
     add_custom_command(
         OUTPUT  ${outputs}
-        DEPENDS ${RING_SPEC_DIR}/${lang}.json ${langfile} wiregen
+        DEPENDS ${RING_SPEC} ${langfile} wiregen
         COMMAND $<TARGET_FILE:wiregen>
-        ARGS    --input_file ${RING_SPEC_DIR}/${lang}.json
+        ARGS    --input_file ${RING_SPEC}
                 --outdir ${RING_DIR}/${lang}
-                --langfile ${langfile}
-                --generate_tests
+                --language ${lang}
+                --generate_relay
                 --write_to_file)
 
     add_executable(ring_relay_${lang} ${sources})
@@ -103,7 +60,7 @@ add_test(NAME skywire_ring:Serial
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.bin
-            -DSPEC_DIR=${RING_SPEC_DIR}
+            -DSPEC=${RING_SPEC}
             -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
             -DWORKDIR=${RING_DIR}/run
             -DC_RELAY=$<TARGET_FILE:ring_relay_c>
