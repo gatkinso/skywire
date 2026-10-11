@@ -32,6 +32,12 @@ const std::regex qualified_re("[A-Za-z_][A-Za-z0-9_]*((\\.|::)[A-Za-z_][A-Za-z0-
 const std::regex include_re("<[A-Za-z0-9_./+-]+>|\"[A-Za-z0-9_./+-]+\"|[A-Za-z0-9_./+-]+");
 const std::regex filename_re("[A-Za-z0-9_.+-]+");
 
+// Member tags are also protobuf field numbers (proto3 output, PZ streams), so
+// they must be valid ones: 1 to 2^29-1, outside the range protobuf reserves.
+const uint32_t max_field_number = (1u << 29) - 1;
+const uint32_t first_reserved_field_number = 19000;
+const uint32_t last_reserved_field_number = 19999;
+
 // Output slot produced by a generator -> spec key naming its file.
 const std::pair<const char*, const char*> output_slots[] = {
     { "header", "outputheaderfilename" },
@@ -348,6 +354,16 @@ bool Processor::validate_spec(int& errorcode)
     {
         const auto& m = member.second;
         const std::string where = "member " + std::to_string(member.first) + ": ";
+
+        if (member.first == 0 || member.first > max_field_number)
+        {
+            valid = spec_error(errorcode, where + "tag must be from 1 to " + std::to_string(max_field_number));
+        }
+        else if (member.first >= first_reserved_field_number && member.first <= last_reserved_field_number)
+        {
+            valid = spec_error(errorcode, where + "tags " + std::to_string(first_reserved_field_number) + "-" +
+                               std::to_string(last_reserved_field_number) + " are reserved by protobuf");
+        }
 
         if (false == std::regex_match(m.name(), identifier_re))
         {
