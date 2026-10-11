@@ -301,6 +301,12 @@ with the file Example.json....
 Note the the runtime is located in <topsrc>/lang/cpp.  (This is where the skyloupe namespace 
 stuff is defined.)
 
+Each member's key (`"100"`, `"200"` above) is its tag. Members are serialized in
+numeric tag order, and the proto3 generator uses the tags as protobuf field
+numbers, so a tag must be a valid field number: from 1 to 536870911, and not
+19000–19999, which protobuf reserves. wiregen rejects any other tag as an
+invalid specification.
+
 To generate the message in C use this file:
 
 ````
