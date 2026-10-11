@@ -18,24 +18,9 @@
 #  README.md.
 
 set(RING_DIR ${PROJECT_BINARY_DIR}/ring)
-set(RING_SPEC_DIR ${RING_DIR}/specs)
-
-# Instantiates RingyMcRingface.json.in for one language, so every language
-# shares one member list by construction. Output file names come from each
-# lang file.
-function(ring_spec lang namespace includes)
-    set(RING_NAMESPACE ${namespace})
-    set(RING_INCLUDES "${includes}")
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json.in ${RING_SPEC_DIR}/${lang}.json @ONLY)
-endfunction()
-
-ring_spec(c ring [=["\"cstream.h\""]=])
-ring_spec(cpp ring [=["\"streamable.h\"", "<stdint.h>"]=])
-ring_spec(swift ring [=["Foundation"]=])
-# The Go relay is a command, so the generated code is in package main.
-ring_spec(go main "")
-ring_spec(java ring "")
-ring_spec(python ring "")
+# One spec serves every language: file names and runtime includes come from
+# each lang file.
+set(RING_SPEC ${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json)
 
 # The C and C++ relays build with the project; the other languages are
 # generated and compiled by ring_serial.cmake when the test runs.
@@ -54,9 +39,9 @@ foreach(lang c cpp)
     file(MAKE_DIRECTORY ${RING_DIR}/${lang})
     add_custom_command(
         OUTPUT  ${outputs}
-        DEPENDS ${RING_SPEC_DIR}/${lang}.json ${langfile} wiregen
+        DEPENDS ${RING_SPEC} ${langfile} wiregen
         COMMAND $<TARGET_FILE:wiregen>
-        ARGS    --input_file ${RING_SPEC_DIR}/${lang}.json
+        ARGS    --input_file ${RING_SPEC}
                 --outdir ${RING_DIR}/${lang}
                 --language ${lang}
                 --generate_relay
@@ -75,7 +60,7 @@ add_test(NAME skywire_ring:Serial
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.bin
-            -DSPEC_DIR=${RING_SPEC_DIR}
+            -DSPEC=${RING_SPEC}
             -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
             -DWORKDIR=${RING_DIR}/run
             -DC_RELAY=$<TARGET_FILE:ring_relay_c>

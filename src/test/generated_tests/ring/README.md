@@ -47,8 +47,9 @@ and fewer than two languages reports the test as Skipped.
 
 ## The message
 
-`RingyMcRingface.json.in` is the one member list. CMake instantiates it per
-language into `<build>/ring/specs/<lang>.json`. Tags are declared out of order
+`RingyMcRingface.json` is the one spec for every language. It names no files
+and no includes: those come from each language's lang file. The Go relay is a
+command, so the driver generates Go with `--namespace main`. Tags are declared out of order
 and differ in digit count, so wire order must follow the numeric tag.
 Native endianness is left out because it is host-dependent.
 

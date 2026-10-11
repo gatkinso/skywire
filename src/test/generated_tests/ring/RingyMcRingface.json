@@ -1,7 +1,7 @@
 {
    "stringValues": {
       "classname": "RingyMcRingface",
-      "namespace": "@RING_NAMESPACE@"
+      "namespace": "ring"
    },
    "members": {
       "1002": { "type": "string",        "name": "str_truncated", "length": 3 },
@@ -27,6 +27,5 @@
       "401":  { "type": "float",         "name": "f32_le", "endian": 1 },
       "410":  { "type": "double",        "name": "f64_be", "endian": 0 },
       "1001": { "type": "string",        "name": "str_exact", "length": 7 }
-   },
-   "includes": [@RING_INCLUDES@]
+   }
 }

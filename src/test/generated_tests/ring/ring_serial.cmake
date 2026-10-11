@@ -22,7 +22,7 @@
 #    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python)
 #    SKYWIRE_RING_REQUIRE_ALL=1     fail, instead of skipping, a language whose toolchain is missing
 #
-#  Required -D variables: WIREGEN, INPUT, SPEC_DIR, LANG_DIR, WORKDIR,
+#  Required -D variables: WIREGEN, INPUT, SPEC, LANG_DIR, WORKDIR,
 #                         C_RELAY, CPP_RELAY, TAMPER
 #  Optional -D variables: EXE_SUFFIX
 #
@@ -58,12 +58,13 @@ function(run_checked what)
 endfunction()
 
 # Generates one language's code with the lang file installed next to wiregen.
+# Any further arguments (e.g. --namespace) are passed to wiregen.
 function(generate lang)
     file(REMOVE_RECURSE ${WORKDIR}/${lang})
     file(MAKE_DIRECTORY ${WORKDIR}/${lang})
     run_checked("wiregen (${lang})"
-        ${WIREGEN} --input_file ${SPEC_DIR}/${lang}.json --outdir ${WORKDIR}/${lang}
-                   --language ${lang} --generate_relay --write_to_file)
+        ${WIREGEN} --input_file ${SPEC} --outdir ${WORKDIR}/${lang}
+                   --language ${lang} --generate_relay --write_to_file ${ARGN})
 endfunction()
 
 file(REMOVE_RECURSE ${WORKDIR})
@@ -99,7 +100,8 @@ if(GO_EXECUTABLE)
     string(REGEX REPLACE "^go([0-9]+\\.[0-9]+).*" "\\1" go_version_num "${go_version}")
 endif()
 if(GO_EXECUTABLE AND go_version_num VERSION_GREATER_EQUAL 1.21)
-    generate(go)
+    # The Go relay is a command, so the generated code is in package main.
+    generate(go --namespace main)
     set(dir ${WORKDIR}/go)
     file(WRITE ${dir}/go.mod "module wiregen/ring\n\ngo 1.21\n")
     get_filename_component(go_bindir ${GO_EXECUTABLE} DIRECTORY)

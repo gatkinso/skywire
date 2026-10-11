@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <algorithm>
 #include <regex>
 #include <set>
 #include "file_writer.h"
@@ -175,7 +176,13 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 {
     bool success = false;
 
+    if (false == namespace_.empty())
+    {
+        (*msg_spec_.get_proto_ref().mutable_string_values())["namespace"] = namespace_;
+    }
+
     resolve_output_filenames();
+    resolve_includes();
 
     if (false == validate_spec(errorcode))
     {
@@ -360,6 +367,33 @@ void Processor::resolve_output_filenames()
         {
             values[slot.second] = expand_filename(pattern->second, classname);
         }
+    }
+}
+
+void Processor::resolve_includes()
+{
+    // The lang file lists what generated code always includes (its runtime
+    // headers); the spec's own includes follow, without repeats.
+    const auto& defaults = lang_spec_.get_proto().includes();
+    if (defaults.empty())
+    {
+        return;
+    }
+
+    auto& includes = *msg_spec_.get_proto_ref().mutable_includes();
+    std::vector<std::string> merged(defaults.begin(), defaults.end());
+    for (const auto& include : includes)
+    {
+        if (std::find(merged.begin(), merged.end(), include) == merged.end())
+        {
+            merged.push_back(include);
+        }
+    }
+
+    includes.Clear();
+    for (const auto& include : merged)
+    {
+        includes.Add()->assign(include);
     }
 }
 

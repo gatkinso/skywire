@@ -165,6 +165,11 @@ different lang file instead (for example a customized copy); on its own it also
 sets the language, since every lang file names its language. If both are given
 they must agree. (`--langfile` is the old spelling of `--lang_file`.)
 
+`--namespace <name>` replaces the specification's `namespace` (the C++
+namespace, or the Go, Java or Python package), so one specification can be
+generated into different namespaces. The specification need not have a
+namespace at all when the command line gives one.
+
 Without `--write_to_file` the generated code is printed to standard output.
 
 # [6.0] Configuration files 
@@ -199,11 +204,7 @@ with the file Example.json....
              "name":"myuint32_200",
              "endian":0
           },      
-       },
-       "includes":[  
-          "\"cstream.h\"",
-          "<stdint.h>"
-       ]
+       }
     }
 ```
 
@@ -214,7 +215,7 @@ with the file Example.json....
 
     #pragma once
 
-    #include "cstream.h"
+    #include "streamable.h"
     #include <stdint.h>
 
     namespace SomeNamespace {
@@ -334,11 +335,7 @@ To generate the message in C, run wiregen with `--language c` and this file:
          "name":"myuint32_200",
          "endian":0
       },
-   },
-   "includes":[  
-      "\"cstream.h\"",
-      "<stdint.h>"
-   ]
+   }
 }
 
 ````
@@ -387,6 +384,20 @@ every member against shared test values, and writes it back out. The
 cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
 every language. Naming a test or relay file in a specification does not by itself
 generate that file; only the flags do. proto3 has neither.
+
+The lang file also lists the includes (imports) its generated code always needs,
+such as the language's runtime. They come first in the generated file, followed
+by any `includes` in the specification that are not already listed. A
+specification needs `includes` only for something of its own, such as the header
+of another message it contains.
+
+| Language | Lang file `includes` |
+|----------|----------------------|
+| c        | `"cstream.h"` |
+| c++      | `"streamable.h"`, `<stdint.h>` |
+| swift    | `Foundation` |
+
+The Go, Java and Python generators add the imports their code uses themselves.
 
 More detail on this to come.
 

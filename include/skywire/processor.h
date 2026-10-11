@@ -34,6 +34,8 @@ public:
     virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
     // The target language is the one the lang file names; when set, it must be this one.
     void set_language(const std::string& language) { expected_language_ = language; }
+    // When set, replaces the specification's namespace.
+    void set_namespace(const std::string& name_space) { namespace_ = name_space; }
 
 private:
     Specification msg_spec_;
@@ -41,6 +43,7 @@ private:
 
     std::string language_key_ = "language";
     std::string expected_language_;
+    std::string namespace_;
 
     std::string swift_str_ = "swift";
     std::string c_str_ = "c";
@@ -52,6 +55,7 @@ private:
 
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     virtual void resolve_output_filenames();
+    virtual void resolve_includes();
     virtual bool validate_spec(int& errorcode);
     virtual bool write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode);
 };

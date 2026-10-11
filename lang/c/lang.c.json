@@ -58,6 +58,7 @@
         "get_string_assignment_str":"memcpy(value, structure->__MEMBERNAME__, __LENGTH__)",
         "set_string_assignment_str":"strncpy(structure->__MEMBERNAME__, value, __LENGTH__)"
     },
+    "includes": [ "\"cstream.h\"" ],
     "native_types":[
         "char",
         "unsigned char",

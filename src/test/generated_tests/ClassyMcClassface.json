@@ -85,9 +85,5 @@
          "type": "double",
          "name": "r_mydouble2020"
       }
-   },
-   "includes": [
-      "\"streamable.h\"",
-      "<stdint.h>"
-   ]
+   }
 }

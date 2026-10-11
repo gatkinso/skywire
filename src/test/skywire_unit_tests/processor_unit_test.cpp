@@ -17,6 +17,8 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <set>
+#include <sstream>
+#include <vector>
 #include "skywire/processor.h"
 #include "skywire/skywire.h"
 
@@ -555,4 +557,117 @@ TEST_F(ProcessorFilenameTest, ExpandedNameIsStillValidated)
     ASSERT_FALSE(run(spec(R"(,"outputheaderfilename":"../{classname}.h")")));
     ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
     ASSERT_TRUE(written().empty());
+}
+
+// Defaults the lang file supplies (runtime includes) and the --namespace
+// override, so one spec serves every language.
+class ProcessorDefaultsTest : public ProcessorUnitTest
+{
+protected:
+    std::string name_space;
+
+    static std::string lang(const std::string& includes = R"(["\"streamable.h\"", "<stdint.h>"])")
+    {
+        std::string lang = lang_str;
+        const std::string key = "\"language\": \"c++\",";
+        lang.insert(lang.find(key) + key.size(),
+                    R"("sentry_str": "#pragma once\n",)"
+                    R"("include_str": "#include __INCLUDEFILE__\n",)"
+                    R"("namespace_str": "namespace __NAMESPACE__ {\n",)");
+        if (false == includes.empty())
+        {
+            lang.insert(lang.find('{') + 1, R"("includes": )" + includes + ",");
+        }
+        return lang;
+    }
+
+    static std::string spec(const std::string& includes = "", const std::string& name_space = R"("namespace":"testspace",)")
+    {
+        return R"({"stringValues":{)" + name_space + R"("classname":"TestClass","outputheaderfilename":"TestClass.h"},)"
+               R"("members":)" + good_members + (includes.empty() ? "" : R"(,"includes":)" + includes) + "}";
+    }
+
+    bool run(const std::string& msg, const std::string& lang_file = lang())
+    {
+        Processor p;
+        p.set_namespace(name_space);
+        return p.process_string(msg, lang_file, output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
+    }
+
+    // The header's #include lines, in order.
+    std::vector<std::string> includes()
+    {
+        std::vector<std::string> lines;
+        std::istringstream header(output_str_map["header"]);
+        for (std::string line; std::getline(header, line);)
+        {
+            if (line.rfind("#include ", 0) == 0)
+            {
+                lines.push_back(line.substr(9));
+            }
+        }
+        return lines;
+    }
+};
+
+TEST_F(ProcessorDefaultsTest, SpecNeedsNoIncludes)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"streamable.h\"", "<stdint.h>" }));
+}
+
+TEST_F(ProcessorDefaultsTest, SpecIncludesFollowLangIncludes)
+{
+    ASSERT_TRUE(run(spec(R"(["<stdint.h>", "\"extra.h\""])")));
+    // The lang file's come first, and one the spec repeats appears once.
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"streamable.h\"", "<stdint.h>", "\"extra.h\"" }));
+}
+
+TEST_F(ProcessorDefaultsTest, LangWithoutIncludesUsesSpecs)
+{
+    ASSERT_TRUE(run(spec(R"(["\"extra.h\""])"), lang("")));
+    ASSERT_EQ(includes(), (std::vector<std::string>{ "\"extra.h\"" }));
+}
+
+TEST_F(ProcessorDefaultsTest, LangIncludesAreValidated)
+{
+    ASSERT_FALSE(run(spec(), lang(R"(["\"a.h\"\n#define x"])")));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceFromSpec)
+{
+    ASSERT_TRUE(run(spec()));
+    ASSERT_NE(output_str_map["header"].find("namespace testspace {"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceOverridesSpec)
+{
+    name_space = "other";
+    ASSERT_TRUE(run(spec()));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
+    ASSERT_EQ(output_str_map["header"].find("testspace"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceWithoutSpecNamespace)
+{
+    name_space = "other";
+    ASSERT_TRUE(run(spec("", "")));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
+}
+
+TEST_F(ProcessorDefaultsTest, NamespaceIsValidated)
+{
+    name_space = "other { evil";
+    ASSERT_FALSE(run(spec()));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorDefaultsTest, LibraryPassesNamespace)
+{
+    ASSERT_TRUE(skyloupe::process_string(spec(), output_str_map, lang(), "c++", outputdir, errorcode,
+                                         generate_tests, write_to_file, generate_relay, "other"));
+    ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
 }

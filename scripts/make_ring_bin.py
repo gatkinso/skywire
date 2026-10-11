@@ -23,7 +23,6 @@ every generator is checked against. See scripts/README.md.
 
 import argparse
 import json
-import re
 import struct
 import sys
 from pathlib import Path
@@ -54,11 +53,8 @@ BYTE_ORDER = {0: ">", 1: "<"}
 
 
 def load_spec(path):
-    """Parse the spec template, dropping its @PLACEHOLDER@s (they only fill in stringValues and includes)."""
-    text = path.read_text()
-    text = re.sub(r"^\s*@[A-Z_]+@\s*\n", "", text, flags=re.MULTILINE)
-    text = re.sub(r"@[A-Z_]+@", "", text)
-    return json.loads(text)
+    """Parse the ring spec."""
+    return json.loads(path.read_text())
 
 
 def encode(spec):
@@ -98,8 +94,8 @@ def encode(spec):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--spec", type=Path, default=RING_DIR / "RingyMcRingface.json.in",
-                        help="spec template to read (default: %(default)s)")
+    parser.add_argument("--spec", type=Path, default=RING_DIR / "RingyMcRingface.json",
+                        help="spec to read (default: %(default)s)")
     parser.add_argument("--out", type=Path, default=RING_DIR / "RingyMcRingface.bin",
                         help="file to write (default: %(default)s)")
     parser.add_argument("--check", action="store_true",

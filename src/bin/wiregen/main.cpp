@@ -38,6 +38,7 @@ results_t output_str_map;
 std::string language;
 std::string lang_file;
 std::string langspec;
+std::string name_space;
 bool silent = false;
 bool generate_tests = false;
 bool generate_relay = false;
@@ -58,6 +59,7 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
                   << "                                              (uses the lang file installed next to wiregen)" << std::endl
                   << "     wiregen --lang_file filename          -- lang file to use instead of the installed one" << std::endl
                   << "     wiregen --langspec string             -- lang file contents to use instead of a file" << std::endl
+                  << "     wiregen --namespace name              -- namespace (package) to generate into, replacing the spec's" << std::endl
                   << "     wiregen --generate_tests              -- generate unit tests" << std::endl
                   << "     wiregen --generate_relay              -- generate a relay program (cross-language test)" << std::endl
                   << "     wiregen --silent                      -- no output displayed" << std::endl
@@ -159,6 +161,18 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
+    if (flag.compare("--namespace") == 0)
+    {
+        if (false == value.empty())
+        {
+            name_space = value;
+        }
+        else
+        {
+            std::cout << "Need a name for --namespace switch" << std::endl;
+        }
+    }
+
     if (flag.compare("--silent") == 0)
     {
         if (false != value.empty())
@@ -206,6 +220,7 @@ bool process_cmd_line(int argc, const char* argv[])
     cmdargs.setOption("--lang_file", true, false, cli_callback);
     cmdargs.setOption("--langfile", true, false, cli_callback);
     cmdargs.setOption("--langspec", true, false, cli_callback);
+    cmdargs.setOption("--namespace", true, false, cli_callback);
     cmdargs.setOption("--generate_tests", true, true, cli_callback);
     cmdargs.setOption("--generate_relay", true, true, cli_callback);
     cmdargs.setOption("--silent", true, true, cli_callback);
@@ -303,7 +318,7 @@ int main(int argc, const char* argv[])
 
     if (true == file_mode)
     {
-        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay);
+        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space);
     } 
     else
     {
@@ -313,7 +328,7 @@ int main(int argc, const char* argv[])
             return SW_FILEREADERROR;
         }
 
-        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file, generate_relay);
+        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file, generate_relay, name_space);
     }
 
     if (false == write_to_file)

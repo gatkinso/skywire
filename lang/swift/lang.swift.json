@@ -64,6 +64,7 @@
         "double":"Double",
         "string":"[UInt8]"
     },
+    "includes": [ "Foundation" ],
     "native_types":[
         "char",
         "unsigned char",
