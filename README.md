@@ -178,8 +178,7 @@ with the file Example.json....
           "outputheaderfilename":"Example.h",
           "outputtestfilename":"ExampleUnitTest.cpp",
           "namespace":"SomeNamespace",
-          "language": "c++",
-          "lang_file": "lang.cpp.json"
+          "language": "c++"
        },
        "members":{  
           "100":{  
@@ -317,7 +316,6 @@ To generate the message in C use this file:
       "outputcfilename":"Example.c",
       "namespace":"SomeNamespace",
       "language": "c",
-      "lang_file": "lang.c.json",
       "outputtestfilename":"ExampleUnitTest.cpp"
    },
    "members":{  

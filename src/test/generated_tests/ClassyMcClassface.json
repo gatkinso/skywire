@@ -4,8 +4,7 @@
       "outputheaderfilename": "ClassyMcClassface.h",
       "outputtestfilename": "ClassyMcClassfaceTest.cpp",
       "namespace": "testspace",
-      "language": "c++",
-      "lang_file": "lang.cpp.json"
+      "language": "c++"
    },
    "members": {
       "100": {

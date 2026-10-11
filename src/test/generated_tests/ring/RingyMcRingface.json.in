@@ -3,8 +3,7 @@
       "classname": "RingyMcRingface",
 @RING_FILES@
       "namespace": "@RING_NAMESPACE@",
-      "language": "@RING_LANGUAGE@",
-      "lang_file": "@RING_LANG_FILE@"
+      "language": "@RING_LANGUAGE@"
    },
    "members": {
       "1002": { "type": "string",        "name": "str_truncated", "length": 3 },

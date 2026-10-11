@@ -3,8 +3,7 @@
       "classname":"TestClass",
       "outputimplfilename":"TestClass.py",
       "namespace":"testspace",
-      "language": "python3",
-      "lang_file": "lang.python3.json"
+      "language": "python3"
    },
    "members":{
       "1":{

@@ -39,7 +39,6 @@ private:
     Specification lang_spec_;
 
     std::string language_key_ = "language";
-    std::string language_file_key_ = "lang_file";
     std::string language_file_;
 
     std::string swift_str_ = "swift";

@@ -26,8 +26,7 @@ std::string msg_str =
       \"outputheaderfilename\":\"TestClass++.h\",     \
       \"outputtestfilename\":\"TestClassTest++.cpp\", \
       \"namespace\":\"testspace\",                    \
-      \"language\": \"c++\",                          \
-      \"lang_file\": \"lang.cpp.json\"                \
+      \"language\": \"c++\"                           \
    },                                                 \
    \"members\":{                                      \
       \"1\":{                                         \

@@ -22,9 +22,8 @@ set(RING_SPEC_DIR ${RING_DIR}/specs)
 
 # Instantiates RingyMcRingface.json.in for one language, so every language
 # shares one member list by construction.
-function(ring_spec lang language lang_file namespace includes)
+function(ring_spec lang language namespace includes)
     set(RING_LANGUAGE ${language})
-    set(RING_LANG_FILE ${lang_file})
     set(RING_NAMESPACE ${namespace})
     set(RING_INCLUDES "${includes}")
     set(RING_FILES "")
@@ -38,29 +37,29 @@ function(ring_spec lang language lang_file namespace includes)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json.in ${RING_SPEC_DIR}/${lang}.json @ONLY)
 endfunction()
 
-ring_spec(c c lang.c.json ring [=["\"cstream.h\""]=]
+ring_spec(c c ring [=["\"cstream.h\""]=]
     outputheaderfilename=RingyMcRingface.h
     outputimplfilename=RingyMcRingface.c
     outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.c)
-ring_spec(cpp c++ lang.cpp.json ring [=["\"streamable.h\"", "<stdint.h>"]=]
+ring_spec(cpp c++ ring [=["\"streamable.h\"", "<stdint.h>"]=]
     outputheaderfilename=RingyMcRingface.h
     outputtestfilename=RingyMcRingfaceTest.cpp
     outputrelayfilename=ring_relay.cpp)
-ring_spec(swift swift lang.swift.json ring [=["Foundation"]=]
+ring_spec(swift swift ring [=["Foundation"]=]
     outputimplfilename=RingyMcRingface.swift
     outputtestfilename=RingyMcRingface_test.swift
     outputrelayfilename=ring_relay.swift)
 # The Go relay is a command, so the generated code is in package main.
-ring_spec(go go lang.go.json main ""
+ring_spec(go go main ""
     outputimplfilename=RingyMcRingface.go
     outputtestfilename=RingyMcRingface_test.go
     outputrelayfilename=ring_relay.go)
-ring_spec(java java lang.java.json ring ""
+ring_spec(java java ring ""
     outputimplfilename=RingyMcRingface.java
     outputtestfilename=RingyMcRingfaceTest.java
     outputrelayfilename=RingRelay.java)
-ring_spec(python python3 lang.python3.json ring ""
+ring_spec(python python3 ring ""
     outputimplfilename=RingyMcRingface.py
     outputtestfilename=RingyMcRingfaceTest.py
     outputrelayfilename=ring_relay.py)

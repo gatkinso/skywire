@@ -5,8 +5,7 @@
       "outputimplfilename": "StructyMcStructface.c",
       "outputtestfilename": "StructyMcStructfaceTest.cpp",
       "namespace": "testspace",
-      "language": "c",
-      "lang_file": "lang.c.json"
+      "language": "c"
    },
    "members": {
       "100": {

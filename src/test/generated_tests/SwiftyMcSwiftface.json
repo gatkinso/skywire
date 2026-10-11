@@ -4,8 +4,7 @@
       "outputimplfilename": "SwiftyMcSwiftface.swift",
       "outputtestfilename": "SwiftyMcSwiftface_test.swift",
       "namespace": "testspace",
-      "language": "swift",
-      "lang_file": "lang.swift.json"
+      "language": "swift"
    },
    "members": {
       "100": {

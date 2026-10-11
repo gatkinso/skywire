@@ -4,8 +4,7 @@
       "outputimplfilename": "CoffeeMcCofface.java",
       "outputtestfilename": "CoffeeMcCoffaceTest.java",
       "namespace": "testspace",
-      "language": "java",
-      "lang_file": "lang.java.json"
+      "language": "java"
    },
    "members": {
       "100": {
