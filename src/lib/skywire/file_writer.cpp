@@ -33,7 +33,7 @@ bool FileWriter::present(int& errorcode)
 
 bool FileWriter::write_file(int& errorcode)
 {
-    std::ofstream out_file(pathname_, std::ofstream::out | std::ofstream::trunc);
+    std::ofstream out_file(pathname_, std::ofstream::out | std::ofstream::trunc | std::ofstream::binary);
 
     if (false == out_file.is_open())
     {

@@ -58,7 +58,7 @@ if(UNIX)
 endif(UNIX)
 
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy ${TGT_NAME} ${DST_NAME})
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGETNAME}> ${CMAKE_BINARY_DIR}/bin/${TARGETNAME}${CMAKE_EXECUTABLE_SUFFIX})
 
 # wiregen --language looks for the lang files in its own directory, so they are
 # copied next to both built copies of wiregen and installed beside it.
