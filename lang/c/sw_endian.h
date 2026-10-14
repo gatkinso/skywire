@@ -22,9 +22,6 @@
 #define SW_LITTLE_ENDIAN_FLAG 1
 #define SW_NATIVE_ENDIAN_FLAG 2
 
-#if defined WIN32
-    #include <Winsock.h>
-#endif
 
 #if defined LINUX || defined APPLE
     #include <netinet/in.h>

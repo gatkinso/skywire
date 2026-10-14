@@ -51,7 +51,7 @@ foreach(WG_C ${WG_C_FILES})
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_C}.json
                 ${CMAKE_SOURCE_DIR}/lang/c/lang.c.json
                 wiregen
-        COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
+        COMMAND $<TARGET_FILE:wiregen>
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_C}.json
                 --outdir ${WG_C_DIR}
                 --language c
@@ -71,7 +71,7 @@ foreach(WG_CPP ${WG_CPP_FILES})
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
                 ${CMAKE_SOURCE_DIR}/lang/cpp/lang.cpp.json
                 wiregen
-        COMMAND ${CMAKE_BINARY_DIR}/bin/wiregen
+        COMMAND $<TARGET_FILE:wiregen>
         ARGS    --input_file ${CMAKE_CURRENT_SOURCE_DIR}/${WG_CPP}.json
                 --outdir ${WG_CPP_DIR}
                 --language c++
