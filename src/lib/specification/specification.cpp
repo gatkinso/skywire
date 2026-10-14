@@ -70,7 +70,7 @@ bool Specification::write_file(const std::string& pathname) const
             return false;
         }
 
-        std::ofstream file(pathname, std::ios::out | std::ios::trunc);
+        std::ofstream file(pathname, std::ios::out | std::ios::trunc | std::ios::binary);
 
         if (file.fail())
         {
