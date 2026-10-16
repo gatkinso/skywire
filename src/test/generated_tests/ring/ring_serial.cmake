@@ -22,7 +22,7 @@
 #    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python)
 #    SKYWIRE_RING_REQUIRE_ALL=1     fail, instead of skipping, a language whose toolchain is missing
 #
-#  Required -D variables: WIREGEN, INPUT, SPEC, LANG_DIR, WORKDIR,
+#  Required -D variables: WIREGEN, INPUT, SPEC, INNER_SPEC, LANG_DIR, WORKDIR,
 #                         C_RELAY, CPP_RELAY, TAMPER
 #  Optional -D variables: EXE_SUFFIX
 #
@@ -57,11 +57,15 @@ function(run_checked what)
     endif()
 endfunction()
 
-# Generates one language's code with the lang file installed next to wiregen.
+# Generates one language's code with the lang file installed next to wiregen:
+# the ring message with its relay, and the message it contains (INNER_SPEC).
 # Any further arguments (e.g. --namespace) are passed to wiregen.
 function(generate lang)
     file(REMOVE_RECURSE ${WORKDIR}/${lang})
     file(MAKE_DIRECTORY ${WORKDIR}/${lang})
+    run_checked("wiregen (${lang}, inner message)"
+        ${WIREGEN} --input_file ${INNER_SPEC} --outdir ${WORKDIR}/${lang}
+                   --language ${lang} --write_to_file ${ARGN})
     run_checked("wiregen (${lang})"
         ${WIREGEN} --input_file ${SPEC} --outdir ${WORKDIR}/${lang}
                    --language ${lang} --generate_relay --write_to_file ${ARGN})
@@ -84,7 +88,7 @@ if(SWIFTC_EXECUTABLE)
     set(dir ${WORKDIR}/swift)
     run_checked("swiftc"
         ${SWIFTC_EXECUTABLE} -o ${dir}/ring_relay${EXE_SUFFIX}
-        ${LANG_DIR}/swift/SWStream.swift ${dir}/RingyMcRingface.swift ${dir}/RingyMcRingfaceRelay.swift)
+        ${LANG_DIR}/swift/SWStream.swift ${dir}/RingyInner.swift ${dir}/RingyMcRingface.swift ${dir}/RingyMcRingfaceRelay.swift)
     set(relay_swift ${dir}/ring_relay${EXE_SUFFIX})
     list(APPEND available swift)
 else()
@@ -145,7 +149,7 @@ if(JAVAC_EXECUTABLE AND JAVA_EXECUTABLE AND javac_rc EQUAL 0)
     file(MAKE_DIRECTORY ${dir}/classes)
     run_checked("javac"
         ${JAVAC_EXECUTABLE} -Xlint:all -Werror -d ${dir}/classes
-        ${dir}/RingyMcRingface.java ${dir}/RingyMcRingfaceRelay.java)
+        ${dir}/RingyInner.java ${dir}/RingyMcRingface.java ${dir}/RingyMcRingfaceRelay.java)
     set(relay_java ${JAVA_EXECUTABLE} -cp ${dir}/classes ring.RingyMcRingfaceRelay)
     list(APPEND available java)
 else()

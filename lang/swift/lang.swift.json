@@ -21,11 +21,12 @@
 
         "serialize_native_mem_str":"stream.serialize(__MEMBERNAME__, __ENDIAN__)",
         "deserialize_native_mem_str":"stream.deserialize(&__MEMBERNAME__, __ENDIAN__)",
-        "serialize_user_mem_str":"_ = __MEMBERNAME__.serialize(stream, __ENDIAN__)",
-        "deserialize_user_mem_str":"_ = __MEMBERNAME__.deserialize(stream, __ENDIAN__)",
+        "serialize_user_mem_str":"guard __MEMBERNAME__.serialize(stream) else { return false }",
+        "deserialize_user_mem_str":"guard __MEMBERNAME__.deserialize(stream) else { return false }",
         "size_native_mem_str":"MemoryLayout<__TYPE__>.size",
         "size_user_mem_str":"__MEMBERNAME__.size()",
         "equals_mem_str":"__MEMBERNAME__ == other.__MEMBERNAME__",
+        "equals_user_mem_str":"__MEMBERNAME__.Equals(other.__MEMBERNAME__)",
 
         "serialize_string_mem_str":"stream.serialize(__MEMBERNAME__, __LENGTH__, .native)",
         "deserialize_string_mem_str":"stream.deserialize(&__MEMBERNAME__, __LENGTH__, .native)",
@@ -33,6 +34,7 @@
         "equals_string_mem_str":"__MEMBERNAME__ == other.__MEMBERNAME__",
 
         "member_decl_str":"var __MEMBERNAME__: __TYPE__ = 0\n",
+        "member_user_decl_str":"var __MEMBERNAME__: __TYPE__ = __TYPE__()\n",
         "member_string_decl_str":"var __MEMBERNAME__: [UInt8] = [UInt8](repeating: 0, count: __LENGTH__)\n",
 
         "get_str":"public func Get___MEMBERNAME__() -> __TYPE__ { return __MEMBERNAME__ }\n",

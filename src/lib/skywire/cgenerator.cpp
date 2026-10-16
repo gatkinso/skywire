@@ -106,7 +106,7 @@ bool CGenerator::hdr_includes(int& errorcode) {
         return false;
     }
 
-    for (auto& item : values)
+    for (auto& item : with_user_headers(values))
     {
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
@@ -325,9 +325,12 @@ bool CGenerator::imp_serialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_spec_.get_value_string("write_native_template_str");
+        const std::string& type = std::get<member_type>(member.second);
+        // A nested message is written by its own function, with its own members' byte orders.
+        std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "write_user_template_str" : "write_native_template_str");
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
 
         if (is_string_type(std::get<member_type>(member.second)))
             template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
@@ -368,9 +371,12 @@ bool CGenerator::imp_deserialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str = lang_spec_.get_value_string("read_native_template_str");
+        const std::string& type = std::get<member_type>(member.second);
+        // A nested message is written by its own function, with its own members' byte orders.
+        std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "read_user_template_str" : "read_native_template_str");
         insert_indents(1);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
 
         if (is_string_type(std::get<member_type>(member.second)))
             template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
@@ -411,6 +417,8 @@ bool CGenerator::imp_size(int& errorcode)
         insert_indents(2);
         if (is_string_type(std::get<member_type>(member.second)))
             ss_ << std::get<member_length>(member.second);
+        else if (is_user_type(std::get<member_type>(member.second)))
+            ss_ << std::get<member_type>(member.second) << "_Size()";
         else
             ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
 
@@ -460,6 +468,12 @@ bool CGenerator::imp_equals_function(int& errorcode)
             template_str = lang_spec_.get_value_string("equal_check_string_template_str");
             template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
             template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+        }
+        else if (is_user_type(std::get<member_type>(member.second)))
+        {
+            template_str = lang_spec_.get_value_string("equal_check_user_template_str");
+            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member.second));
         }
         else
         {

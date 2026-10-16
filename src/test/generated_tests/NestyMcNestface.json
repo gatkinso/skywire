@@ -1,0 +1,13 @@
+{
+   "stringValues": {
+      "classname": "NestyMcNestface",
+      "namespace": "testspace"
+   },
+   "members": {
+      "1":    { "type": "uint8_t",    "name": "a_myuint8_1" },
+      "2":    { "type": "NestyInner", "name": "b_first2" },
+      "3":    { "type": "int64_t",    "name": "c_myint64_3", "endian": 1 },
+      "2048": { "type": "NestyInner", "name": "d_second2048" },
+      "2049": { "type": "float",      "name": "e_myfloat2049" }
+   }
+}

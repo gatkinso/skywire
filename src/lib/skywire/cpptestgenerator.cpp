@@ -126,6 +126,10 @@ bool CppTestGenerator::test_size(int& errorcode)
         {
             ss_ << std::get<member_length>(member.second);
         }
+        else if (is_user_type(std::get<member_type>(member.second)))
+        {
+            ss_ << namespac << "::" << std::get<member_type>(member.second) << "::size()";
+        }
         else
         {
             ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
@@ -301,6 +305,11 @@ bool CppTestGenerator::test_pz_wire(int& errorcode)
     std::vector<uint8_t> wire;
     for (auto& member : ordered_members_)
     {
+        // A nested message is left all zero, so protobuf leaves it out.
+        if (is_user_type(std::get<member_type>(member.second)))
+        {
+            continue;
+        }
         if (!test_values::encode_pb(std::get<member_type>(member.second), member.first,
                                     std::get<member_length>(member.second), wire))
         {

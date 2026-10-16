@@ -88,6 +88,8 @@ std::string lang_str =
         \"float\" : \"float32\",                                                                                                          \
         \"double\" : \"float64\",                                                                                                         \
     },                                                                                                                                    \
+    \"native_types\": [ \"char\", \"unsigned char\", \"uint8_t\", \"int8_t\", \"uint16_t\", \"int16_t\", \"uint32_t\", \"int32_t\",       \
+                      \"uint64_t\", \"int64_t\", \"float\", \"double\", \"string\" ],                                                     \
 }";
 
 class ProcessorUnitTest : public ::testing::Test
@@ -438,9 +440,10 @@ TEST_F(ProcessorValidationTest, RejectsPathTraversalInRelayFilename)
     expect_rejected(make_spec(good_members, R"(,"outputrelayfilename":"../relay.cpp")"));
 }
 
-TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
+TEST_F(ProcessorValidationTest, RelayNeedsNestedSpec)
 {
-    // A user-defined member has no shared test value, so a relay cannot check it.
+    // A relay checks the members inside a nested message, so it needs that
+    // message's spec, which a spec given as a string has no directory to find.
     const std::string members = R"({"1":{"type":"OtherMessage","name":"nested"}})";
     generate_tests = true;
     ASSERT_TRUE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp")")));
@@ -448,7 +451,7 @@ TEST_F(ProcessorValidationTest, RelayNeedsTestValueForEveryMember)
     output_str_map.clear();
     generate_relay = true;
     ASSERT_FALSE(run(make_spec(members, R"(,"outputtestfilename":"TestClassTest.cpp","outputrelayfilename":"relay.cpp")")));
-    ASSERT_NE(errorcode & SW_FILE_IMP, 0u);
+    ASSERT_NE(errorcode & SW_FILEREADERROR, 0u);
 }
 
 // Output file names: the lang file gives a {classname} pattern for each
@@ -688,4 +691,79 @@ TEST_F(ProcessorUnitTest, Proto3WithTests)
     ASSERT_EQ(output_str_map.size(), 2u);
     ASSERT_NE(output_str_map["implementation"].find("message TestClass {"), std::string::npos);
     ASSERT_NE(output_str_map["unittest"].find("# expected: "), std::string::npos);
+}
+
+// A relay reads each nested message's spec from <type>.json beside the spec,
+// and checks the members inside it.
+class ProcessorNestedRelayTest : public ::testing::Test
+{
+protected:
+    std::filesystem::path dir;
+    results_t output_str_map;
+    int errorcode = 0;
+
+    void SetUp() override
+    {
+        dir = std::filesystem::temp_directory_path() /
+              ("skywire_nested_relay_" + std::string(::testing::UnitTest::GetInstance()->current_test_info()->name()));
+        std::filesystem::remove_all(dir);
+        std::filesystem::create_directories(dir);
+    }
+
+    void TearDown() override
+    {
+        std::filesystem::remove_all(dir);
+    }
+
+    void write_spec(const std::string& classname, const std::string& members)
+    {
+        std::ofstream(dir / (classname + ".json"))
+            << R"({"stringValues":{"classname":")" << classname << R"(","namespace":"testspace"},"members":)" << members << "}";
+    }
+
+    bool run(const std::string& classname, bool generate_relay = true)
+    {
+        Processor p;
+        return p.process_file((dir / (classname + ".json")).string(), std::string(SKYWIRE_LANG_DIR) + "/cpp/lang.cpp.json",
+                              output_str_map, dir.string(), errorcode, false, false, generate_relay);
+    }
+};
+
+TEST_F(ProcessorNestedRelayTest, ChecksMembersInsideNestedMessages)
+{
+    write_spec("Outer", R"({"1":{"type":"uint8_t","name":"a"},"2":{"type":"Middle","name":"mid"}})");
+    write_spec("Middle", R"({"1":{"type":"Inner","name":"in"},"2":{"type":"string","name":"s","length":4}})");
+    write_spec("Inner", R"({"1":{"type":"int32_t","name":"x"}})");
+
+    ASSERT_TRUE(run("Outer"));
+    const std::string& relay = output_str_map["relay"];
+    EXPECT_NE(relay.find("testspace::Inner make_expected_Inner()"), std::string::npos);
+    EXPECT_LT(relay.find("make_expected_Inner()"), relay.find("testspace::Middle make_expected_Middle()"));
+    EXPECT_NE(relay.find("check_member(\"mid.in.x\", got.Get_mid().Get_in().Get_x(), want.Get_mid().Get_in().Get_x());"), std::string::npos);
+    EXPECT_NE(relay.find("check_bytes(\"mid.s\", got.Get_mid().Get_s(), want.Get_mid().Get_s(), 4);"), std::string::npos);
+    EXPECT_NE(relay.find("3 members intact"), std::string::npos);
+}
+
+TEST_F(ProcessorNestedRelayTest, OnlyRelayNeedsNestedSpec)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"in"}})");
+    ASSERT_TRUE(run("Outer", false));
+    ASSERT_FALSE(run("Outer"));
+    ASSERT_NE(errorcode & SW_FILEREADERROR, 0u);
+}
+
+TEST_F(ProcessorNestedRelayTest, NestedSpecMustNameItsType)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"in"}})");
+    std::ofstream(dir / "Inner.json") << R"({"stringValues":{"classname":"Other"},"members":{"1":{"type":"int32_t","name":"x"}}})";
+    ASSERT_FALSE(run("Outer"));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+TEST_F(ProcessorNestedRelayTest, MessageCannotContainItself)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"in"}})");
+    write_spec("Inner", R"({"1":{"type":"Outer","name":"out"}})");
+    ASSERT_FALSE(run("Outer"));
+    ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }

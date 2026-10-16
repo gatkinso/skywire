@@ -34,6 +34,7 @@ public:
 protected:
     virtual bool do_test_implementation(int& errorcode);
     virtual bool do_sets(int& errorcode);
+    std::string set_line(const std::string& target, const member_desc_t& member);
     virtual bool do_expected_wire(int& errorcode);
 
     // Appends the wire bytes of the test value set for one member.

@@ -51,6 +51,9 @@ class CppRelayGenerator : public CppTestGenerator
 public:
     CppRelayGenerator(Specification& mspec, Specification& lspec) : CppTestGenerator(mspec, lspec) {}
     bool generate(int& errorcode) override;
+
+private:
+    void relay_sets(const members_t& members);
 };
 
 class GoRelayGenerator : public GoTestGenerator

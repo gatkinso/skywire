@@ -49,8 +49,14 @@ bool Proto3TestGenerator::do_test_implementation(int& errorcode)
     // The expected bytes are computed here, not by protoc, so the test catches
     // a .proto whose types don't encode the way the C++ PZ stream does.
     std::vector<uint8_t> wire;
+    // A nested message has no test value: it stays all zero, which protobuf
+    // leaves out, so it appears in neither the bytes nor the textproto.
     for (auto& member : ordered_members_)
     {
+        if (is_user_type(std::get<member_type>(member.second)))
+        {
+            continue;
+        }
         if (false == test_values::encode_pb(std::get<member_type>(member.second), member.first,
                                             std::get<member_length>(member.second), wire))
         {
@@ -71,6 +77,10 @@ bool Proto3TestGenerator::do_test_implementation(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
+        if (is_user_type(std::get<member_type>(member.second)))
+        {
+            continue;
+        }
         ss_ << std::get<member_name>(member.second) << ": "
             << test_values::textproto_value(std::get<member_type>(member.second), std::get<member_length>(member.second))
             << "\n";

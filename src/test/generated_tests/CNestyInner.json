@@ -1,0 +1,12 @@
+{
+   "stringValues": {
+      "classname": "CNestyInner",
+      "namespace": "testspace"
+   },
+   "members": {
+      "1": { "type": "int16_t",  "name": "a_myint16_1" },
+      "2": { "type": "uint32_t", "name": "b_myuint32_2", "endian": 1 },
+      "3": { "type": "double",   "name": "c_mydouble3", "endian": 1 },
+      "4": { "type": "string",   "name": "d_mystring4", "length": 8 }
+   }
+}
