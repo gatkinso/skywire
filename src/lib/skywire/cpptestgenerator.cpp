@@ -48,6 +48,10 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_equality(errorcode);
     test_short_buffer(errorcode);
     test_wire(errorcode);
+    test_pz_round_trip(errorcode);
+    test_pz_wire(errorcode);
+    test_pz_empty(errorcode);
+    test_pz_short_buffer(errorcode);
 
     header_string.append(ss_.str());
 
@@ -257,6 +261,128 @@ bool CppTestGenerator::test_wire(int& errorcode)
     ss_ << "    ASSERT_TRUE(in.serialize(stream));\n";
     ss_ << "    ASSERT_EQ(sizeof(want), stream.byte_size());\n";
     ss_ << "    ASSERT_EQ(0, std::memcmp(stream.data(), want, sizeof(want)));\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// The PZ (protobuf) tests: the same message through a PZ-mode stream.
+bool CppTestGenerator::test_pz_round_trip(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    ss_ << "TEST(" << testname << ", PZRoundTrip)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " in, out;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);\n";
+    ss_ << "    ASSERT_TRUE(in.serialize(stream));\n";
+    ss_ << "    ASSERT_TRUE(out.deserialize(stream));\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "    ASSERT_EQ(0u, stream.byte_size());\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// Compares the protobuf bytes with the ones computed by wiregen, which the
+// proto3 test (Proto3Wire) also checks protoc produces for the generated .proto.
+bool CppTestGenerator::test_pz_wire(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    std::vector<uint8_t> wire;
+    for (auto& member : ordered_members_)
+    {
+        if (!test_values::encode_pb(std::get<member_type>(member.second), member.first,
+                                    std::get<member_length>(member.second), wire))
+        {
+            return true;
+        }
+    }
+
+    ss_ << "TEST(" << testname << ", PZWire)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " in;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    static const uint8_t want[] = {";
+    for (size_t i = 0; i < wire.size(); i++)
+    {
+        ss_ << ((i % 8 == 0) ? "\n        " : " ");
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", wire[i]);
+        ss_ << hex;
+    }
+    ss_ << "\n    };\n\n";
+    ss_ << "    skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);\n";
+    ss_ << "    ASSERT_TRUE(in.serialize(stream));\n";
+    ss_ << "    ASSERT_EQ(sizeof(want), stream.byte_size());\n";
+    ss_ << "    ASSERT_EQ(0, std::memcmp(stream.data(), want, sizeof(want)));\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// proto3 leaves out zero fields, so an empty message is a valid encoding of
+// the all-zero message.
+bool CppTestGenerator::test_pz_empty(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    ss_ << "TEST(" << testname << ", PZEmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " zero, in, out;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);\n";
+    ss_ << "    ASSERT_TRUE(zero.serialize(stream));\n";
+    ss_ << "    ASSERT_EQ(0u, stream.byte_size());\n\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_TRUE(out.deserialize(stream));\n";
+    ss_ << "    ASSERT_EQ(zero, out);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// A message cut one byte short is malformed: deserialize must fail, consume
+// nothing, and leave the destination untouched.
+bool CppTestGenerator::test_pz_short_buffer(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+    std::string testname = classname + "Test";
+
+    ss_ << "TEST(" << testname << ", PZShortBuffer)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " in;\n";
+
+    do_sets(errorcode);
+
+    ss_ << "\n";
+    ss_ << "    skyloupe::Stream full(512, 512, skyloupe::Stream::PZ);\n";
+    ss_ << "    ASSERT_TRUE(in.serialize(full));\n";
+    ss_ << "    ASSERT_LT(0u, full.byte_size());\n\n";
+    ss_ << "    skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);\n";
+    ss_ << "    stream.pz_buffer() = full.pz_buffer().substr(0, full.byte_size() - 1);\n\n";
+    ss_ << "    " << namespac << "::" << classname << " out;\n";
+    ss_ << "    ASSERT_FALSE(out.deserialize(stream));\n";
+    ss_ << "    ASSERT_EQ(out, " << namespac << "::" << classname << "());\n";
+    ss_ << "    ASSERT_EQ(stream.byte_size(), full.byte_size() - 1);\n";
     ss_ << "}\n\n";
 
     return true;

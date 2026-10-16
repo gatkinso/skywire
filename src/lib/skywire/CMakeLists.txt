@@ -36,6 +36,7 @@ set(_GENERATORS
              javagenerator.cpp
              javatestgenerator.cpp
              proto3generator.cpp
+             proto3testgenerator.cpp
              py3generator.cpp
              py3testgenerator.cpp
              crelaygenerator.cpp
@@ -56,6 +57,7 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/javagenerator.h
              ${TARGET_INC_DIR}/javatestgenerator.h
              ${TARGET_INC_DIR}/proto3generator.h
+             ${TARGET_INC_DIR}/proto3testgenerator.h
              ${TARGET_INC_DIR}/py3generator.h
              ${TARGET_INC_DIR}/py3testgenerator.h
              ${TARGET_INC_DIR}/relaygenerators.h

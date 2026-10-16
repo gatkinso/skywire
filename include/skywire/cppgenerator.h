@@ -47,11 +47,18 @@ protected:
     virtual bool hdr_set_functions(int& errorcode);
     virtual bool hdr_serialize(int& errorcode);
     virtual bool hdr_deserialize(int& errorcode);
+    virtual bool hdr_serialize_pb(int& errorcode);
+    virtual bool hdr_deserialize_pb(int& errorcode);
     virtual bool hdr_size(int& errorcode);
     virtual bool hdr_equals(int& errorcode);
     virtual bool hdr_members(int& errorcode);
     virtual bool hdr_classend(int& errorcode);
     virtual bool hdr_namespaceend(int& errorcode);
+
+    // Writes a multi-line template, indenting every line.
+    void gen_lines(std::string text, unsigned int indents);
+    bool gen_pb_unsupported();
+    std::string pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member);
 };
 
 }

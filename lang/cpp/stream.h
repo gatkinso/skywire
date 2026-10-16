@@ -763,6 +763,56 @@ protected:
     protozero::pbf_reader reader_{buffer_};
 };
 
+// Helpers for the protobuf (PZ) encoding of generated messages.
+
+// proto3 leaves out fields holding their zero value. Floating point values
+// compare by bits, so -0.0 is still sent.
+template <typename T>
+inline bool pb_nonzero(T value) { return value != 0; }
+
+inline bool pb_nonzero(float value)
+{
+    uint32_t bits;
+    std::memcpy(&bits, &value, sizeof(bits));
+    return bits != 0;
+}
+
+inline bool pb_nonzero(double value)
+{
+    uint64_t bits;
+    std::memcpy(&bits, &value, sizeof(bits));
+    return bits != 0;
+}
+
+// A fixed-length string travels as bytes without its trailing NULs, so a
+// protobuf peer sees "abc", not "abc\0\0\0".
+inline size_t pb_bytes_length(const char* data, size_t len)
+{
+    while (len > 0 && data[len - 1] == '\0')
+    {
+        len--;
+    }
+    return len;
+}
+
+// Reads a bytes field into a fixed-length string, zero-padding a shorter
+// value. A longer one does not fit and fails.
+inline bool pb_read_bytes(protozero::pbf_reader& reader, char* data, size_t len)
+{
+    protozero::data_view view = reader.get_view();
+    if (view.size() > len)
+    {
+        return false;
+    }
+
+    std::memset(data, 0, len);
+    if (view.size() > 0)
+    {
+        std::memcpy(data, view.data(), view.size());
+    }
+    return true;
+}
+
 class Stream {
 public:
     typedef enum mode { SW, PZ } modetype;
@@ -1011,6 +1061,16 @@ public:
         if (mode_ == PZ) {
             pzstream_.prepare();
         }
+    }
+
+    modetype mode() const {
+        return mode_;
+    }
+
+    // The protobuf bytes of a PZ-mode stream. Generated messages encode into
+    // and decode from it directly, using their member tags as field numbers.
+    std::string& pz_buffer() {
+        return buffer_;
     }
 
 private:

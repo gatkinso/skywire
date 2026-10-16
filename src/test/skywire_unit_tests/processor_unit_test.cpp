@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <fstream>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -670,4 +671,21 @@ TEST_F(ProcessorDefaultsTest, LibraryPassesNamespace)
     ASSERT_TRUE(skyloupe::process_string(spec(), output_str_map, lang(), "c++", outputdir, errorcode,
                                          generate_tests, write_to_file, generate_relay, "other"));
     ASSERT_NE(output_str_map["header"].find("namespace other {"), std::string::npos);
+}
+
+// proto3 output: the .proto, plus the text-format test message with --generate_tests.
+TEST_F(ProcessorUnitTest, Proto3WithTests)
+{
+    std::ifstream lang_file(std::string(SKYWIRE_LANG_DIR) + "/proto/lang.proto3.json");
+    std::stringstream lang;
+    lang << lang_file.rdbuf();
+
+    const std::string msg = R"({"stringValues":{"classname":"TestClass","namespace":"testspace"},)"
+                            R"("members":{"1":{"type":"int32_t","name":"a"},"2":{"type":"string","name":"s","length":4}}})";
+
+    Processor p;
+    ASSERT_TRUE(p.process_string(msg, lang.str(), output_str_map, outputdir, errorcode, true, false));
+    ASSERT_EQ(output_str_map.size(), 2u);
+    ASSERT_NE(output_str_map["implementation"].find("message TestClass {"), std::string::npos);
+    ASSERT_NE(output_str_map["unittest"].find("# expected: "), std::string::npos);
 }
