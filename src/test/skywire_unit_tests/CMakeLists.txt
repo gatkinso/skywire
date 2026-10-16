@@ -39,9 +39,11 @@ set(UNIT_TESTS
                 filewriter_unit_test.cpp
                 generator_unit_test.cpp
                 processor_unit_test.cpp
+                proto3generator_unit_test.cpp
                 specification_unit_test.cpp
                 stream_unit_test.cpp
-                pz_stream_unit_test.cpp)
+                pz_stream_unit_test.cpp
+                test_values_unit_test.cpp)
 
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
@@ -53,6 +55,9 @@ if(MSVC)
 endif(MSVC)
 
 target_link_libraries(${TARGETNAME} skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
+
+# Generator tests read the shipped lang files.
+target_compile_definitions(${TARGETNAME} PRIVATE SKYWIRE_LANG_DIR="${PROJECT_SOURCE_DIR}/lang")
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_unit_test:)
 

@@ -16,7 +16,6 @@
 #pragma once
 
 #include <string>
-#include <functional>
 #include "generator.h"
 
 namespace skyloupe 
@@ -31,20 +30,20 @@ public:
     bool generate(int& errorcode) override;
 
  protected:
-    virtual bool do_header(int& errorcode);
     virtual bool do_implementation(int& errorcode);
 
-    virtual bool imp_b0(int& errorcode);
-    virtual bool imp_b1(int& errorcode);
-    virtual bool imp_b2(int& errorcode);
-    virtual bool imp_b3(int& errorcode);
-    virtual bool imp_b4(int& errorcode);
-    virtual bool imp_b5(int& errorcode);
+    virtual bool imp_banner(int& errorcode);
+    virtual bool imp_syntax(int& errorcode);
+    virtual bool imp_package(int& errorcode);
+    virtual bool imp_message(int& errorcode);
+
+    std::string proto_type(const std::string& type);
+    std::string skywire_comment(const member_desc_t& member);
 
 private:
     std::string classname_;
 
-    bool do_block(const std::string block_id, std::function<std::string()> builder);
+    std::string subst(std::string template_str, uint32_t tag, const member_desc_t& member);
 };
 
 }

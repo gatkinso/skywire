@@ -26,6 +26,10 @@ public:
     virtual ~Streamable() = default;
     virtual bool serialize(skyloupe::Stream& str, Endianness endian = Big) const = 0;
     virtual bool deserialize(skyloupe::Stream& str, Endianness endian = Big) = 0;
+
+    // The protobuf (PZ) encoding: each member is the field numbered by its tag.
+    virtual bool serialize_pb(protozero::pbf_writer& pbf) const = 0;
+    virtual bool deserialize_pb(protozero::pbf_reader pbf) = 0;
 };
 
 }

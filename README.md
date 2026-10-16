@@ -332,10 +332,47 @@ Note the the runtime is located in <topsrc>/lang/cpp.  (This is where the skylou
 stuff is defined.)
 
 Each member's key (`"100"`, `"200"` above) is its tag. Members are serialized in
-numeric tag order, and the proto3 generator uses the tags as protobuf field
-numbers, so a tag must be a valid field number: from 1 to 536870911, and not
-19000–19999, which protobuf reserves. wiregen rejects any other tag as an
-invalid specification.
+numeric tag order, and the tags are also protobuf field numbers (below), so a
+tag must be a valid field number: from 1 to 536870911, and not 19000–19999,
+which protobuf reserves. wiregen rejects any other tag as an invalid
+specification.
+
+#### Protobuf (PZ) mode
+
+A generated C++ message can also travel as protobuf, so it can talk directly to
+an existing protobuf service. Pick the stream when you make it:
+
+```
+skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);   // protobuf
+skyloupe::Stream stream;                                     // skywire (SW)
+```
+
+In PZ mode each member is the protobuf field numbered by its tag, and
+`wiregen --language proto3` writes the matching `.proto`:
+
+| Spec type | proto3 type | Notes |
+|-----------|-------------|-------|
+| `char`, `int8_t`, `int16_t`, `int32_t` | `int32` | |
+| `unsigned char`, `uint8_t`, `uint16_t`, `uint32_t` | `uint32` | |
+| `int64_t` / `uint64_t` | `int64` / `uint64` | |
+| `float` / `double` | `float` / `double` | |
+| `string` (`char[N]`) | `bytes` | sent without trailing NULs |
+
+The encoding is canonical proto3, byte for byte what protoc produces: zero
+values and empty strings are left out (`-0.0` is still sent). Decoding takes
+fields in any order, treats missing ones as zero, lets a repeated field's last
+value win, and skips unknown fields and fields with an unexpected wire type.
+A wider value than the member holds is narrowed (as protobuf C++ narrows
+int32 to a smaller C type); a bytes value longer than the string member fails,
+a shorter one is zero-padded. On failure the message is left unchanged.
+Endianness has no effect in PZ mode; the `.proto` notes each member's C type,
+byte order and string length in a comment.
+
+The namespace becomes the protobuf package (`a::b` becomes `a.b`). Nested
+messages (members whose type is another message) are not supported in PZ mode
+or proto3 output yet: proto3 output rejects them, and a C++ message with one
+fails to serialize or deserialize in PZ mode (SW mode is unaffected). PZ mode is
+C++ only.
 
 To generate the message in C, run wiregen with `--language c` and this file:
 
@@ -390,7 +427,7 @@ message's `classname`:
 | c++      | `{classname}.h` |                     | `{classname}Test.cpp`   | `{classname}Relay.cpp` |
 | go       |                 | `{classname}.go`    | `{classname}_test.go`   | `{classname}Relay.go`  |
 | java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
-| proto3   |                 | `{classname}.proto` |                         |                        |
+| proto3   |                 | `{classname}.proto` | `{classname}Test.txtpb` |                        |
 | python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
@@ -405,7 +442,10 @@ relay: a small program that reads a serialized message from a file, checks
 every member against shared test values, and writes it back out. The
 cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
 every language. Naming a test or relay file in a specification does not by itself
-generate that file; only the flags do. proto3 has neither.
+generate that file; only the flags do. proto3 has no relay; its test file is a
+text-format message holding the shared test values, headed by the bytes protoc
+must encode it to (`src/test/generated_tests/proto3_roundtrip.cmake` checks
+this).
 
 The lang file also lists the includes (imports) its generated code always needs,
 such as the language's runtime. They come first in the generated file, followed
