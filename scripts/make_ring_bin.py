@@ -57,12 +57,17 @@ def load_spec(path):
     return json.loads(path.read_text())
 
 
-def encode(spec):
-    """Return (wire bytes, README table rows) for the members in tag order."""
+def encode(spec, spec_dir, prefix="", offset=0):
+    """Return (wire bytes, README table rows) for the members in tag order.
+
+    A member whose type is another message is that message's own encoding,
+    inline, read from <type>.json in spec_dir; its rows name the member by
+    its path (outer.inner).
+    """
     wire = b""
     rows = []
     for tag, member in sorted(spec["members"].items(), key=lambda item: int(item[0])):
-        name, mtype = member["name"], member["type"]
+        name, mtype = prefix + member["name"], member["type"]
         endian = member.get("endian", 0)
 
         if mtype == "string":
@@ -85,9 +90,16 @@ def encode(spec):
             shown = f"`{name}` {mtype} {value}" if struct.calcsize(code) == 1 else f"`{name}` {value}"
             hexed = f"`{data.hex(' ')}`"
         else:
-            sys.exit(f"member {tag} ({name}): type '{mtype}' has no test value; add it to TYPES in {Path(__file__).name}")
+            nested = spec_dir / f"{mtype}.json"
+            if not nested.exists():
+                sys.exit(f"member {tag} ({name}): type '{mtype}' is not a known type, and {nested} does not exist; "
+                         f"add the type to TYPES in {Path(__file__).name} or write its spec")
+            data, nested_rows = encode(load_spec(nested), spec_dir, name + ".", offset + len(wire))
+            rows += nested_rows
+            wire += data
+            continue
 
-        rows.append(f"| {len(wire)} | {shown} | {hexed} |")
+        rows.append(f"| {offset + len(wire)} | {shown} | {hexed} |")
         wire += data
     return wire, rows
 
@@ -102,7 +114,7 @@ def main():
                         help="only check that --out is up to date; exit 1 if it is not")
     args = parser.parse_args()
 
-    wire, rows = encode(load_spec(args.spec))
+    wire, rows = encode(load_spec(args.spec), args.spec.parent)
 
     print("| Offset | Member | Bytes |")
     print("|---:|---|---|")

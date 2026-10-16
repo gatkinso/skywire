@@ -16,9 +16,12 @@
 #pragma once
 
 #include <string>
+#include <functional>
 #include <map>
+#include <set>
 #include <sstream>
 #include <tuple>
+#include <vector>
 #include "errorcodes.h"
 #include "types.h"
 #include "specification/specification.h"
@@ -39,7 +42,15 @@ public:
     virtual bool generate(int& errorcode) = 0;
     virtual bool is_native_type(const std::string& type);
     virtual bool is_string_type(const std::string& type);
+    // A member type that is neither native nor a string names another
+    // generated message, in the same namespace.
+    bool is_user_type(const std::string& type);
     virtual results_t get_results() const { return results_; }  //copy???
+
+    // The specs of the nested message types this message uses (and those
+    // they use), by type name, for generators that look inside nested
+    // members: the relays.
+    void set_nested_specs(const std::map<std::string, Specification>& specs);
 
 protected:
     Specification msg_spec_;
@@ -57,8 +68,50 @@ protected:
     bool inorder_members(int& errorcode, unsigned int indents = 0);
     bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
     bool inorder_member_names(int& errorcode, unsigned int indents = 0);
+    // The distinct nested message types this message uses, sorted.
+    std::set<std::string> user_types();
+    // C and C++ includes: the given ones, then each nested type's generated
+    // header ("T.h") that isn't already among them.
+    std::vector<std::string> with_user_headers(std::vector<std::string> includes);
 
     std::set<std::string> native_types_;
+
+    typedef std::map<uint32_t, member_desc_t> members_t;
+    typedef std::function<void(const std::vector<std::string>& path, const member_desc_t& member)> leaf_visitor_t;
+
+    static members_t members_of(Specification& spec);
+
+    // Nested types' members, from set_nested_specs.
+    std::map<std::string, members_t> nested_members_;
+
+    // Visits every native and string member in wire order, descending into
+    // nested messages; path holds the member names from this message down
+    // to the visited one. Returns false, after naming it on stderr, if a
+    // nested type's spec is missing.
+    bool for_each_leaf(const leaf_visitor_t& visit);
+    bool for_each_leaf(const members_t& members, std::vector<std::string>& path, const leaf_visitor_t& visit);
+
+    // The nested types this message uses, directly or not, each after the
+    // types it contains.
+    std::vector<std::string> nested_types_in_order();
+
+    // A native or string member, reached through path (member names from
+    // this message down).
+    struct leaf_t
+    {
+        std::vector<std::string> path;
+        member_desc_t member;
+
+        // The path's names, each prefixed by before and followed by after,
+        // joined by between (e.g. "got" + ".Get_a()" + ".Get_b()").
+        std::string join(const std::string& between, const std::string& before = "", const std::string& after = "") const;
+        // The members containing this one, each as before + name + after.
+        std::string join_parents(const std::string& before, const std::string& after) const;
+    };
+
+    // Every member the relays check, nested ones included; each must have a
+    // shared test value. Returns false (setting errorcode) otherwise.
+    bool relay_leaves(std::vector<leaf_t>& leaves, int& errorcode);
 };
 
 }

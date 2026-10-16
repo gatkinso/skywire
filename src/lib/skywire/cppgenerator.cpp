@@ -101,7 +101,7 @@ bool CppGenerator::hdr_includes(int& errorcode)
         return false;
     }
 
-    for (auto& item : values)
+    for (auto& item : with_user_headers(values))
     {
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
@@ -432,43 +432,26 @@ std::string CppGenerator::pb_subst(std::string template_str, uint32_t tag, const
     return template_str;
 }
 
-// Nested (user-type) members have no protobuf encoding yet, so a message
-// with one fails in PZ mode; SW mode is unaffected. Returns false after
-// writing that failing body.
-bool CppGenerator::gen_pb_unsupported()
+// The lang key for a member's protobuf template: direction is "serialize" or "deserialize".
+std::string CppGenerator::pb_key(const std::string& direction, const std::string& type)
 {
-    for (auto& member : ordered_members_)
-    {
-        const std::string& type = std::get<member_type>(member.second);
-        if (false == is_string_type(type) && false == is_native_type(type))
-        {
-            insert_indents(3);
-            ss_ << "return false; // " << type << " " << std::get<member_name>(member.second)
-                << ": nested messages are not supported in PZ mode yet" << std::endl;
-            return false;
-        }
-    }
-
-    return true;
+    if (is_string_type(type))
+        return direction + "_pb_string_mem_str";
+    if (is_user_type(type))
+        return direction + "_pb_user_mem_str";
+    return direction + "_pb_native_mem_str";
 }
 
 // protobuf encoding: each member is the field numbered by its tag, and zero
-// values are left out, as proto3 does.
+// values are left out, as proto3 does. A nested message is an embedded
+// message, also left out when all its fields are zero.
 bool CppGenerator::hdr_serialize_pb(int& errorcode)
 {
     gen_one_line("serialize_pb_str", 2);
 
-    if (false == gen_pb_unsupported())
-    {
-        insert_indents(2);
-        gen_one_line("endfunction_str");
-        return true;
-    }
-
     for (auto& member : ordered_members_)
     {
-        const std::string key = is_string_type(std::get<member_type>(member.second))
-                                ? "serialize_pb_string_mem_str" : "serialize_pb_native_mem_str";
+        const std::string key = pb_key("serialize", std::get<member_type>(member.second));
         gen_lines(pb_subst(lang_spec_.get_value_string(key), member.first, member.second), 3);
     }
 
@@ -486,19 +469,11 @@ bool CppGenerator::hdr_deserialize_pb(int& errorcode)
 {
     gen_one_line("deserialize_pb_str", 2);
 
-    if (false == gen_pb_unsupported())
-    {
-        insert_indents(2);
-        gen_one_line("endfunction_str");
-        return true;
-    }
-
     gen_lines(lang_spec_.get_value_string("deserialize_pb_loop_begin_str"), 3);
 
     for (auto& member : ordered_members_)
     {
-        const std::string key = is_string_type(std::get<member_type>(member.second))
-                                ? "deserialize_pb_string_mem_str" : "deserialize_pb_native_mem_str";
+        const std::string key = pb_key("deserialize", std::get<member_type>(member.second));
         gen_lines(pb_subst(lang_spec_.get_value_string(key), member.first, member.second), 3);
     }
 
@@ -550,7 +525,7 @@ bool CppGenerator::hdr_size(int& errorcode)
         else
         {
             template_str = lang_spec_.get_value_string("size_user_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_type>(member.second));
+            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member.second));
         }
 
         insert_indents(4);

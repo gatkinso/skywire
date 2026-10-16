@@ -144,7 +144,7 @@ bool SwiftGenerator::imp_members(int& errorcode)
         }
         else
         {
-            template_str = lang_spec_.get_value_string("member_decl_str");
+            template_str = lang_spec_.get_value_string(is_user_type(std::get<member_type>(member.second)) ? "member_user_decl_str" : "member_decl_str");
             template_str = std::regex_replace(template_str, std::regex(type_substr), swift_type(std::get<member_type>(member.second)));
         }
 
@@ -192,8 +192,8 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
         }
         else
         {
+            // A nested message uses its own members' byte orders.
             template_str = lang_spec_.get_value_string("serialize_user_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), swift_endian(std::get<member_endianness>(member.second)));
         }
 
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
@@ -238,8 +238,8 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
         }
         else
         {
+            // A nested message uses its own members' byte orders.
             template_str = lang_spec_.get_value_string("deserialize_user_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), swift_endian(std::get<member_endianness>(member.second)));
         }
 
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
@@ -331,6 +331,10 @@ bool SwiftGenerator::imp_equals(int& errorcode)
         {
             member_tmpl = lang_spec_.get_value_string("equals_string_mem_str");
             member_tmpl = std::regex_replace(member_tmpl, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+        }
+        else if (is_user_type(std::get<member_type>(member.second)))
+        {
+            member_tmpl = lang_spec_.get_value_string("equals_user_mem_str");
         }
         else
         {

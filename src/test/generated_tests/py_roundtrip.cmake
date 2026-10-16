@@ -6,7 +6,9 @@
 #  generates the Python sources with wiregen, byte-compiles them, and runs the
 #  generated unittest module.
 #
-#  Required -D variables: WIREGEN, SPEC, LANGFILE, OUTDIR
+#  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
+#  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
+#  nested message types must be among them.
 #
 
 find_program(PYTHON3_EXECUTABLE NAMES python3 python)
@@ -24,18 +26,28 @@ endif()
 message("Using ${PYTHON3_EXECUTABLE}")
 
 file(MAKE_DIRECTORY ${OUTDIR})
-get_filename_component(classname ${SPEC} NAME_WE)
+string(REPLACE "," ";" SPECS "${SPECS}")
+
+foreach(spec ${SPECS})
+    execute_process(
+        COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
+                --lang_file ${LANGFILE} --generate_tests --write_to_file
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
+    endif()
+endforeach()
+
+set(modules "")
+set(sources "")
+foreach(spec ${SPECS})
+    get_filename_component(classname ${spec} NAME_WE)
+    list(APPEND modules ${classname}Test)
+    list(APPEND sources ${classname}.py ${classname}Test.py)
+endforeach()
 
 execute_process(
-    COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --lang_file ${LANGFILE} --generate_tests --write_to_file
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "wiregen failed (${rc})")
-endif()
-
-execute_process(
-    COMMAND ${PYTHON3_EXECUTABLE} -m py_compile ${classname}.py ${classname}Test.py
+    COMMAND ${PYTHON3_EXECUTABLE} -m py_compile ${sources}
     WORKING_DIRECTORY ${OUTDIR}
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)
@@ -43,7 +55,7 @@ if(NOT rc EQUAL 0)
 endif()
 
 execute_process(
-    COMMAND ${PYTHON3_EXECUTABLE} -m unittest -v ${classname}Test
+    COMMAND ${PYTHON3_EXECUTABLE} -m unittest -v ${modules}
     WORKING_DIRECTORY ${OUTDIR}
     RESULT_VARIABLE rc)
 if(NOT rc EQUAL 0)

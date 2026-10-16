@@ -35,6 +35,7 @@ public:
     virtual bool imp_banner(int& errorcode);
     virtual bool imp_syntax(int& errorcode);
     virtual bool imp_package(int& errorcode);
+    virtual bool imp_imports(int& errorcode);
     virtual bool imp_message(int& errorcode);
 
     std::string proto_type(const std::string& type);

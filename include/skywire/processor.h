@@ -16,6 +16,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <map>
 #include "specification/specification.h"
 #include "generators.h"
 #include "errorcodes.h"
@@ -44,6 +46,9 @@ private:
     std::string language_key_ = "language";
     std::string expected_language_;
     std::string namespace_;
+    // The message spec's directory, where a relay finds nested messages'
+    // specs ("<type>.json"); empty for process_string.
+    std::string spec_dir_;
 
     std::string swift_str_ = "swift";
     std::string c_str_ = "c";
@@ -57,6 +62,7 @@ private:
     virtual void resolve_output_filenames();
     virtual void resolve_includes();
     virtual bool validate_spec(int& errorcode);
+    bool load_nested_specs(Specification& spec, std::map<std::string, Specification>& specs, std::vector<std::string>& stack, int& errorcode);
     virtual bool write_results(const std::string& outputdir, const results_t& output_str_map, int& errorcode);
 };
 

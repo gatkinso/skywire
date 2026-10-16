@@ -103,20 +103,28 @@ bool Py3TestGenerator::do_sets(int& errorcode)
 {
     for (auto& member : ordered_members_)
     {
-        const std::string& type = std::get<member_type>(member.second);
-        const std::string& name = std::get<member_name>(member.second);
-
-        if (is_string_type(type))
-        {
-            ss_ << "    msg.Set_" << name << "(b\"" << test_values::string_value() << "\")\n";
-        }
-        else if (test_values::literal(type))
-        {
-            ss_ << "    msg.Set_" << name << "(" << test_values::literal(type) << ")\n";
-        }
+        ss_ << set_line("msg", member.second);
     }
 
     return true;
+}
+
+// The statement that sets one member of target to its shared test value, or
+// nothing for a member with no test value (a nested message).
+std::string Py3TestGenerator::set_line(const std::string& target, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const std::string& name = std::get<member_name>(member);
+
+    if (is_string_type(type))
+    {
+        return "    " + target + ".Set_" + name + "(b\"" + test_values::string_value() + "\")\n";
+    }
+    if (test_values::literal(type))
+    {
+        return "    " + target + ".Set_" + name + "(" + test_values::literal(type) + ")\n";
+    }
+    return "";
 }
 
 // The expected bytes come from the generator, not from the generated Python,

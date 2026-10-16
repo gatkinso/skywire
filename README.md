@@ -337,6 +337,30 @@ tag must be a valid field number: from 1 to 536870911, and not 19000–19999,
 which protobuf reserves. wiregen rejects any other tag as an invalid
 specification.
 
+#### Nested messages
+
+A member's type can be another generated message: any type that is not a
+native type or `string` names a message, by its class name, in the same
+namespace (package, module).
+
+```
+"members": {
+   "1": { "type": "uint8_t", "name": "count" },
+   "2": { "type": "Inner",   "name": "inner" }
+}
+```
+
+Generate `Inner` from its own specification, into the same place. The generated
+code imports it where the language needs that: `#include "Inner.h"` in C and
+C++, `from Inner import Inner` in Python, `import "Inner.proto";` in proto3;
+Go, Java and Swift need nothing. The specification does not need to list it in
+`includes`.
+
+On the wire a nested message is its own serialization, inline, in tag order
+like any member. Its members keep their own byte orders, so the nested member's
+`endian` has no effect. Its size is the nested message's size, and if it fails
+to deserialize, so does the message containing it.
+
 #### Protobuf (PZ) mode
 
 A generated C++ message can also travel as protobuf, so it can talk directly to
@@ -368,11 +392,11 @@ a shorter one is zero-padded. On failure the message is left unchanged.
 Endianness has no effect in PZ mode; the `.proto` notes each member's C type,
 byte order and string length in a comment.
 
-The namespace becomes the protobuf package (`a::b` becomes `a.b`). Nested
-messages (members whose type is another message) are not supported in PZ mode
-or proto3 output yet: proto3 output rejects them, and a C++ message with one
-fails to serialize or deserialize in PZ mode (SW mode is unaffected). PZ mode is
-C++ only.
+The namespace becomes the protobuf package (`a::b` becomes `a.b`). A nested
+message (below) is an embedded message field of its own message type, imported
+from its own generated `.proto`; like any zero field, it is left out when all
+its members are zero, and a repeated one merges into the earlier one. PZ mode
+is C++ only.
 
 To generate the message in C, run wiregen with `--language c` and this file:
 
@@ -439,7 +463,10 @@ their files.
 
 `--generate_tests` writes the unit test file, and `--generate_relay` writes the
 relay: a small program that reads a serialized message from a file, checks
-every member against shared test values, and writes it back out. The
+every member against shared test values, and writes it back out. It checks the
+members inside nested messages too, so wiregen reads each nested type's
+specification from `<type>.json` in the same directory as the specification
+it is given (`--generate_relay` fails if one is missing). The
 cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
 every language. Naming a test or relay file in a specification does not by itself
 generate that file; only the flags do. proto3 has no relay; its test file is a
@@ -450,8 +477,8 @@ this).
 The lang file also lists the includes (imports) its generated code always needs,
 such as the language's runtime. They come first in the generated file, followed
 by any `includes` in the specification that are not already listed. A
-specification needs `includes` only for something of its own, such as the header
-of another message it contains.
+specification needs `includes` only for something of its own; a nested
+message's header or module is imported without it (see Nested messages).
 
 | Language | Lang file `includes` |
 |----------|----------------------|

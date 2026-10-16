@@ -6,7 +6,9 @@
 #  test's SKIP_REGULAR_EXPRESSION; otherwise it generates the Go sources with
 #  wiregen, checks they are gofmt-clean, and runs `go vet` and `go test`.
 #
-#  Required -D variables: WIREGEN, SPEC, LANGFILE, OUTDIR
+#  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
+#  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
+#  nested message types must be among them.
 #
 
 find_program(GO_EXECUTABLE go)
@@ -30,15 +32,18 @@ endif()
 message("Using ${GO_EXECUTABLE} (${go_version})")
 
 file(MAKE_DIRECTORY ${OUTDIR})
+string(REPLACE "," ";" SPECS "${SPECS}")
 file(WRITE ${OUTDIR}/go.mod "module wiregen/generated\n\ngo 1.21\n")
 
-execute_process(
-    COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --lang_file ${LANGFILE} --generate_tests --write_to_file
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "wiregen failed (${rc})")
-endif()
+foreach(spec ${SPECS})
+    execute_process(
+        COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
+                --lang_file ${LANGFILE} --generate_tests --write_to_file
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
+    endif()
+endforeach()
 
 get_filename_component(go_bindir ${GO_EXECUTABLE} DIRECTORY)
 find_program(GOFMT_EXECUTABLE gofmt HINTS ${go_bindir})

@@ -140,6 +140,8 @@ bool CTestGenerator::test_size(int& errorcode)
     {
         if (is_string_type(std::get<member_type>(member.second)))
             ss_ << std::get<member_length>(member.second);
+        else if (is_user_type(std::get<member_type>(member.second)))
+            ss_ << std::get<member_type>(member.second) << "_Size()";
         else
             ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
         if (i++ < ordered_members_.size() - 1)
@@ -180,6 +182,8 @@ bool CTestGenerator::do_sets(int& errorcode)
         else if (std::get<member_type>(member.second) == "float")         ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASEFLOAT << "f;\n";
         else if (std::get<member_type>(member.second) == "double")        ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASEDOUBLE << ";\n";
         else if (std::get<member_type>(member.second) == "string")        ss_ << "strncpy(out[i]." << std::get<member_name>(member.second) << ", \"skywire\", " << std::get<member_length>(member.second) << ");\n";
+        // A nested message has no test value; zero it, so it compares equal after the round trip.
+        else if (is_user_type(std::get<member_type>(member.second)))     ss_ << "memset(&out[i]." << std::get<member_name>(member.second) << ", 0, sizeof(out[i]." << std::get<member_name>(member.second) << "));\n";
     }
 
     insert_indents(2);

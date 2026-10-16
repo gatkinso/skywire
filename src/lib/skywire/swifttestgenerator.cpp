@@ -120,20 +120,28 @@ bool SwiftTestGenerator::do_sets(int& errorcode)
 {
     for (auto& member : ordered_members_)
     {
-        const std::string& type = std::get<member_type>(member.second);
-        const std::string& name = std::get<member_name>(member.second);
-
-        if (is_string_type(type))
-        {
-            ss_ << "        input.Set_" << name << "(Array(\"" << test_values::string_value() << "\".utf8))\n";
-        }
-        else if (test_values::literal(type))
-        {
-            ss_ << "        input.Set_" << name << "(" << test_values::literal(type) << ")\n";
-        }
+        ss_ << set_line("input", member.second);
     }
 
     return true;
+}
+
+// The statement that sets one member of target to its shared test value, or
+// nothing for a member with no test value (a nested message).
+std::string SwiftTestGenerator::set_line(const std::string& target, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const std::string& name = std::get<member_name>(member);
+
+    if (is_string_type(type))
+    {
+        return "        " + target + ".Set_" + name + "(Array(\"" + test_values::string_value() + "\".utf8))\n";
+    }
+    if (test_values::literal(type))
+    {
+        return "        " + target + ".Set_" + name + "(" + test_values::literal(type) + ")\n";
+    }
+    return "";
 }
 
 }

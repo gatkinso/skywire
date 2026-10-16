@@ -48,12 +48,15 @@ and fewer than two languages reports the test as Skipped.
 ## The message
 
 `RingyMcRingface.json` is the one spec for every language. It names no files
-and no includes: those come from each language's lang file. The Go relay is a
+and no includes: those come from each language's lang file. Its `inner` member
+is a nested message, `RingyInner.json`, generated alongside it in every
+language; the relays check `inner`'s members by path (`inner.u16_le`), and the
+table shows them inline, where they sit on the wire. The Go relay is a
 command, so the driver generates Go with `--namespace main`. Tags are declared out of order
 and differ in digit count, so wire order must follow the numeric tag.
 Native endianness is left out because it is host-dependent.
 
-`RingyMcRingface.bin` (110 bytes) is written by
+`RingyMcRingface.bin` (130 bytes) is written by
 [`scripts/make_ring_bin.py`](../../../../scripts/README.md), using Python's
 `struct` and independently of every generator. The script prints this table:
 
@@ -67,21 +70,26 @@ Native endianness is left out because it is host-dependent.
 | 6 | `u16_le` 60000 | `60 ea` |
 | 8 | `i16_be` -12345 | `cf c7` |
 | 10 | `i16_le` -12345 | `c7 cf` |
-| 12 | `u32_be` 3000000000 | `b2 d0 5e 00` |
-| 16 | `u32_le` 3000000000 | `00 5e d0 b2` |
-| 20 | `i32_be` -2000000000 | `88 ca 6c 00` |
-| 24 | `i32_le` -2000000000 | `00 6c ca 88` |
-| 28 | `u64_be` 12000000000 | `00 00 00 02 cb 41 78 00` |
-| 36 | `u64_le` 12000000000 | `00 78 41 cb 02 00 00 00` |
-| 44 | `i64_be` -9000000000 | `ff ff ff fd e7 8e e6 00` |
-| 52 | `i64_le` -9000000000 | `00 e6 8e e7 fd ff ff ff` |
-| 60 | `f32_be` 3.5 | `40 60 00 00` |
-| 64 | `f32_le` 3.5 | `00 00 60 40` |
-| 68 | `f64_be` 3.14159 | `40 09 21 f9 f0 1b 86 6e` |
-| 76 | `f64_le` 3.14159 | `6e 86 1b f0 f9 21 09 40` |
-| 84 | `str_padded` [16] "skywire" | `73 6b 79 77 69 72 65` + 9 × `00` |
-| 100 | `str_exact` [7] "skywire" | `73 6b 79 77 69 72 65` (no terminator) |
-| 107 | `str_truncated` [3] "sky" | `73 6b 79` |
+| 12 | `inner.u16_le` 60000 | `60 ea` |
+| 14 | `inner.i32_be` -2000000000 | `88 ca 6c 00` |
+| 18 | `inner.f64_le` 3.14159 | `6e 86 1b f0 f9 21 09 40` |
+| 26 | `inner.text` [5] "skywi" | `73 6b 79 77 69` |
+| 31 | `inner.i8` int8_t -50 | `ce` |
+| 32 | `u32_be` 3000000000 | `b2 d0 5e 00` |
+| 36 | `u32_le` 3000000000 | `00 5e d0 b2` |
+| 40 | `i32_be` -2000000000 | `88 ca 6c 00` |
+| 44 | `i32_le` -2000000000 | `00 6c ca 88` |
+| 48 | `u64_be` 12000000000 | `00 00 00 02 cb 41 78 00` |
+| 56 | `u64_le` 12000000000 | `00 78 41 cb 02 00 00 00` |
+| 64 | `i64_be` -9000000000 | `ff ff ff fd e7 8e e6 00` |
+| 72 | `i64_le` -9000000000 | `00 e6 8e e7 fd ff ff ff` |
+| 80 | `f32_be` 3.5 | `40 60 00 00` |
+| 84 | `f32_le` 3.5 | `00 00 60 40` |
+| 88 | `f64_be` 3.14159 | `40 09 21 f9 f0 1b 86 6e` |
+| 96 | `f64_le` 3.14159 | `6e 86 1b f0 f9 21 09 40` |
+| 104 | `str_padded` [16] "skywire" | `73 6b 79 77 69 72 65` + 9 × `00` |
+| 120 | `str_exact` [7] "skywire" | `73 6b 79 77 69 72 65` (no terminator) |
+| 127 | `str_truncated` [3] "sky" | `73 6b 79` |
 
 ## Changing the message
 
