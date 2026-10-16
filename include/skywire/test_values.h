@@ -40,6 +40,17 @@ const char* string_value();
 // for types with no test value (user-defined types).
 bool encode(const std::string& type, unsigned int endian, unsigned int length, std::vector<uint8_t>& out);
 
+// Appends the canonical proto3 encoding of the test value for one member,
+// using tag as the field number: integers as varints (signed ones
+// sign-extended to 64 bits), float/double as fixed32/fixed64, strings as bytes
+// with trailing NULs trimmed. Zero values and empty strings are omitted, as
+// proto3 does. Returns false for types with no test value (user-defined types).
+bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::vector<uint8_t>& out);
+
+// The test value for one member in protobuf text format: a numeric literal,
+// or a quoted, escaped string. Empty for types with no test value.
+std::string textproto_value(const std::string& type, unsigned int length);
+
 }
 
 }

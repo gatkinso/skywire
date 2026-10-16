@@ -21,6 +21,7 @@ set(WG_C_FILES
 
 set(WG_CPP_FILES
     ClassyMcClassface
+    ProtoMcProtoface
 )
 
 set(WG_C_RUMTIME
@@ -40,7 +41,7 @@ include_directories(
                 ${WG_CPP_DIR}
                 ${PROTOZERO_INC_DIR})
 
-set(UNIT_TESTS c_cpp.cpp)
+set(UNIT_TESTS c_cpp.cpp pz_cpp.cpp)
 
 # Generate C 
 foreach(WG_C ${WG_C_FILES})
@@ -176,6 +177,18 @@ add_test(NAME skywire_generated_tests:JavaRoundTrip
 
 set_tests_properties(skywire_generated_tests:JavaRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "JAVA_TOOLCHAIN_NOT_FOUND")
+
+# proto3 wire-format test: protoc (always built with skywire) must accept the
+# generated .proto and encode the generated test message to the bytes wiregen
+# expects, the same bytes the C++ PZ stream writes (see proto3_roundtrip.cmake).
+add_test(NAME skywire_generated_tests:Proto3Wire
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DPROTOC=$<TARGET_FILE:protobuf::protoc>
+            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/ProtoMcProtoface.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/proto/lang.proto3.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_proto3_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/proto3_roundtrip.cmake)
 
 # Cross-language serial test: one message relayed through every language in a
 # random order (see ring/README.md).

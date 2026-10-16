@@ -24,6 +24,7 @@ const unsigned int SW_BLANKINPUTSTRING          = 0x00000005;
 const unsigned int SW_STRINGREADERROR           = 0x00000006;
 const unsigned int SW_FILEWRITEERROR            = 0x00000007;
 const unsigned int SW_SPEC_INVALID              = 0x04000000;
+const unsigned int SW_LANG_UNSUPPORTED_TYPE     = 0x08000000;
 
 const unsigned int SW_LANG_C                    = 0x01000000;
 const unsigned int SW_LANG_CPP                  = 0x02000000;

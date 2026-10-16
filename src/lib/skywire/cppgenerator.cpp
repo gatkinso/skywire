@@ -27,6 +27,7 @@ bool CppGenerator::generate(int& errorcode)
 
     results_.clear();
 
+
     if (false == do_header(errorcode))
     {
         errorcode |= SW_FILE_HEADER;
@@ -58,6 +59,8 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_des(errorcode);
     hdr_serialize(errorcode);
     hdr_deserialize(errorcode);
+    hdr_serialize_pb(errorcode);
+    hdr_deserialize_pb(errorcode);
     hdr_size(errorcode);
     hdr_equals(errorcode);
     hdr_get_functions(errorcode);
@@ -267,6 +270,8 @@ bool CppGenerator::hdr_serialize(int& errorcode)
         return false;
     }
 
+    gen_lines(lang_spec_.get_value_string("serialize_pz_branch_str"), 3);
+
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");
@@ -329,6 +334,10 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         return false;
     }
 
+    std::string pz_branch = lang_spec_.get_value_string("deserialize_pz_branch_str");
+    pz_branch = std::regex_replace(pz_branch, std::regex(lang_spec_.get_value_string("classname_substr")), msg_spec_.get_value_string("classname"));
+    gen_lines(pz_branch, 3);
+
     // Reject a short stream before touching any field, like the Go, Java and Python generators.
     gen_one_line("deserialize_size_check_str", 3);
 
@@ -377,6 +386,123 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
         ss_ << template_str << std::endl;
     }
 
+    insert_indents(3);
+    ss_ << "return true;" << std::endl;
+    insert_indents(2);
+    gen_one_line("endfunction_str");
+
+    return true;
+}
+
+void CppGenerator::gen_lines(std::string text, unsigned int indents)
+{
+    size_t start = 0;
+    while (start < text.size())
+    {
+        size_t end = text.find('\n', start);
+        if (end == std::string::npos)
+        {
+            end = text.size();
+        }
+        insert_indents(indents);
+        ss_ << text.substr(start, end - start) << std::endl;
+        start = end + 1;
+    }
+}
+
+std::string CppGenerator::pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const std::string pb_type = lang_spec_.get_value_string("pb_" + type);
+
+    // protobuf wire types: float and double are fixed-width, the integers varints.
+    std::string wire_type = "varint";
+    if (pb_type == "float")
+        wire_type = "fixed32";
+    else if (pb_type == "double")
+        wire_type = "fixed64";
+
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("tag_substr")), std::to_string(tag));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("pbtype_substr")), pb_type);
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("wiretype_substr")), wire_type);
+
+    return template_str;
+}
+
+// Nested (user-type) members have no protobuf encoding yet, so a message
+// with one fails in PZ mode; SW mode is unaffected. Returns false after
+// writing that failing body.
+bool CppGenerator::gen_pb_unsupported()
+{
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        if (false == is_string_type(type) && false == is_native_type(type))
+        {
+            insert_indents(3);
+            ss_ << "return false; // " << type << " " << std::get<member_name>(member.second)
+                << ": nested messages are not supported in PZ mode yet" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// protobuf encoding: each member is the field numbered by its tag, and zero
+// values are left out, as proto3 does.
+bool CppGenerator::hdr_serialize_pb(int& errorcode)
+{
+    gen_one_line("serialize_pb_str", 2);
+
+    if (false == gen_pb_unsupported())
+    {
+        insert_indents(2);
+        gen_one_line("endfunction_str");
+        return true;
+    }
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string key = is_string_type(std::get<member_type>(member.second))
+                                ? "serialize_pb_string_mem_str" : "serialize_pb_native_mem_str";
+        gen_lines(pb_subst(lang_spec_.get_value_string(key), member.first, member.second), 3);
+    }
+
+    insert_indents(3);
+    ss_ << "return true;" << std::endl;
+    insert_indents(2);
+    gen_one_line("endfunction_str");
+
+    return true;
+}
+
+// protobuf decoding: fields may come in any order or not at all; unknown
+// fields, and known ones with an unexpected wire type, are skipped.
+bool CppGenerator::hdr_deserialize_pb(int& errorcode)
+{
+    gen_one_line("deserialize_pb_str", 2);
+
+    if (false == gen_pb_unsupported())
+    {
+        insert_indents(2);
+        gen_one_line("endfunction_str");
+        return true;
+    }
+
+    gen_lines(lang_spec_.get_value_string("deserialize_pb_loop_begin_str"), 3);
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string key = is_string_type(std::get<member_type>(member.second))
+                                ? "deserialize_pb_string_mem_str" : "deserialize_pb_native_mem_str";
+        gen_lines(pb_subst(lang_spec_.get_value_string(key), member.first, member.second), 3);
+    }
+
+    gen_lines(lang_spec_.get_value_string("deserialize_pb_loop_end_str"), 3);
     insert_indents(3);
     ss_ << "return true;" << std::endl;
     insert_indents(2);

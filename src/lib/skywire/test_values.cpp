@@ -14,6 +14,7 @@
 //
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <map>
 #include "test_values.h"
@@ -60,6 +61,33 @@ const std::map<std::string, TestValue>& values()
         { "double",        { "3.14159",     bits_of<double, uint64_t>(3.14159),          8 } },
     };
     return table;
+}
+
+bool is_signed(const std::string& type)
+{
+    return type == "char" || type == "int8_t" || type == "int16_t" || type == "int32_t" || type == "int64_t";
+}
+
+// The test value for a string member: string_value() cut to the member length.
+std::string string_test_value(unsigned int length)
+{
+    const std::string value = string_value();
+    return value.substr(0, std::min<size_t>(length, value.size()));
+}
+
+void append_varint(uint64_t value, std::vector<uint8_t>& out)
+{
+    while (value >= 0x80)
+    {
+        out.push_back(static_cast<uint8_t>(value | 0x80));
+        value >>= 7;
+    }
+    out.push_back(static_cast<uint8_t>(value));
+}
+
+void append_key(uint32_t tag, unsigned int wire_type, std::vector<uint8_t>& out)
+{
+    append_varint((static_cast<uint64_t>(tag) << 3) | wire_type, out);
 }
 
 bool host_is_little_endian()
@@ -112,6 +140,87 @@ bool encode(const std::string& type, unsigned int endian, unsigned int length, s
     }
 
     return true;
+}
+
+bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::vector<uint8_t>& out)
+{
+    const unsigned int varint_type = 0, fixed64_type = 1, bytes_type = 2, fixed32_type = 5;
+
+    if (type == "string")
+    {
+        std::string value = string_test_value(length);
+        value.erase(value.find_last_not_of('\0') + 1);
+        if (false == value.empty())
+        {
+            append_key(tag, bytes_type, out);
+            append_varint(value.size(), out);
+            out.insert(out.end(), value.begin(), value.end());
+        }
+        return true;
+    }
+
+    auto it = values().find(type);
+    if (it == values().end())
+    {
+        return false;
+    }
+
+    uint64_t bits = it->second.bits;
+    const unsigned int width = it->second.width;
+    if (bits == 0)
+    {
+        return true;
+    }
+
+    if (type == "float" || type == "double")
+    {
+        append_key(tag, width == 4 ? fixed32_type : fixed64_type, out);
+        for (unsigned int i = 0; i < width; i++)
+        {
+            out.push_back(static_cast<uint8_t>(bits >> (8 * i)));
+        }
+        return true;
+    }
+
+    if (is_signed(type) && width < 8 && (bits >> (8 * width - 1)) != 0)
+    {
+        bits |= ~uint64_t(0) << (8 * width);
+    }
+
+    append_key(tag, varint_type, out);
+    append_varint(bits, out);
+    return true;
+}
+
+std::string textproto_value(const std::string& type, unsigned int length)
+{
+    if (type != "string")
+    {
+        const char* value = literal(type);
+        return value ? value : "";
+    }
+
+    std::string quoted = "\"";
+    for (unsigned char c : string_test_value(length))
+    {
+        if (c == '"' || c == '\\')
+        {
+            quoted += '\\';
+            quoted += static_cast<char>(c);
+        }
+        else if (c < 0x20 || c > 0x7e)
+        {
+            char octal[8];
+            std::snprintf(octal, sizeof(octal), "\\%03o", c);
+            quoted += octal;
+        }
+        else
+        {
+            quoted += static_cast<char>(c);
+        }
+    }
+    quoted += "\"";
+    return quoted;
 }
 
 }

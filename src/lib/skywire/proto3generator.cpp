@@ -13,13 +13,54 @@
 //   permissions and limitations under the License.
 //
 
+#include <iostream>
 #include <regex>
-#include <map>
 #include <string>
 #include "proto3generator.h"
+#include "sw_endian.h"
 
 namespace skyloupe
 {
+
+std::string Proto3Generator::proto_type(const std::string& type)
+{
+    return lang_spec_.get_value_string(type);
+}
+
+// The skywire-only facts about a member (its C type, byte order, string
+// length) don't exist in protobuf, so they ride along as a comment.
+std::string Proto3Generator::skywire_comment(const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+
+    if (is_string_type(type))
+    {
+        return "char[" + std::to_string(std::get<member_length>(member)) + "]";
+    }
+
+    if (type == "char" || type == "unsigned char" || type == "uint8_t" || type == "int8_t")
+    {
+        return type;
+    }
+
+    std::string endian_key = "native_endian_str";
+    if (std::get<member_endianness>(member) == SW_BIG_ENDIAN_FLAG)
+        endian_key = "big_endian_str";
+    else if (std::get<member_endianness>(member) == SW_LITTLE_ENDIAN_FLAG)
+        endian_key = "little_endian_str";
+
+    return type + ", " + lang_spec_.get_value_string(endian_key);
+}
+
+std::string Proto3Generator::subst(std::string template_str, uint32_t tag, const member_desc_t& member)
+{
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), proto_type(std::get<member_type>(member)));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("tag_substr")), std::to_string(tag));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("comment_substr")), skywire_comment(member));
+
+    return template_str;
+}
 
 bool Proto3Generator::generate(int& errorcode)
 {
@@ -29,10 +70,22 @@ bool Proto3Generator::generate(int& errorcode)
 
     classname_ = msg_spec_.get_value_string("classname", "@NOTFOUND");
 
-    if (false == do_header(errorcode))
+    if (msg_spec_.get_proto().members_size() == 0)
     {
-        errorcode |= SW_FILE_HEADER;
+        errorcode |= SW_LANG_NOMEMBERS;
         return false;
+    }
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        if (false == is_native_type(type))
+        {
+            errorcode |= SW_LANG_UNSUPPORTED_TYPE;
+            std::cerr << "member " << member.first << ": type '" << type
+                      << "' is a nested message, which proto3 output does not support yet" << std::endl;
+            return false;
+        }
     }
 
     ss_.str("");
@@ -46,106 +99,77 @@ bool Proto3Generator::generate(int& errorcode)
     return true;
 }
 
-bool Proto3Generator::do_header(int& errorcode)
-{
-    return true;
-}
-
 bool Proto3Generator::do_implementation(int& errorcode)
 {
     std::string& imp_string = results_["implementation"];
-    imp_b0(errorcode);
-    imp_b1(errorcode);
-    imp_b2(errorcode);
-    imp_b3(errorcode);
-    imp_b4(errorcode);
-    imp_b5(errorcode);
-    imp_string.append(ss_.str());
+
+    imp_banner(errorcode);
+    imp_syntax(errorcode);
+    imp_package(errorcode);
+    imp_message(errorcode);
+
+    std::string body = ss_.str();
+    body.erase(body.find_last_not_of('\n') + 1);
+    body += '\n';
+
+    imp_string.append(body);
 
     return true;
 }
 
-bool Proto3Generator::imp_b0(int& errorcode)
+bool Proto3Generator::imp_banner(int& errorcode)
 {
-    bool success =  gen_one_line("banner_str");
+    bool success = gen_one_line("banner_str");
 
-    ss_ << msg_spec_.get_value_string("block_separator_str", "\n");
+    ss_ << lang_spec_.get_value_string("block_separator_str");
 
     return success;
 }
 
-bool Proto3Generator::imp_b1(int& errorcode)
+bool Proto3Generator::imp_syntax(int& errorcode)
 {
-    bool success =  gen_one_line("syntax_str");
+    bool success = gen_one_line("syntax_str");
 
-    ss_ << msg_spec_.get_value_string("block_separator_str", "\n");
+    ss_ << lang_spec_.get_value_string("block_separator_str");
 
     return success;
 }
 
-bool Proto3Generator::imp_b2(int& errorcode)
+// The namespace is optional; a C++-style one (a::b) becomes a protobuf
+// package (a.b).
+bool Proto3Generator::imp_package(int& errorcode)
 {
-    bool success = gen_one_line_subst("namespace_str", "namespace", "namespace_substr", 0);
-
-    if (false == success)
+    std::string name_space = msg_spec_.get_value_string("namespace", "");
+    if (name_space.empty())
     {
-        errorcode |= SW_LANG_C_STRUCTNAME;
-        return success;
+        return true;
     }
 
-    ss_ << msg_spec_.get_value_string("block_separator_str", "\n");
+    name_space = std::regex_replace(name_space, std::regex("::"), ".");
 
-    return success;
+    std::string package_str = lang_spec_.get_value_string("package_str");
+    ss_ << std::regex_replace(package_str, std::regex(lang_spec_.get_value_string("namespace_substr")), name_space);
+    ss_ << lang_spec_.get_value_string("block_separator_str");
+
+    return true;
 }
 
-bool Proto3Generator::imp_b3(int& errorcode)
+// Member tags are the protobuf field numbers (validate_spec keeps them legal).
+bool Proto3Generator::imp_message(int& errorcode)
 {
-    return true; //option
-}
+    std::string body;
+    for (auto& member : ordered_members_)
+    {
+        body += subst(lang_spec_.get_value_string("member_decl_str"), member.first, member.second);
+    }
 
-bool Proto3Generator::imp_b4(int& errorcode)
-{
-   return true;  //imports
-}
-
-bool Proto3Generator::imp_b5(int& errorcode)
-{
-    return do_block("message_block", [this]()->std::string {
-        std::string member_substr = lang_spec_.get_value_string("member_substr");
-        std::string type_substr = lang_spec_.get_value_string("type_substr");
-        std::string index_substr = lang_spec_.get_value_string("index_substr");
-
-        std::string body;
-        for (auto& member : ordered_members_)
-        {
-            std::string template_str;
-            template_str = lang_spec_.get_value_string("member_decl_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(type_substr), lang_spec_.get_value_string(std::get<member_type>(member.second)));
-            template_str = std::regex_replace(template_str, std::regex(index_substr), std::to_string(member.first));
-
-            body += template_str;
-        }
-
-        return body;
-    });
-}
-
-bool Proto3Generator::do_block(const std::string block_id, std::function<std::string()> builder)
-{
-    bool success = true;
-    std::string block_str = lang_spec_.get_value_string(block_id);
-    std::string structname_substr = lang_spec_.get_value_string("structname_substr");
-    std::string body_token_str = lang_spec_.get_value_string("body_token");
-
-    std::string new_body_str = builder();
-
-    block_str = std::regex_replace(block_str, std::regex(structname_substr), classname_);
-    block_str = std::regex_replace(block_str, std::regex(body_token_str), new_body_str);
+    std::string block_str = lang_spec_.get_value_string("message_block");
+    block_str = std::regex_replace(block_str, std::regex(lang_spec_.get_value_string("structname_substr")), classname_);
+    block_str = std::regex_replace(block_str, std::regex(lang_spec_.get_value_string("body_token")), body);
 
     ss_ << block_str;
 
-    return success;
+    return true;
 }
 
 }

@@ -23,6 +23,7 @@
 #include "javagenerator.h"
 #include "javatestgenerator.h"
 #include "proto3generator.h"
+#include "proto3testgenerator.h"
 #include "py3generator.h"
 #include "py3testgenerator.h"
 #include "relaygenerators.h"
