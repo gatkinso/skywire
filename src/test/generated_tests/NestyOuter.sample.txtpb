@@ -1,0 +1,25 @@
+# Three levels of nesting with values set at each: NestyOuter holds a
+# NestyMcNestface, which holds two NestyInner; NestyOuter also holds a
+# NestyInner directly. Also checked byte for byte against the C++ PZ stream
+# in nested_cpp.cpp.
+# expected: 08e0d403124308c801121e08fdffffffffffffffff0110f0a20419000000000000e03f22046e65737418ffffffffffffffffff018280010a220865696768746368728d80010000c03f1a0808072204646565702100000000000002c0
+a_myuint16_1: 60000
+b_middle2 {
+  a_myuint8_1: 200
+  b_first2 {
+    a_myint16_1: -3
+    b_myuint32_2: 70000
+    c_mydouble3: 0.5
+    d_mystring4: "nest"
+  }
+  c_myint64_3: -1
+  d_second2048 {
+    d_mystring4: "eightchr"
+  }
+  e_myfloat2049: 1.5
+}
+c_inner3 {
+  a_myint16_1: 7
+  d_mystring4: "deep"
+}
+d_mydouble4: -2.25

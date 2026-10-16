@@ -17,11 +17,17 @@ set(TARGETNAME generated_tests)
 
 set(WG_C_FILES
     StructyMcStructface
+    CNestyInner
+    CNestyMcNestface
+    CNestyOuter
 )
 
 set(WG_CPP_FILES
     ClassyMcClassface
     ProtoMcProtoface
+    NestyInner
+    NestyMcNestface
+    NestyOuter
 )
 
 set(WG_C_RUMTIME
@@ -41,7 +47,7 @@ include_directories(
                 ${WG_CPP_DIR}
                 ${PROTOZERO_INC_DIR})
 
-set(UNIT_TESTS c_cpp.cpp pz_cpp.cpp)
+set(UNIT_TESTS c_cpp.cpp pz_cpp.cpp nested_cpp.cpp)
 
 # Generate C 
 foreach(WG_C ${WG_C_FILES})
@@ -117,6 +123,11 @@ if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
 endif(MSVC)
 
+# nested_cpp.cpp checks the C++ PZ bytes against the sample Proto3Wire gives protoc.
+target_compile_definitions(${TARGETNAME} PRIVATE
+    NESTY_SAMPLE="${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.sample.txtpb"
+    NESTY_OUTER_SAMPLE="${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.sample.txtpb")
+
 target_link_libraries(${TARGETNAME} skywire GTest::GTest GTest::Main ${PLATFORM_LINK_LIBS})
 
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
@@ -128,7 +139,7 @@ add_dependencies(${TARGETNAME} specification skywire wiregen)
 add_test(NAME skywire_generated_tests:SwiftRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
             -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_swift_wiregen
@@ -143,7 +154,7 @@ set_tests_properties(skywire_generated_tests:SwiftRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:GoRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/GopherMcGoface.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/GopherMcGoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/go/lang.go.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_go_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/go_roundtrip.cmake)
@@ -156,7 +167,7 @@ set_tests_properties(skywire_generated_tests:GoRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:PythonRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/SnakeyMcSnakeface.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SnakeyMcSnakeface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/python/lang.python3.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_python_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/py_roundtrip.cmake)
@@ -170,7 +181,7 @@ set_tests_properties(skywire_generated_tests:PythonRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:JavaRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/CoffeeMcCofface.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/CoffeeMcCofface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/java/lang.java.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_java_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/java_roundtrip.cmake)
@@ -185,7 +196,8 @@ add_test(NAME skywire_generated_tests:Proto3Wire
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DPROTOC=$<TARGET_FILE:protobuf::protoc>
-            -DSPEC=${CMAKE_CURRENT_SOURCE_DIR}/ProtoMcProtoface.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/ProtoMcProtoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSAMPLES=${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.sample.txtpb,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.sample.txtpb
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/proto/lang.proto3.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_proto3_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/proto3_roundtrip.cmake)

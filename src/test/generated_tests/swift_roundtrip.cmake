@@ -5,7 +5,11 @@
 #  skip marker matched by the test's SKIP_REGULAR_EXPRESSION; otherwise it
 #  generates the Swift sources with wiregen, compiles them and runs the result.
 #
-#  Required -D variables: WIREGEN, SPEC, LANGFILE, RUNTIME, OUTDIR
+#  Required -D variables: WIREGEN, SPECS, LANGFILE, RUNTIME, OUTDIR
+#  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
+#  nested message types must be among them.
+#  Each test has its own @main, so each is built separately, with every
+#  message source.
 #  Optional -D variables: EXE_SUFFIX
 #
 
@@ -19,27 +23,36 @@ endif()
 message("Using swiftc: ${SWIFTC_EXECUTABLE}")
 
 file(MAKE_DIRECTORY ${OUTDIR})
-get_filename_component(classname ${SPEC} NAME_WE)
-set(impl ${OUTDIR}/${classname}.swift)
-set(test ${OUTDIR}/${classname}_test.swift)
-set(bin  ${OUTDIR}/swifty_test${EXE_SUFFIX})
+string(REPLACE "," ";" SPECS "${SPECS}")
 
-execute_process(
-    COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --lang_file ${LANGFILE} --generate_tests --write_to_file
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "wiregen failed (${rc})")
-endif()
+set(classnames "")
+set(impls "")
+foreach(spec ${SPECS})
+    get_filename_component(classname ${spec} NAME_WE)
+    list(APPEND classnames ${classname})
+    list(APPEND impls ${OUTDIR}/${classname}.swift)
 
-execute_process(
-    COMMAND ${SWIFTC_EXECUTABLE} -o ${bin} ${RUNTIME} ${impl} ${test}
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "swiftc failed (${rc})")
-endif()
+    execute_process(
+        COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
+                --lang_file ${LANGFILE} --generate_tests --write_to_file
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
+    endif()
+endforeach()
 
-execute_process(COMMAND ${bin} RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "Swift round-trip failed (${rc})")
-endif()
+foreach(classname ${classnames})
+    set(bin ${OUTDIR}/${classname}_test${EXE_SUFFIX})
+
+    execute_process(
+        COMMAND ${SWIFTC_EXECUTABLE} -o ${bin} ${RUNTIME} ${impls} ${OUTDIR}/${classname}_test.swift
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "swiftc failed on ${classname} (${rc})")
+    endif()
+
+    execute_process(COMMAND ${bin} RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "Swift round-trip ${classname} failed (${rc})")
+    endif()
+endforeach()

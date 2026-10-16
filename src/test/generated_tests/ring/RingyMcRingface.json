@@ -15,6 +15,7 @@
       "110":  { "type": "int16_t",       "name": "i16_be", "endian": 0 },
       "111":  { "type": "int16_t",       "name": "i16_le", "endian": 1 },
       "1000": { "type": "string",        "name": "str_padded", "length": 16 },
+      "150":  { "type": "RingyInner",    "name": "inner" },
       "200":  { "type": "uint32_t",      "name": "u32_be", "endian": 0 },
       "201":  { "type": "uint32_t",      "name": "u32_le", "endian": 1 },
       "210":  { "type": "int32_t",       "name": "i32_be", "endian": 0 },

@@ -7,7 +7,9 @@
 #  wiregen, compiles them with all lint warnings as errors, and runs the
 #  generated test class.
 #
-#  Required -D variables: WIREGEN, SPEC, LANGFILE, OUTDIR
+#  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
+#  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
+#  nested message types must be among them.
 #
 
 find_program(JAVAC_EXECUTABLE javac)
@@ -27,23 +29,28 @@ endif()
 
 message("Using ${JAVAC_EXECUTABLE} (${javac_version})")
 
-# The package comes from the spec; the test class is named by the lang
-# file's test file pattern, {classname}Test.java.
-file(READ ${SPEC} spec_json)
-string(JSON package GET "${spec_json}" stringValues namespace)
-string(JSON classname GET "${spec_json}" stringValues classname)
-set(test_class ${classname}Test)
+string(REPLACE "," ";" SPECS "${SPECS}")
 
 file(REMOVE_RECURSE ${OUTDIR})
 file(MAKE_DIRECTORY ${OUTDIR}/classes)
 
-execute_process(
-    COMMAND ${WIREGEN} --input_file ${SPEC} --outdir ${OUTDIR}
-            --lang_file ${LANGFILE} --generate_tests --write_to_file
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "wiregen failed (${rc})")
-endif()
+# The package comes from each spec; the test class is named by the lang
+# file's test file pattern, {classname}Test.java.
+set(test_classes "")
+foreach(spec ${SPECS})
+    file(READ ${spec} spec_json)
+    string(JSON package GET "${spec_json}" stringValues namespace)
+    string(JSON classname GET "${spec_json}" stringValues classname)
+    list(APPEND test_classes ${package}.${classname}Test)
+
+    execute_process(
+        COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
+                --lang_file ${LANGFILE} --generate_tests --write_to_file
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
+    endif()
+endforeach()
 
 file(GLOB java_files RELATIVE ${OUTDIR} ${OUTDIR}/*.java)
 
@@ -55,10 +62,12 @@ if(NOT rc EQUAL 0)
     message(FATAL_ERROR "javac failed (${rc})")
 endif()
 
-execute_process(
-    COMMAND ${JAVA_EXECUTABLE} -cp classes ${package}.${test_class}
-    WORKING_DIRECTORY ${OUTDIR}
-    RESULT_VARIABLE rc)
-if(NOT rc EQUAL 0)
-    message(FATAL_ERROR "Java round-trip failed (${rc})")
-endif()
+foreach(test_class ${test_classes})
+    execute_process(
+        COMMAND ${JAVA_EXECUTABLE} -cp classes ${test_class}
+        WORKING_DIRECTORY ${OUTDIR}
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        message(FATAL_ERROR "Java round-trip ${test_class} failed (${rc})")
+    endif()
+endforeach()

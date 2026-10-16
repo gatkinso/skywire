@@ -21,6 +21,8 @@ set(RING_DIR ${PROJECT_BINARY_DIR}/ring)
 # One spec serves every language: file names and runtime includes come from
 # each lang file.
 set(RING_SPEC ${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.json)
+# The message the ring message contains; its relay reads this spec too.
+set(RING_INNER_SPEC ${CMAKE_CURRENT_SOURCE_DIR}/RingyInner.json)
 
 # The C and C++ relays build with the project; the other languages are
 # generated and compiled by ring_serial.cmake when the test runs.
@@ -28,18 +30,29 @@ foreach(lang c cpp)
     if(lang STREQUAL "c")
         set(langfile ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json)
         set(outputs ${RING_DIR}/c/RingyMcRingface.h ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c)
-        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyMcRingfaceRelay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(inner_outputs ${RING_DIR}/c/RingyInner.h ${RING_DIR}/c/RingyInner.c)
+        set(sources ${RING_DIR}/c/RingyMcRingface.c ${RING_DIR}/c/RingyInner.c ${RING_DIR}/c/RingyMcRingfaceRelay.c ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     else()
         set(langfile ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json)
         set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp)
+        set(inner_outputs ${RING_DIR}/cpp/RingyInner.h)
         # stream.h swaps float/double bytes with sw_swap32/64 from cstream.c.
-        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${RING_DIR}/cpp/RingyInner.h ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
     endif()
 
     file(MAKE_DIRECTORY ${RING_DIR}/${lang})
     add_custom_command(
+        OUTPUT  ${inner_outputs}
+        DEPENDS ${RING_INNER_SPEC} ${langfile} wiregen
+        COMMAND $<TARGET_FILE:wiregen>
+        ARGS    --input_file ${RING_INNER_SPEC}
+                --outdir ${RING_DIR}/${lang}
+                --language ${lang}
+                --write_to_file)
+
+    add_custom_command(
         OUTPUT  ${outputs}
-        DEPENDS ${RING_SPEC} ${langfile} wiregen
+        DEPENDS ${RING_SPEC} ${RING_INNER_SPEC} ${langfile} wiregen
         COMMAND $<TARGET_FILE:wiregen>
         ARGS    --input_file ${RING_SPEC}
                 --outdir ${RING_DIR}/${lang}
@@ -61,6 +74,7 @@ add_test(NAME skywire_ring:Serial
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/RingyMcRingface.bin
             -DSPEC=${RING_SPEC}
+            -DINNER_SPEC=${RING_INNER_SPEC}
             -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
             -DWORKDIR=${RING_DIR}/run
             -DC_RELAY=$<TARGET_FILE:ring_relay_c>

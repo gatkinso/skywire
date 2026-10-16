@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <filesystem>
 #include <algorithm>
 #include <regex>
 #include <set>
@@ -101,6 +102,8 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
         return success;
     }
 
+    spec_dir_.clear();
+
     if (false == msg_spec_.read_string(input_msg_str))
     {
         errorcode |= SW_STRINGREADERROR;
@@ -142,6 +145,12 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
         errorcode |= SW_BLANKINPUTFILENAME;
         std::cerr << "Blank input file name" << std::endl;
         return success;
+    }
+
+    spec_dir_ = std::filesystem::path(msgpathname).parent_path().string();
+    if (spec_dir_.empty())
+    {
+        spec_dir_ = ".";
     }
 
     if (false == msg_spec_.read_file(msgpathname))
@@ -318,6 +327,18 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         return success;
     }
 
+    // A relay checks the values inside nested messages, so it needs their specs.
+    if (relay_genny)
+    {
+        std::map<std::string, Specification> nested_specs;
+        std::vector<std::string> stack = { msg_spec_.get_value_string("classname") };
+        if (false == load_nested_specs(msg_spec_, nested_specs, stack, errorcode))
+        {
+            return success;
+        }
+        relay_genny->set_nested_specs(nested_specs);
+    }
+
     success = genny->generate(errorcode);
     if (true == success && true == generate_tests && test_genny)
     {
@@ -400,6 +421,63 @@ void Processor::resolve_includes()
     {
         includes.Add()->assign(include);
     }
+}
+
+// Reads the spec of every nested message type that spec uses, recursively,
+// from spec_dir_/<type>.json. stack holds the messages being loaded, to
+// reject a message that contains itself.
+bool Processor::load_nested_specs(Specification& spec, std::map<std::string, Specification>& specs, std::vector<std::string>& stack, int& errorcode)
+{
+    std::set<std::string> native_types(lang_spec_.get_proto().native_types().begin(), lang_spec_.get_proto().native_types().end());
+
+    for (const auto& member : spec.get_proto().members())
+    {
+        const std::string& type = member.second.type();
+        if (type == "string" || native_types.count(type) != 0)
+        {
+            continue;
+        }
+
+        if (std::find(stack.begin(), stack.end(), type) != stack.end())
+        {
+            errorcode |= SW_SPEC_INVALID;
+            std::cerr << "nested type '" << type << "' contains itself" << std::endl;
+            return false;
+        }
+
+        if (specs.count(type) != 0)
+        {
+            continue;
+        }
+
+        const std::string pathname = (std::filesystem::path(spec_dir_) / (type + ".json")).string();
+        Specification nested;
+        if (spec_dir_.empty() || false == nested.read_file(pathname))
+        {
+            errorcode |= SW_FILEREADERROR;
+            std::cerr << "nested type '" << type << "': cannot read its specification "
+                      << (spec_dir_.empty() ? type + ".json (no spec directory)" : pathname) << std::endl;
+            return false;
+        }
+
+        if (nested.get_value_string("classname") != type)
+        {
+            errorcode |= SW_SPEC_INVALID;
+            std::cerr << pathname << ": classname is not '" << type << "'" << std::endl;
+            return false;
+        }
+
+        specs[type] = nested;
+        stack.push_back(type);
+        bool ok = load_nested_specs(specs[type], specs, stack, errorcode);
+        stack.pop_back();
+        if (false == ok)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool Processor::validate_spec(int& errorcode)

@@ -45,9 +45,12 @@
         "set_assignment_str":"structure->__MEMBERNAME__ = *value",
         "write_native_template_str":"cstream_write(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
         "read_native_template_str":"cstream_read(str, &structure->__MEMBERNAME__, sizeof(structure->__MEMBERNAME__), __ENDIAN__);",
+        "write_user_template_str":"if (0 != __TYPE___Serialize(&structure->__MEMBERNAME__, str)) return -1;",
+        "read_user_template_str":"if (0 != __TYPE___Deserialize(&structure->__MEMBERNAME__, str)) return -1;",
         "deserialize_size_check_str":"if (cstream_available(str) < __CLASSNAME___Size()) return -1;\n",
 
         "equal_check_template_str":"left->__MEMBERNAME__ == right->__MEMBERNAME__ ",
+        "equal_check_user_template_str":"__TYPE___Equals(&left->__MEMBERNAME__, &right->__MEMBERNAME__) == 1 ",
         "length_substr":"__LENGTH__",
         "member_string_decl_str":"char __MEMBERNAME__[__LENGTH__];",
         "equal_check_string_template_str":"memcmp(left->__MEMBERNAME__, right->__MEMBERNAME__, __LENGTH__) == 0 ",

@@ -22,8 +22,14 @@
 namespace skyloupe
 {
 
+// A nested message's protobuf type is its own message name.
 std::string Proto3Generator::proto_type(const std::string& type)
 {
+    if (is_user_type(type))
+    {
+        return type;
+    }
+
     return lang_spec_.get_value_string(type);
 }
 
@@ -32,6 +38,11 @@ std::string Proto3Generator::proto_type(const std::string& type)
 std::string Proto3Generator::skywire_comment(const member_desc_t& member)
 {
     const std::string& type = std::get<member_type>(member);
+
+    if (is_user_type(type))
+    {
+        return lang_spec_.get_value_string("nested_str");
+    }
 
     if (is_string_type(type))
     {
@@ -76,18 +87,6 @@ bool Proto3Generator::generate(int& errorcode)
         return false;
     }
 
-    for (auto& member : ordered_members_)
-    {
-        const std::string& type = std::get<member_type>(member.second);
-        if (false == is_native_type(type))
-        {
-            errorcode |= SW_LANG_UNSUPPORTED_TYPE;
-            std::cerr << "member " << member.first << ": type '" << type
-                      << "' is a nested message, which proto3 output does not support yet" << std::endl;
-            return false;
-        }
-    }
-
     ss_.str("");
 
     if (false == do_implementation(errorcode))
@@ -106,6 +105,7 @@ bool Proto3Generator::do_implementation(int& errorcode)
     imp_banner(errorcode);
     imp_syntax(errorcode);
     imp_package(errorcode);
+    imp_imports(errorcode);
     imp_message(errorcode);
 
     std::string body = ss_.str();
@@ -149,6 +149,25 @@ bool Proto3Generator::imp_package(int& errorcode)
 
     std::string package_str = lang_spec_.get_value_string("package_str");
     ss_ << std::regex_replace(package_str, std::regex(lang_spec_.get_value_string("namespace_substr")), name_space);
+    ss_ << lang_spec_.get_value_string("block_separator_str");
+
+    return true;
+}
+
+// Each nested message type comes from its own generated .proto, in the same package.
+bool Proto3Generator::imp_imports(int& errorcode)
+{
+    const std::set<std::string> types = user_types();
+    if (types.empty())
+    {
+        return true;
+    }
+
+    for (auto& type : types)
+    {
+        std::string import_str = lang_spec_.get_value_string("import_str");
+        ss_ << std::regex_replace(import_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
+    }
     ss_ << lang_spec_.get_value_string("block_separator_str");
 
     return true;

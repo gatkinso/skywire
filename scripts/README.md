@@ -22,7 +22,8 @@ python3 scripts/make_ring_bin.py --check    # exit 1 if the file is out of date
 ```
 
 It reads the members from the spec, in numeric tag order, with each member's
-byte order and string length. It prints a Markdown table of offsets and bytes
+byte order and string length. A member whose type is another message is that
+message's own encoding, inline, read from `<type>.json` beside the spec. It prints a Markdown table of offsets and bytes
 in the same format as the table in the ring README, so you can paste it in.
 
 Options:
@@ -34,7 +35,7 @@ Options:
 | `--check` | Compare with `--out` instead of writing it. |
 
 The script exits with an error if a member's type has no entry in its `TYPES`
-table, or if a member uses `endian: 2` (native), which has no fixed wire bytes.
+table and no spec of its own, or if a member uses `endian: 2` (native), which has no fixed wire bytes.
 
 ### Adding a member or a type
 

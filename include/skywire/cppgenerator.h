@@ -57,7 +57,7 @@ protected:
 
     // Writes a multi-line template, indenting every line.
     void gen_lines(std::string text, unsigned int indents);
-    bool gen_pb_unsupported();
+    std::string pb_key(const std::string& direction, const std::string& type);
     std::string pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member);
 };
 

@@ -146,8 +146,7 @@ bool Py3Generator::imp_banner(int& errorcode)
     return gen_one_line("banner_str");
 }
 
-// struct is always needed; the spec may list more modules (e.g. ones that
-// define user-defined member types).
+// struct is always needed; the spec may list more modules.
 bool Py3Generator::imp_includes(int& errorcode)
 {
     std::set<std::string> modules = { "struct" };
@@ -167,6 +166,15 @@ bool Py3Generator::imp_includes(int& errorcode)
     for (auto& module : modules)
     {
         ss_ << std::regex_replace(include_str, std::regex(include_substr), module);
+    }
+
+    // Each nested message type comes from its own generated module.
+    const std::string user_import_str = lang_spec_.get_value_string("user_import_str");
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+
+    for (auto& type : user_types())
+    {
+        ss_ << std::regex_replace(user_import_str, std::regex(type_substr), type);
     }
 
     return true;

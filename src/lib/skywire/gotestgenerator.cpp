@@ -110,20 +110,28 @@ bool GoTestGenerator::do_sets(int& errorcode)
 {
     for (auto& member : ordered_members_)
     {
-        const std::string& type = std::get<member_type>(member.second);
-        const std::string& name = std::get<member_name>(member.second);
-
-        if (is_string_type(type))
-        {
-            ss_ << "\ts.Set_" << name << "([]byte(\"" << test_values::string_value() << "\"))\n";
-        }
-        else if (test_values::literal(type))
-        {
-            ss_ << "\ts.Set_" << name << "(" << test_values::literal(type) << ")\n";
-        }
+        ss_ << set_line("s", member.second);
     }
 
     return true;
+}
+
+// The statement that sets one member of target to its shared test value, or
+// nothing for a member with no test value (a nested message).
+std::string GoTestGenerator::set_line(const std::string& target, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const std::string& name = std::get<member_name>(member);
+
+    if (is_string_type(type))
+    {
+        return "\t" + target + ".Set_" + name + "([]byte(\"" + test_values::string_value() + "\"))\n";
+    }
+    if (test_values::literal(type))
+    {
+        return "\t" + target + ".Set_" + name + "(" + test_values::literal(type) + ")\n";
+    }
+    return "";
 }
 
 // The expected bytes are computed by the generator, not by the generated Go
