@@ -32,6 +32,7 @@ if(UNIX)
 endif(UNIX)
 
 set(UNIT_TESTS
+                bitfields_unit_test.cpp
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 cstream_unit_test.cpp

@@ -337,6 +337,60 @@ tag must be a valid field number: from 1 to 536870911, and not 19000–19999,
 which protobuf reserves. wiregen rejects any other tag as an invalid
 specification.
 
+#### Bitfield members
+
+An integer member with `bits` takes only that many bits on the wire, packed
+with its neighbours into a storage unit:
+
+```
+"stringValues": { "classname": "Header", "bitorder": "lsb" },
+"members": {
+   "1": { "type": "uint8_t",  "name": "version", "bits": 4 },
+   "2": { "type": "uint8_t",  "name": "flags",   "bits": 4 },
+   "3": { "type": "uint16_t", "name": "id",      "bits": 12, "endian": 0 },
+   "4": { "type": "int16_t",  "name": "delta",   "bits": 4,  "endian": 0 }
+}
+```
+
+- `bits` is allowed on `uint8_t` … `int64_t` only, from 1 to the type's width.
+- Walking the members in tag order, a bitfield joins the open unit if it has
+  the unit's type and `endian` and fits in the bits left. Otherwise it starts
+  a new unit; fields never straddle units. Any other member closes the unit.
+  Above, `version` and `flags` fill one byte. `id` starts a big-endian
+  `uint16_t`, and `delta`, a different type, starts another.
+- A unit goes on the wire as one integer of its type, in its `endian` (as for
+  any member, endian has no effect on an 8-bit unit). Unused bits are written
+  as 0 and ignored on read.
+- `bitorder` (a `stringValues` entry, default `lsb`) sets where the first field
+  goes: `lsb` puts it in the unit's low bits (as GCC and Clang do on
+  little-endian hosts), `msb` in its high bits (as protocol diagrams draw it).
+- In every language the member is held in its full type (in C a plain struct
+  field, not a C bitfield). Setters keep only the field's bits, and signed
+  fields are sign-extended: `Set_delta(-3)` reads back -3, `Set_flags(0x1f)`
+  reads back 15.
+
+**Caution: writing a bitfield member without its setter.** In some languages
+the member can be assigned directly, skipping the setter's masking. Serialize
+masks again, so an out-of-range value never spills into its neighbours. But
+the message keeps the value as written: `Equals`, the getter and printing all
+see it, while the wire carries only the low bits. A message that goes through
+serialize and deserialize then no longer equals the original, and nothing
+warns about it. Use the setters, or keep values in range:
+
+| Language | Direct writes possible? |
+|---|---|
+| C | Yes: the members are plain struct fields (`msg.version = 20;`). |
+| Python | Yes: the members are public attributes (`msg.version = 20`). |
+| Go | Within the message's own package: the fields are unexported. |
+| Swift | Within the module that compiles the message: the stored properties are `internal`. |
+| C++ | No: the members are `private`. |
+| Java | No: the fields are `private`. |
+
+In protobuf (PZ) mode a bitfield is an ordinary field under its own tag, of its
+type's proto3 type; decoding cuts an out-of-range value to the field's bits,
+as the setter does. The `.proto` comment records the layout, e.g.
+`uint32 version = 1; // uint8_t:4, bits 0-3`.
+
 #### Nested messages
 
 A member's type can be another generated message: any type that is not a
@@ -381,6 +435,7 @@ In PZ mode each member is the protobuf field numbered by its tag, and
 | `int64_t` / `uint64_t` | `int64` / `uint64` | |
 | `float` / `double` | `float` / `double` | |
 | `string` (`char[N]`) | `bytes` | sent without trailing NULs |
+| bitfield (`"bits": N`) | its type's proto3 type | one field per member; decoded values are cut to N bits |
 
 The encoding is canonical proto3, byte for byte what protoc produces: zero
 values and empty strings are left out (`-0.0` is still sent). Decoding takes
@@ -390,7 +445,7 @@ A wider value than the member holds is narrowed (as protobuf C++ narrows
 int32 to a smaller C type); a bytes value longer than the string member fails,
 a shorter one is zero-padded. On failure the message is left unchanged.
 Endianness has no effect in PZ mode; the `.proto` notes each member's C type,
-byte order and string length in a comment.
+byte order, string length and bitfield layout in a comment.
 
 The namespace becomes the protobuf package (`a::b` becomes `a.b`). A nested
 message (below) is an embedded message field of its own message type, imported

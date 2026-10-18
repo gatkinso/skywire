@@ -27,6 +27,11 @@
       "400":  { "type": "float",         "name": "f32_be", "endian": 0 },
       "401":  { "type": "float",         "name": "f32_le", "endian": 1 },
       "410":  { "type": "double",        "name": "f64_be", "endian": 0 },
-      "1001": { "type": "string",        "name": "str_exact", "length": 7 }
+      "1001": { "type": "string",        "name": "str_exact", "length": 7 },
+      "512":  { "type": "uint16_t",      "name": "bf_byte",   "bits": 8, "endian": 0 },
+      "500":  { "type": "uint8_t",       "name": "bf_three",  "bits": 3 },
+      "510":  { "type": "uint16_t",      "name": "bf_flag",   "bits": 1, "endian": 0 },
+      "501":  { "type": "uint8_t",       "name": "bf_five",   "bits": 5 },
+      "511":  { "type": "uint16_t",      "name": "bf_seven",  "bits": 7, "endian": 0 }
    }
 }

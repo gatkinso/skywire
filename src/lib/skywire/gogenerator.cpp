@@ -79,6 +79,13 @@ std::string GoGenerator::subst(std::string template_str, const member_desc_t& me
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("bits_substr")), std::to_string(bits));
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("size_substr")), std::to_string(wire_size));
+    // A bitfield setter shifts the field's bits to the top and back, which
+    // masks unsigned values and sign-extends signed ones.
+    if (is_bitfield(member))
+    {
+        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("unused_bits_substr")),
+                                          std::to_string(bits - std::get<member_bits>(member)));
+    }
 
     return template_str;
 }
@@ -229,6 +236,12 @@ bool GoGenerator::imp_serialize(int& errorcode)
             const std::string& type = std::get<member_type>(member.second);
             std::string key;
 
+            if (is_bitfield(member.second))
+            {
+                body += serialize_bitfield(member.first, member.second);
+                continue;
+            }
+
             if (is_string_type(type))
                 key = "serialize_string_mem_str";
             else if (!is_native_type(type))
@@ -257,6 +270,17 @@ bool GoGenerator::imp_deserialize(int& errorcode)
             const std::string& type = std::get<member_type>(member.second);
             std::string key;
             std::string advance_key = "deserialize_advance_str";
+
+            if (is_bitfield(member.second))
+            {
+                body += deserialize_bitfield(member.first, member.second);
+                // A unit is consumed after its last field.
+                if (++i < ordered_members_.size() && place_of(member.first).last)
+                {
+                    body += "\to = o[" + std::to_string(go_bits(type) / 8) + ":]\n";
+                }
+                continue;
+            }
 
             if (is_string_type(type))
                 key = "deserialize_string_mem_str";
@@ -314,23 +338,29 @@ bool GoGenerator::imp_size(int& errorcode)
     return do_block("size_fcn_block", [this]()->std::string {
         const std::string separator = lang_spec_.get_value_string("size_separator_str");
 
-        std::string body;
-        size_t i = 0;
+        std::vector<std::string> terms;
         for (auto& member : ordered_members_)
         {
             const std::string& type = std::get<member_type>(member.second);
 
-            if (is_string_type(type))
-                body += std::to_string(std::get<member_length>(member.second));
-            else if (!is_native_type(type))
-                body += subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
-            else
-                body += std::to_string(go_bits(type) / 8);
-
-            if (++i < ordered_members_.size())
+            if (is_bitfield(member.second))
             {
-                body += separator;
+                // A storage unit counts once, at its first field.
+                if (place_of(member.first).first)
+                    terms.push_back(std::to_string(go_bits(type) / 8));
             }
+            else if (is_string_type(type))
+                terms.push_back(std::to_string(std::get<member_length>(member.second)));
+            else if (!is_native_type(type))
+                terms.push_back(subst(lang_spec_.get_value_string("size_user_mem_str"), member.second));
+            else
+                terms.push_back(std::to_string(go_bits(type) / 8));
+        }
+
+        std::string body;
+        for (size_t i = 0; i < terms.size(); i++)
+        {
+            body += (i ? separator : "") + terms[i];
         }
 
         return body;
@@ -357,6 +387,10 @@ bool GoGenerator::imp_set_functions(int& errorcode)
     {
         const std::string& type = std::get<member_type>(member.second);
         std::string key = is_string_type(type) ? "set_string_str" : "set_str";
+        if (is_bitfield(member.second) && std::get<member_bits>(member.second) < go_bits(type))
+        {
+            key = "set_bits_str";
+        }
 
         ss_ << subst(lang_spec_.get_value_string(key), member.second);
         ss_ << lang_spec_.get_value_string("block_separator_str");
@@ -380,6 +414,62 @@ bool GoGenerator::do_block(const std::string block_id, std::function<std::string
     ss_ << block_str << lang_spec_.get_value_string("block_separator_str");
 
     return success;
+}
+
+// A bitfield's storage unit is a local, u<n>: its first field declares it,
+// each field ors itself in, and the last one appends it.
+std::string GoGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const unsigned int width = go_bits(unit.type);
+    const std::string utype = "uint" + std::to_string(width);
+    const std::string var = "u" + std::to_string(place.unit);
+    const std::string field = utype + "(s." + std::get<member_name>(member) + ")";
+
+    std::string body;
+    if (place.first)
+    {
+        body += "\t" + var + " := " + utype + "(0)\n";
+    }
+
+    std::string value = place.bits < width ? "(" + field + " & " + bitfields::hex(bitfields::mask(place.bits)) + ")" : field;
+    body += "\t" + var + " |= " + value + (place.shift ? " << " + std::to_string(place.shift) : "") + "\n";
+
+    if (place.last)
+    {
+        body += width == 8 ? "\to = append(o, " + var + ")\n"
+                           : "\to = " + go_endian(unit.endian) + ".AppendUint" + std::to_string(width) + "(o, " + var + ")\n";
+    }
+
+    return body;
+}
+
+std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const unsigned int width = go_bits(unit.type);
+    const std::string var = "u" + std::to_string(place.unit);
+
+    std::string body;
+    if (place.first)
+    {
+        body += "\t" + var + " := " + (width == 8 ? std::string("o[0]") : go_endian(unit.endian) + ".Uint" + std::to_string(width) + "(o)") + "\n";
+    }
+
+    // Shifting the field to the top, converting, and shifting it back down
+    // masks unsigned fields and sign-extends signed ones.
+    const unsigned int up = width - place.shift - place.bits;
+    const unsigned int down = width - place.bits;
+    std::string value = go_type(std::get<member_type>(member)) + "(" + var + (up ? "<<" + std::to_string(up) : "") + ")";
+    if (down)
+    {
+        value += " >> " + std::to_string(down);
+    }
+    body += "\ts." + std::get<member_name>(member) + " = " + value + "\n";
+
+    return body;
 }
 
 }

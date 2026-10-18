@@ -54,6 +54,8 @@ private:
 
     bool do_block(const std::string block_id, std::function<std::string()> builder);
     std::string subst(std::string template_str, const member_desc_t& member);
+    std::string serialize_bitfield(uint32_t tag, const member_desc_t& member);
+    std::string deserialize_bitfield(uint32_t tag, const member_desc_t& member);
 };
 
 }

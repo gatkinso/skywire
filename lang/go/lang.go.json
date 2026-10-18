@@ -14,6 +14,7 @@
         "bits_substr":"__BITS__",
         "length_substr":"__LENGTH__",
         "size_substr":"__SIZE__",
+        "unused_bits_substr":"__UNUSEDBITS__",
         "namespace_substr":"__NAMESPACE__",
         "indent_str":"\t",
         "block_separator_str":"\n",
@@ -54,6 +55,7 @@
 
         "get_str":"func (s *__STRUCTNAME__) Get___MEMBERNAME__() __TYPE__ { return s.__MEMBERNAME__ }\n",
         "set_str":"func (s *__STRUCTNAME__) Set___MEMBERNAME__(newval __TYPE__) { s.__MEMBERNAME__ = newval }\n",
+        "set_bits_str":"func (s *__STRUCTNAME__) Set___MEMBERNAME__(newval __TYPE__) { s.__MEMBERNAME__ = newval << __UNUSEDBITS__ >> __UNUSEDBITS__ }\n",
         "get_string_str":"func (s *__STRUCTNAME__) Get___MEMBERNAME__() [__LENGTH__]byte { return s.__MEMBERNAME__ }\n",
         "set_string_str":"func (s *__STRUCTNAME__) Set___MEMBERNAME__(newval []byte) {\n\ts.__MEMBERNAME__ = [__LENGTH__]byte{}\n\tcopy(s.__MEMBERNAME__[:], newval)\n}\n",
 

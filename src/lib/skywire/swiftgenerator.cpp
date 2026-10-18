@@ -178,6 +178,13 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            serialize_bitfield(member.first, member.second);
+            continue;
+        }
+
         insert_indents(2);
 
         if (is_string_type(std::get<member_type>(member.second)))
@@ -224,6 +231,13 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            deserialize_bitfield(member.first, member.second);
+            continue;
+        }
+
         insert_indents(2);
 
         if (is_string_type(std::get<member_type>(member.second)))
@@ -267,10 +281,18 @@ bool SwiftGenerator::imp_size(int& errorcode)
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");
 
-    int i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            // A storage unit counts once, at its first field.
+            if (place_of(member.first).first)
+                terms.push_back("MemoryLayout<" + swift_type(bitfields::unsigned_type(unit_of(member.first).type)) + ">.size");
+            continue;
+        }
 
         if (is_string_type(std::get<member_type>(member.second)))
         {
@@ -288,15 +310,13 @@ bool SwiftGenerator::imp_size(int& errorcode)
             template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
         }
 
+        terms.push_back(template_str);
+    }
+
+    for (size_t i = 0; i < terms.size(); i++)
+    {
         insert_indents(3);
-        ss_ << template_str;
-
-        if (i++ < static_cast<int>(ordered_members_.size()) - 1)
-        {
-            ss_ << " +";
-        }
-
-        ss_ << std::endl;
+        ss_ << terms[i] << (i + 1 < terms.size() ? " +" : "") << std::endl;
     }
 
     insert_indents(2);
@@ -405,6 +425,14 @@ bool SwiftGenerator::imp_set_functions(int& errorcode)
             template_str = lang_spec_.get_value_string("set_string_str");
             template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
         }
+        else if (is_bitfield(member.second) && std::get<member_bits>(member.second) < bitfields::width(std::get<member_type>(member.second)))
+        {
+            // Shifting the field's bits to the top and back masks unsigned
+            // values and sign-extends signed ones.
+            const std::string unused = std::to_string(bitfields::width(std::get<member_type>(member.second)) - std::get<member_bits>(member.second));
+            template_str = "public func Set___MEMBERNAME__(_ newval: " + swift_type(std::get<member_type>(member.second)) +
+                           ") { __MEMBERNAME__ = (newval << " + unused + ") >> " + unused + " }\n";
+        }
         else
         {
             template_str = lang_spec_.get_value_string("set_str");
@@ -421,6 +449,65 @@ bool SwiftGenerator::imp_set_functions(int& errorcode)
 bool SwiftGenerator::imp_classend(int& errorcode)
 {
     return gen_one_line("endclass_str");
+}
+
+// A bitfield's storage unit is a local, unit_<n>: its first field declares
+// it, each field ors itself in, and the last one writes it.
+void SwiftGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const std::string utype = swift_type(bitfields::unsigned_type(unit.type));
+    const std::string var = "unit_" + std::to_string(place.unit);
+
+    if (place.first)
+    {
+        insert_indents(2);
+        ss_ << "var " << var << ": " << utype << " = 0" << std::endl;
+    }
+
+    std::string field = utype + "(truncatingIfNeeded: " + std::get<member_name>(member) + ")";
+    if (place.bits < bitfields::width(unit.type))
+    {
+        field = "(" + field + " & " + bitfields::hex(bitfields::mask(place.bits)) + ")";
+    }
+    insert_indents(2);
+    ss_ << var << " |= " << field << (place.shift ? " << " + std::to_string(place.shift) : "") << std::endl;
+
+    if (place.last)
+    {
+        insert_indents(2);
+        ss_ << "stream.serialize(" << var << ", " << swift_endian(unit.endian) << ")" << std::endl;
+    }
+}
+
+void SwiftGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const unsigned int width = bitfields::width(unit.type);
+    const std::string var = "unit_" + std::to_string(place.unit);
+
+    if (place.first)
+    {
+        insert_indents(2);
+        ss_ << "var " << var << ": " << swift_type(bitfields::unsigned_type(unit.type)) << " = 0" << std::endl;
+        insert_indents(2);
+        ss_ << "stream.deserialize(&" << var << ", " << swift_endian(unit.endian) << ")" << std::endl;
+    }
+
+    // Shifting the field to the top, converting, and shifting it back down
+    // masks unsigned fields and sign-extends signed ones.
+    const unsigned int up = width - place.shift - place.bits;
+    const unsigned int down = width - place.bits;
+    std::string value = swift_type(std::get<member_type>(member)) + "(truncatingIfNeeded: " +
+                        (up ? var + " << " + std::to_string(up) : var) + ")";
+    if (down)
+    {
+        value += " >> " + std::to_string(down);
+    }
+    insert_indents(2);
+    ss_ << std::get<member_name>(member) << " = " << value << std::endl;
 }
 
 }

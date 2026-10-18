@@ -38,7 +38,7 @@ void CppRelayGenerator::relay_sets(const members_t& members)
         }
         else
         {
-            ss_ << "    in.Set_" << name << "(" << test_values::literal(type) << ");\n";
+            ss_ << "    in.Set_" << name << "(" << test_literal(member.second) << ");\n";
         }
     }
 }

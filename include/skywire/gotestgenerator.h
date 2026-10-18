@@ -40,6 +40,7 @@ protected:
     // Appends the wire bytes of the test value set for one member.
     // Returns false for types whose encoding isn't known here (user types).
     bool encode_member(const member_desc_t& member, std::vector<uint8_t>& out);
+    bool do_bitfield_setters(int& errorcode);
 };
 
 }

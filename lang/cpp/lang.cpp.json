@@ -62,6 +62,8 @@
         "deserialize_pb_native_mem_str":"    case protozero::tag_and_type(__TAG__, protozero::pbf_wire_type::__WIRETYPE__): __MEMBERNAME__ = static_cast<__TYPE__>(pbf.get___PBTYPE__()); break;",
         "serialize_pb_user_mem_str":"{\n    protozero::pbf_writer sub{pbf, __TAG__};\n    if (false == __MEMBERNAME__.serialize_pb(sub)) return false;\n}",
         "deserialize_pb_user_mem_str":"    case protozero::tag_and_type(__TAG__, protozero::pbf_wire_type::length_delimited): if (false == __MEMBERNAME__.deserialize_pb(pbf.get_message())) return false; break;",
+        "fit_substr":"__FIT__",
+        "deserialize_pb_bits_mem_str":"    case protozero::tag_and_type(__TAG__, protozero::pbf_wire_type::varint): __MEMBERNAME__ = __FIT__; break;",
         "deserialize_pb_string_mem_str":"    case protozero::tag_and_type(__TAG__, protozero::pbf_wire_type::length_delimited): if (false == skyloupe::pb_read_bytes(pbf, __MEMBERNAME__, __LENGTH__)) return false; break;",
 
         "pb_char": "int32",

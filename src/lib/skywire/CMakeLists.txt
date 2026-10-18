@@ -26,6 +26,7 @@ set(_INC_DIRS ${TARGET_INC_DIR}
 include_directories(${TARGETNAME} ${_INC_DIRS})
 
 set(_GENERATORS
+             bitfields.cpp
              cgenerator.cpp
              ctestgenerator.cpp
              cppgenerator.cpp
@@ -48,6 +49,7 @@ set(_GENERATORS
              swiftgenerator.cpp
              swifttestgenerator.cpp
              test_values.cpp
+             ${TARGET_INC_DIR}/bitfields.h
              ${TARGET_INC_DIR}/cgenerator.h
              ${TARGET_INC_DIR}/ctestgenerator.h
              ${TARGET_INC_DIR}/cppgenerator.h

@@ -48,6 +48,7 @@ bool CTestGenerator::do_test_implementation(int& errorcode)
     test_equality(errorcode);
     test_short_buffer(errorcode);
     test_wire(errorcode);
+    test_bitfield_setters(errorcode);
 
     header_string.append(ss_.str());
 
@@ -135,19 +136,24 @@ bool CTestGenerator::test_size(int& errorcode)
     insert_indents(1);
     ss_ << "ASSERT_EQ(" << classname << "_Size(),";
 
-    int i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
-        if (is_string_type(std::get<member_type>(member.second)))
-            ss_ << std::get<member_length>(member.second);
-        else if (is_user_type(std::get<member_type>(member.second)))
-            ss_ << std::get<member_type>(member.second) << "_Size()";
-        else
-            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
-        if (i++ < ordered_members_.size() - 1)
+        if (is_bitfield(member.second))
         {
-            ss_ << "+";
+            if (place_of(member.first).first)
+                terms.push_back("sizeof(" + bitfields::unsigned_type(unit_of(member.first).type) + ")");
         }
+        else if (is_string_type(std::get<member_type>(member.second)))
+            terms.push_back(std::to_string(std::get<member_length>(member.second)));
+        else if (is_user_type(std::get<member_type>(member.second)))
+            terms.push_back(std::get<member_type>(member.second) + "_Size()");
+        else
+            terms.push_back("sizeof(" + std::get<member_type>(member.second) + ")");
+    }
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        ss_ << terms[i] << (i + 1 < terms.size() ? "+" : "");
     }
 
     ss_ << ");\n";
@@ -169,7 +175,9 @@ bool CTestGenerator::do_sets(int& errorcode)
     {
         insert_indents(2);
 
-             if (std::get<member_type>(member.second) == "char")          ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << (int)i++*BASECHAR << ";\n";
+        // A bitfield gets a value that fits, so it survives the round trip.
+        if (is_bitfield(member.second))                                   ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << test_literal(member.second) << ";\n";
+        else if (std::get<member_type>(member.second) == "char")          ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << (int)i++*BASECHAR << ";\n";
         else if (std::get<member_type>(member.second) == "unsigned char") ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "i*" << i++*BASEUCHAR << ";\n";
         else if (std::get<member_type>(member.second) == "uint8_t")       ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "i*" << i++*BASEU8 << ";\n";
         else if (std::get<member_type>(member.second) == "int8_t")        ss_ << "out[i]." << std::get<member_name>(member.second) << " = " << "sign*i*" << i++*BASES8 << ";\n";
@@ -232,14 +240,10 @@ bool CTestGenerator::test_wire(int& errorcode)
     std::string testname = classname + "Test";
 
     std::vector<uint8_t> wire;
-    for (auto& member : ordered_members_)
+    if (false == expected_wire(wire))
     {
-        if (!test_values::encode(std::get<member_type>(member.second), std::get<member_endianness>(member.second),
-                                 std::get<member_length>(member.second), wire))
-        {
-            // A user-defined member has no shared test value.
-            return true;
-        }
+        // A user-defined member has no shared test value.
+        return true;
     }
 
     ss_ << "TEST(" << testname << ", Wire)\n";
@@ -259,7 +263,7 @@ bool CTestGenerator::test_wire(int& errorcode)
         }
         else
         {
-            ss_ << "    in." << name << " = " << test_values::literal(type) << ";\n";
+            ss_ << "    in." << name << " = " << test_literal(member.second) << ";\n";
         }
     }
 
@@ -279,6 +283,45 @@ bool CTestGenerator::test_wire(int& errorcode)
     ss_ << "    ASSERT_EQ(sizeof(want), cstream_available(&cs));\n";
     ss_ << "    ASSERT_EQ(0, std::memcmp(cs.head_, want, sizeof(want)));\n";
     ss_ << "    cstream_fini(&cs);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// A bitfield setter keeps only the field's bits: a value with a bit set
+// above the field reads back as the field's value.
+bool CTestGenerator::test_bitfield_setters(int& errorcode)
+{
+    std::string classname = msg_spec_.get_value_string("classname");
+
+    std::stringstream body;
+    for (auto& member : ordered_members_)
+    {
+        const std::string wide = out_of_range_hex(member.second);
+        if (wide.empty())
+        {
+            continue;
+        }
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+        body << "    {\n";
+        body << "        " << type << " value = (" << type << ")" << wide << "ull, got = 0;\n";
+        body << "        ASSERT_EQ(0, Set_" << classname << "_" << name << "(&msg, &value));\n";
+        body << "        ASSERT_EQ(0, Get_" << classname << "_" << name << "(&msg, &got));\n";
+        body << "        ASSERT_EQ((" << type << ")" << test_literal(member.second) << ", got);\n";
+        body << "    }\n";
+    }
+
+    if (body.str().empty())
+    {
+        return true;
+    }
+
+    ss_ << "TEST(" << classname << "Test, BitfieldSetters)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " msg;\n";
+    ss_ << "    std::memset(&msg, 0, sizeof(msg));\n";
+    ss_ << body.str();
     ss_ << "}\n\n";
 
     return true;
