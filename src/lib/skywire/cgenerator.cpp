@@ -326,6 +326,11 @@ bool CGenerator::imp_serialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
+        if (is_bitfield(member.second))
+        {
+            write_bitfield(member.first, member.second);
+            continue;
+        }
         // A nested message is written by its own function, with its own members' byte orders.
         std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "write_user_template_str" : "write_native_template_str");
         insert_indents(1);
@@ -372,6 +377,11 @@ bool CGenerator::imp_deserialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
+        if (is_bitfield(member.second))
+        {
+            read_bitfield(member.first, member.second);
+            continue;
+        }
         // A nested message is written by its own function, with its own members' byte orders.
         std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "read_user_template_str" : "read_native_template_str");
         insert_indents(1);
@@ -411,23 +421,27 @@ bool CGenerator::imp_size(int& errorcode)
     insert_indents(1);
     ss_ << "return (" << std::endl;
 
-    int i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
-        insert_indents(2);
-        if (is_string_type(std::get<member_type>(member.second)))
-            ss_ << std::get<member_length>(member.second);
-        else if (is_user_type(std::get<member_type>(member.second)))
-            ss_ << std::get<member_type>(member.second) << "_Size()";
-        else
-            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
-
-        if (i++ < ordered_members_.size() - 1)
+        if (is_bitfield(member.second))
         {
-            ss_ << "+";
+            // A storage unit counts once, at its first field.
+            if (place_of(member.first).first)
+                terms.push_back("sizeof(" + bitfields::unsigned_type(unit_of(member.first).type) + ")");
         }
+        else if (is_string_type(std::get<member_type>(member.second)))
+            terms.push_back(std::to_string(std::get<member_length>(member.second)));
+        else if (is_user_type(std::get<member_type>(member.second)))
+            terms.push_back(std::get<member_type>(member.second) + "_Size()");
+        else
+            terms.push_back("sizeof(" + std::get<member_type>(member.second) + ")");
+    }
 
-        ss_ << std::endl;
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        insert_indents(2);
+        ss_ << terms[i] << (i + 1 < terms.size() ? "+" : "") << std::endl;
     }
 
     insert_indents(1);
@@ -558,6 +572,9 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         ss_ << null_check_str;
 
         std::string ass_str = lang_spec_.get_value_string(isstr ? str_ass_key : ass_key);
+        // A bitfield setter keeps only the field's bits, sign-extending signed ones.
+        if (ass_key == "set_assignment_str" && is_bitfield(member.second))
+            ass_str = "structure->__MEMBERNAME__ = " + bitfields::c_fit(std::get<member_type>(member.second), std::get<member_bits>(member.second), "*value");
         ass_str = std::regex_replace(ass_str, std::regex(member_substr), std::get<member_name>(member.second));
         if (isstr)
             ass_str = std::regex_replace(ass_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
@@ -569,6 +586,61 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
     }
 
     return true;
+}
+
+std::string CGenerator::endian_flag(unsigned int endian)
+{
+    if (endian == SW_BIG_ENDIAN_FLAG)
+        return "SW_BIG_ENDIAN_FLAG";
+    if (endian == SW_LITTLE_ENDIAN_FLAG)
+        return "SW_LITTLE_ENDIAN_FLAG";
+    return "SW_NATIVE_ENDIAN_FLAG";
+}
+
+// A bitfield's storage unit is a local, unit_<n>: its first field declares
+// it, each field ors itself in, and the last one writes it.
+void CGenerator::write_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const std::string utype = bitfields::unsigned_type(unit.type);
+    const std::string var = "unit_" + std::to_string(place.unit);
+    const std::string suffix = bitfields::width(unit.type) == 64 ? "ull" : "u";
+
+    if (place.first)
+    {
+        insert_indents(1);
+        ss_ << utype << " " << var << " = 0;" << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << var << " |= (" << utype << ")(((" << utype << ")structure->" << std::get<member_name>(member) << " & "
+        << bitfields::hex(bitfields::mask(place.bits)) << suffix << ") << " << place.shift << ");" << std::endl;
+
+    if (place.last)
+    {
+        insert_indents(1);
+        ss_ << "cstream_write(str, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
+    }
+}
+
+void CGenerator::read_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const std::string var = "unit_" + std::to_string(place.unit);
+
+    if (place.first)
+    {
+        insert_indents(1);
+        ss_ << bitfields::unsigned_type(unit.type) << " " << var << ";" << std::endl;
+        insert_indents(1);
+        ss_ << "cstream_read(str, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
+    }
+
+    insert_indents(1);
+    ss_ << "structure->" << std::get<member_name>(member) << " = "
+        << bitfields::c_fit(std::get<member_type>(member), place.bits, var + " >> " + std::to_string(place.shift)) << ";" << std::endl;
 }
 
 }

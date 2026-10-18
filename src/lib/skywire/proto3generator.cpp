@@ -35,9 +35,9 @@ std::string Proto3Generator::proto_type(const std::string& type)
 
 // The skywire-only facts about a member (its C type, byte order, string
 // length) don't exist in protobuf, so they ride along as a comment.
-std::string Proto3Generator::skywire_comment(const member_desc_t& member)
+std::string Proto3Generator::skywire_comment(uint32_t tag, const member_desc_t& member)
 {
-    const std::string& type = std::get<member_type>(member);
+    std::string type = std::get<member_type>(member);
 
     if (is_user_type(type))
     {
@@ -49,7 +49,15 @@ std::string Proto3Generator::skywire_comment(const member_desc_t& member)
         return "char[" + std::to_string(std::get<member_length>(member)) + "]";
     }
 
-    if (type == "char" || type == "unsigned char" || type == "uint8_t" || type == "int8_t")
+    // A bitfield: its width, and the bits it takes in its storage unit.
+    if (is_bitfield(member))
+    {
+        const bitfields::place_t& place = place_of(tag);
+        type += ":" + std::to_string(place.bits) + ", bits " + std::to_string(place.shift) + "-" +
+                std::to_string(place.shift + place.bits - 1);
+    }
+
+    if (bitfields::width(std::get<member_type>(member)) == 8 || type == "char" || type == "unsigned char")
     {
         return type;
     }
@@ -68,7 +76,7 @@ std::string Proto3Generator::subst(std::string template_str, uint32_t tag, const
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), proto_type(std::get<member_type>(member)));
     template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("tag_substr")), std::to_string(tag));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("comment_substr")), skywire_comment(member));
+    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("comment_substr")), skywire_comment(tag, member));
 
     return template_str;
 }

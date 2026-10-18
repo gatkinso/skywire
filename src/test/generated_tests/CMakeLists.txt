@@ -20,6 +20,7 @@ set(WG_C_FILES
     CNestyInner
     CNestyMcNestface
     CNestyOuter
+    CBitsyMcBitface
 )
 
 set(WG_CPP_FILES
@@ -28,6 +29,8 @@ set(WG_CPP_FILES
     NestyInner
     NestyMcNestface
     NestyOuter
+    BitsyMcBitface
+    BitsyMsb
 )
 
 set(WG_C_RUMTIME
@@ -47,7 +50,7 @@ include_directories(
                 ${WG_CPP_DIR}
                 ${PROTOZERO_INC_DIR})
 
-set(UNIT_TESTS c_cpp.cpp pz_cpp.cpp nested_cpp.cpp)
+set(UNIT_TESTS c_cpp.cpp pz_cpp.cpp nested_cpp.cpp bits_cpp.cpp)
 
 # Generate C 
 foreach(WG_C ${WG_C_FILES})
@@ -196,7 +199,7 @@ add_test(NAME skywire_generated_tests:Proto3Wire
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DPROTOC=$<TARGET_FILE:protobuf::protoc>
-            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/ProtoMcProtoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/ProtoMcProtoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json
             -DSAMPLES=${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.sample.txtpb,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.sample.txtpb
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/proto/lang.proto3.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_proto3_wiregen

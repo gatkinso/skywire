@@ -58,7 +58,7 @@ bool Proto3TestGenerator::do_test_implementation(int& errorcode)
             continue;
         }
         if (false == test_values::encode_pb(std::get<member_type>(member.second), member.first,
-                                            std::get<member_length>(member.second), wire))
+                                            std::get<member_length>(member.second), wire, std::get<member_bits>(member.second)))
         {
             errorcode |= SW_LANG_UNSUPPORTED_TYPE;
             return false;
@@ -82,7 +82,8 @@ bool Proto3TestGenerator::do_test_implementation(int& errorcode)
             continue;
         }
         ss_ << std::get<member_name>(member.second) << ": "
-            << test_values::textproto_value(std::get<member_type>(member.second), std::get<member_length>(member.second))
+            << test_values::textproto_value(std::get<member_type>(member.second), std::get<member_length>(member.second),
+                                         std::get<member_bits>(member.second))
             << "\n";
     }
 

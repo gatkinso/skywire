@@ -18,6 +18,7 @@
 #include <cstring>
 #include <map>
 #include "test_values.h"
+#include "bitfields.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -98,6 +99,20 @@ bool host_is_little_endian()
     return first == 1;
 }
 
+void append_integer(uint64_t bits, unsigned int width, unsigned int endian, std::vector<uint8_t>& out)
+{
+    if (endian == SW_NATIVE_ENDIAN_FLAG)
+    {
+        endian = host_is_little_endian() ? SW_LITTLE_ENDIAN_FLAG : SW_BIG_ENDIAN_FLAG;
+    }
+
+    for (unsigned int i = 0; i < width; i++)
+    {
+        const unsigned int shift = (endian == SW_LITTLE_ENDIAN_FLAG) ? i : (width - 1 - i);
+        out.push_back(static_cast<uint8_t>(bits >> (8 * shift)));
+    }
+}
+
 }
 
 const char* literal(const std::string& type)
@@ -127,22 +142,55 @@ bool encode(const std::string& type, unsigned int endian, unsigned int length, s
         return false;
     }
 
-    if (endian == SW_NATIVE_ENDIAN_FLAG)
-    {
-        endian = host_is_little_endian() ? SW_LITTLE_ENDIAN_FLAG : SW_BIG_ENDIAN_FLAG;
-    }
-
-    const unsigned int width = it->second.width;
-    for (unsigned int i = 0; i < width; i++)
-    {
-        const unsigned int shift = (endian == SW_LITTLE_ENDIAN_FLAG) ? i : (width - 1 - i);
-        out.push_back(static_cast<uint8_t>(it->second.bits >> (8 * shift)));
-    }
-
+    append_integer(it->second.bits, it->second.width, endian, out);
     return true;
 }
 
-bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::vector<uint8_t>& out)
+uint64_t bits_value(const std::string& type, unsigned int bits)
+{
+    if (false == bitfields::is_signed(type))
+    {
+        return bitfields::fit(type, bits, 0x5555555555555555ull);
+    }
+
+    // -(2^(bits-1)) + 1, or -1 for a single bit.
+    const uint64_t negative = bits == 1 ? ~uint64_t(0) : (~uint64_t(0) << (bits - 1)) + 1;
+    return bitfields::fit(type, bits, negative);
+}
+
+std::string literal_bits(const std::string& type, unsigned int bits)
+{
+    const uint64_t value = bits_value(type, bits);
+    const unsigned int width = bitfields::width(type);
+
+    if (bitfields::is_signed(type) && (value >> (width - 1)) != 0)
+    {
+        const uint64_t magnitude = (~value + 1) & bitfields::mask(width);
+        return "-" + std::to_string(magnitude);
+    }
+
+    return std::to_string(value);
+}
+
+bool encode_unit(const std::string& type, unsigned int endian, const std::vector<bitfield_t>& fields, std::vector<uint8_t>& out)
+{
+    const unsigned int width = bitfields::width(type);
+    if (width == 0)
+    {
+        return false;
+    }
+
+    uint64_t unit = 0;
+    for (auto& field : fields)
+    {
+        unit |= (bits_value(type, field.bits) & bitfields::mask(field.bits)) << field.shift;
+    }
+
+    append_integer(unit, width / 8, endian, out);
+    return true;
+}
+
+bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::vector<uint8_t>& out, unsigned int bits)
 {
     const unsigned int varint_type = 0, fixed64_type = 1, bytes_type = 2, fixed32_type = 5;
 
@@ -165,9 +213,9 @@ bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::
         return false;
     }
 
-    uint64_t bits = it->second.bits;
+    uint64_t value = bits ? bits_value(type, bits) : it->second.bits;
     const unsigned int width = it->second.width;
-    if (bits == 0)
+    if (value == 0)
     {
         return true;
     }
@@ -177,23 +225,28 @@ bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::
         append_key(tag, width == 4 ? fixed32_type : fixed64_type, out);
         for (unsigned int i = 0; i < width; i++)
         {
-            out.push_back(static_cast<uint8_t>(bits >> (8 * i)));
+            out.push_back(static_cast<uint8_t>(value >> (8 * i)));
         }
         return true;
     }
 
-    if (is_signed(type) && width < 8 && (bits >> (8 * width - 1)) != 0)
+    if (is_signed(type) && width < 8 && (value >> (8 * width - 1)) != 0)
     {
-        bits |= ~uint64_t(0) << (8 * width);
+        value |= ~uint64_t(0) << (8 * width);
     }
 
     append_key(tag, varint_type, out);
-    append_varint(bits, out);
+    append_varint(value, out);
     return true;
 }
 
-std::string textproto_value(const std::string& type, unsigned int length)
+std::string textproto_value(const std::string& type, unsigned int length, unsigned int bits)
 {
+    if (bits != 0)
+    {
+        return literal(type) ? literal_bits(type, bits) : "";
+    }
+
     if (type != "string")
     {
         const char* value = literal(type);

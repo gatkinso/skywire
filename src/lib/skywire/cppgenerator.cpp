@@ -249,6 +249,13 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
             template_str = lang_spec_.get_value_string("set_string_str");
             template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
         }
+        else if (is_bitfield(member.second))
+        {
+            // Keeps only the field's bits, sign-extending signed ones.
+            const std::string& type = std::get<member_type>(member.second);
+            template_str = "void Set___MEMBERNAME__(const " + type + " newval) { __MEMBERNAME__ = " +
+                           bitfields::c_fit(type, std::get<member_bits>(member.second), "newval") + "; }\n";
+        }
         else
         {
             template_str = lang_spec_.get_value_string("set_str");
@@ -285,6 +292,12 @@ bool CppGenerator::hdr_serialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            write_bitfield(member.first, member.second);
+            continue;
+        }
 
         if (is_string_type(std::get<member_type>(member.second)))
         {
@@ -354,6 +367,12 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            read_bitfield(member.first, member.second);
+            continue;
+        }
 
         if (is_string_type(std::get<member_type>(member.second)))
         {
@@ -473,8 +492,15 @@ bool CppGenerator::hdr_deserialize_pb(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        const std::string key = pb_key("deserialize", std::get<member_type>(member.second));
-        gen_lines(pb_subst(lang_spec_.get_value_string(key), member.first, member.second), 3);
+        std::string template_str = lang_spec_.get_value_string(pb_key("deserialize", std::get<member_type>(member.second)));
+        if (is_bitfield(member.second))
+        {
+            // Out-of-range values from another encoder are cut to the field, as the setter does.
+            template_str = lang_spec_.get_value_string("deserialize_pb_bits_mem_str");
+            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("fit_substr")),
+                                              bitfields::c_fit(std::get<member_type>(member.second), std::get<member_bits>(member.second), "pbf.get___PBTYPE__()"));
+        }
+        gen_lines(pb_subst(template_str, member.first, member.second), 3);
     }
 
     gen_lines(lang_spec_.get_value_string("deserialize_pb_loop_end_str"), 3);
@@ -507,10 +533,18 @@ bool CppGenerator::hdr_size(int& errorcode)
         return false;
     }
 
-    int i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
         std::string template_str;
+
+        if (is_bitfield(member.second))
+        {
+            // A storage unit counts once, at its first field.
+            if (place_of(member.first).first)
+                terms.push_back("sizeof(" + bitfields::unsigned_type(unit_of(member.first).type) + ")");
+            continue;
+        }
 
         if (is_string_type(std::get<member_type>(member.second)))
         {
@@ -528,15 +562,13 @@ bool CppGenerator::hdr_size(int& errorcode)
             template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member.second));
         }
 
+        terms.push_back(template_str);
+    }
+
+    for (size_t i = 0; i < terms.size(); i++)
+    {
         insert_indents(4);
-        ss_ << template_str;
-
-        if (i++ < ordered_members_.size() - 1)
-        {
-            ss_ << " +";
-        }
-
-        ss_ << std::endl;
+        ss_ << terms[i] << (i + 1 < terms.size() ? " +" : "") << std::endl;
     }
 
     insert_indents(3);
@@ -644,6 +676,61 @@ bool CppGenerator::hdr_classend(int& errorcode)
 bool CppGenerator::hdr_namespaceend(int& errorcode)
 {
     return gen_one_line("endnamespace_str");
+}
+
+std::string CppGenerator::endianness(unsigned int endian)
+{
+    if (endian == SW_BIG_ENDIAN_FLAG)
+        return "skyloupe::Endianness::Big";
+    if (endian == SW_LITTLE_ENDIAN_FLAG)
+        return "skyloupe::Endianness::Little";
+    return "skyloupe::Endianness::Native";
+}
+
+// A bitfield's storage unit is a local, unit_<n>: its first field declares
+// it, each field ors itself in, and the last one writes it.
+void CppGenerator::write_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const std::string utype = bitfields::unsigned_type(unit.type);
+    const std::string var = "unit_" + std::to_string(place.unit);
+    const std::string suffix = bitfields::width(unit.type) == 64 ? "ull" : "u";
+
+    if (place.first)
+    {
+        insert_indents(3);
+        ss_ << utype << " " << var << " = 0;" << std::endl;
+    }
+
+    insert_indents(3);
+    ss_ << var << " |= static_cast<" << utype << ">((static_cast<" << utype << ">(" << std::get<member_name>(member) << ") & "
+        << bitfields::hex(bitfields::mask(place.bits)) << suffix << ") << " << place.shift << ");" << std::endl;
+
+    if (place.last)
+    {
+        insert_indents(3);
+        ss_ << "str.serialize(" << var << ", " << endianness(unit.endian) << ");" << std::endl;
+    }
+}
+
+void CppGenerator::read_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const std::string var = "unit_" + std::to_string(place.unit);
+
+    if (place.first)
+    {
+        insert_indents(3);
+        ss_ << bitfields::unsigned_type(unit.type) << " " << var << " = 0;" << std::endl;
+        insert_indents(3);
+        ss_ << "str.deserialize(" << var << ", " << endianness(unit.endian) << ");" << std::endl;
+    }
+
+    insert_indents(3);
+    ss_ << std::get<member_name>(member) << " = "
+        << bitfields::c_fit(std::get<member_type>(member), place.bits, var + " >> " + std::to_string(place.shift)) << ";" << std::endl;
 }
 
 }

@@ -61,6 +61,9 @@ protected:
 
 private:
     virtual bool getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode);
+    static std::string endian_flag(unsigned int endian);
+    void write_bitfield(uint32_t tag, const member_desc_t& member);
+    void read_bitfield(uint32_t tag, const member_desc_t& member);
 };
 
 }

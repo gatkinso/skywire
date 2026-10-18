@@ -39,7 +39,7 @@ public:
     virtual bool imp_message(int& errorcode);
 
     std::string proto_type(const std::string& type);
-    std::string skywire_comment(const member_desc_t& member);
+    std::string skywire_comment(uint32_t tag, const member_desc_t& member);
 
 private:
     std::string classname_;
