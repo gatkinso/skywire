@@ -5,7 +5,11 @@
 #  generated relay of every available language, one after another, in a random
 #  order:
 #
-#      input.bin -> L1 -> hop1.bin -> L2 -> hop2.bin -> ... -> Ln -> hopN.bin
+#      input.bin -> L1 -> hop1.bin -> L2 -> hop2.bin -> ... -> Ln -> hopN.bin -> L1
+#
+#  The ring closes: the first language's relay (the same build) reads the last
+#  hop's output, so the bytes that come back must satisfy the language they
+#  started in.
 #
 #  Each relay deserializes its input file, checks every member against the
 #  shared test values, re-serializes, checks the bytes are unchanged and writes
@@ -19,7 +23,7 @@
 #
 #  Environment:
 #    SKYWIRE_RING_SEED=<n>          repeat the order (and flipped byte) of an earlier run
-#    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python)
+#    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python rust)
 #    SKYWIRE_RING_REQUIRE_ALL=1     fail, instead of skipping, a language whose toolchain is missing
 #
 #  Required -D variables: WIREGEN, INPUT, SPEC, INNER_SPEC, LANG_DIR, WORKDIR,
@@ -31,7 +35,7 @@
 # IN_LIST and the other newer features behave the same on every CMake version.
 cmake_minimum_required(VERSION 3.28)
 
-set(all_langs cpp c java swift go python)
+set(all_langs cpp c java swift go python rust)
 
 set(display_cpp "C++")
 set(display_c "C")
@@ -39,6 +43,7 @@ set(display_java "Java")
 set(display_swift "Swift")
 set(display_go "Go")
 set(display_python "Python")
+set(display_rust "Rust")
 
 set(available "")
 
@@ -170,6 +175,46 @@ else()
     skip_lang(python "python3 not on PATH")
 endif()
 
+# Rust (1.58 added the inline format arguments the relay uses). rustup
+# installs into ~/.cargo/bin, which a non-interactive shell may not have on
+# PATH. The relay is the crate root and declares the message modules.
+set(cargo_bins $ENV{HOME}/.cargo/bin $ENV{USERPROFILE}/.cargo/bin)
+find_program(RUSTC_EXECUTABLE rustc HINTS ${cargo_bins})
+if(RUSTC_EXECUTABLE)
+    execute_process(COMMAND ${RUSTC_EXECUTABLE} --version
+        OUTPUT_VARIABLE rustc_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "^rustc ([0-9]+\\.[0-9]+).*" "\\1" rustc_version_num "${rustc_version}")
+endif()
+if(RUSTC_EXECUTABLE AND rustc_version_num VERSION_GREATER_EQUAL 1.58)
+    generate(rust)
+    set(dir ${WORKDIR}/rust)
+    get_filename_component(rust_bindir ${RUSTC_EXECUTABLE} DIRECTORY)
+    find_program(RUSTFMT_EXECUTABLE rustfmt HINTS ${rust_bindir} ${cargo_bins})
+    if(RUSTFMT_EXECUTABLE)
+        file(GLOB rust_sources ${dir}/*.rs)
+        execute_process(COMMAND ${RUSTFMT_EXECUTABLE} --edition 2021 --check ${rust_sources}
+            RESULT_VARIABLE rc OUTPUT_VARIABLE out ERROR_VARIABLE out)
+        if(NOT rc EQUAL 0)
+            message(FATAL_ERROR "generated Rust is not rustfmt-clean:\n${out}")
+        endif()
+    endif()
+    run_checked("rustc"
+        ${RUSTC_EXECUTABLE} --edition 2021 -D warnings -O -o ${dir}/ring_relay${EXE_SUFFIX}
+        ${dir}/ringy_mc_ringface_relay.rs)
+    find_program(CLIPPY_EXECUTABLE clippy-driver HINTS ${rust_bindir} ${cargo_bins})
+    if(CLIPPY_EXECUTABLE)
+        run_checked("clippy"
+            ${CLIPPY_EXECUTABLE} --edition 2021 -D warnings -o ${dir}/clippy_relay${EXE_SUFFIX}
+            ${dir}/ringy_mc_ringface_relay.rs)
+    endif()
+    set(relay_rust ${dir}/ring_relay${EXE_SUFFIX})
+    list(APPEND available rust)
+elseif(RUSTC_EXECUTABLE)
+    skip_lang(rust "${rustc_version} is older than rustc 1.58")
+else()
+    skip_lang(rust "rustc not on PATH or in ~/.cargo/bin")
+endif()
+
 # --- Choose the order --------------------------------------------------------
 
 if(NOT "$ENV{SKYWIRE_RING_SEED}" STREQUAL "")
@@ -228,8 +273,12 @@ if(n LESS 2)
     return()
 endif()
 
+# The first language closes the ring.
+list(GET order 0 first_lang)
+set(hops ${order} ${first_lang})
+
 set(path "")
-foreach(lang ${order})
+foreach(lang ${hops})
     list(APPEND path "${display_${lang}}")
 endforeach()
 string(REPLACE ";" " -> " path "${path}")
@@ -285,7 +334,7 @@ endfunction()
 set(current ${INPUT})
 set(previous "the input file")
 set(hop 0)
-foreach(lang ${order})
+foreach(lang ${hops})
     math(EXPR hop "${hop} + 1")
     set(next ${WORKDIR}/hop${hop}_${lang}.bin)
 

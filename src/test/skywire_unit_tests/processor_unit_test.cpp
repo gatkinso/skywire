@@ -291,7 +291,7 @@ TEST(FindLanguage, NamesAndAliases)
     ASSERT_EQ(language, "python3");
     ASSERT_EQ(lang_filename, "lang.python3.json");
 
-    for (const char* name : { "c", "go", "java", "proto3", "python3", "swift" })
+    for (const char* name : { "c", "go", "java", "proto3", "python3", "rust", "swift" })
     {
         ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
         ASSERT_EQ(language, name);
@@ -581,6 +581,13 @@ TEST_F(ProcessorFilenameTest, SpecNameMayUsePattern)
     generate_relay = true;
     ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"{classname}_wire.h","outputrelayfilename":"{classname}_relay.cpp")")));
     ASSERT_EQ(written(), (std::set<std::string>{ "TestClass_wire.h", "TestClassTest.cpp", "TestClass_relay.cpp" }));
+}
+
+TEST_F(ProcessorFilenameTest, SnakeCaseClassnameToken)
+{
+    generate_relay = true;
+    ASSERT_TRUE(run(spec(R"(,"outputheaderfilename":"{classname_snake}.h","outputrelayfilename":"{classname_snake}_{classname}.cpp")")));
+    ASSERT_EQ(written(), (std::set<std::string>{ "test_class.h", "TestClassTest.cpp", "test_class_TestClass.cpp" }));
 }
 
 TEST_F(ProcessorFilenameTest, ExpandedNameIsStillValidated)

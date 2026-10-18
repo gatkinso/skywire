@@ -19,6 +19,7 @@
 #include <set>
 #include "bitfields.h"
 #include "file_writer.h"
+#include "naming.h"
 #include "processor.h"
 #include "sw_endian.h"
 
@@ -49,17 +50,24 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "relay", "outputrelayfilename" },
 };
 
-// Output file names may contain this, which is replaced by the spec's classname.
+// Output file names may contain these, which are replaced by the spec's
+// classname, as is or in snake_case (Rust module files).
 const std::string classname_token = "{classname}";
+const std::string classname_snake_token = "{classname_snake}";
 
-std::string expand_filename(std::string pattern, const std::string& classname)
+std::string replace_token(std::string pattern, const std::string& token, const std::string& value)
 {
-    for (auto pos = pattern.find(classname_token); pos != std::string::npos;
-         pos = pattern.find(classname_token, pos + classname.size()))
+    for (auto pos = pattern.find(token); pos != std::string::npos;
+         pos = pattern.find(token, pos + value.size()))
     {
-        pattern.replace(pos, classname_token.size(), classname);
+        pattern.replace(pos, token.size(), value);
     }
     return pattern;
+}
+
+std::string expand_filename(const std::string& pattern, const std::string& classname)
+{
+    return replace_token(replace_token(pattern, classname_token, classname), classname_snake_token, snake_case(classname));
 }
 
 std::string printable(const std::string& value)
@@ -321,6 +329,20 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
             relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Py3RelayGenerator(msg_spec_, lang_spec_));
         }
     }
+    else if (lang == rust_str_)
+    {
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::RustGenerator(msg_spec_, lang_spec_));
+
+        if (true == generate_tests)
+        {
+            test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::RustTestGenerator(msg_spec_, lang_spec_));
+        }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::RustRelayGenerator(msg_spec_, lang_spec_));
+        }
+    }
     else
     {
         errorcode |= SW_UNKNOWNLANG;
@@ -373,7 +395,8 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
 void Processor::resolve_output_filenames()
 {
     // The lang file gives each output a file name pattern (".h", "_test.go",
-    // ...); a name in the spec takes its place. Either may use {classname}.
+    // ...); a name in the spec takes its place. Either may use {classname}
+    // or {classname_snake}.
     auto& values = *msg_spec_.get_proto_ref().mutable_string_values();
     const auto& patterns = lang_spec_.get_proto().string_values();
 

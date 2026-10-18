@@ -1,0 +1,41 @@
+{
+   "stringValues": {
+      "classname": "RustyMcRustface",
+      "namespace": "testspace"
+   },
+   "members": {
+      "1":   { "type": "char",          "name": "a_char_1" },
+      "2":   { "type": "unsigned char", "name": "b_uchar_2" },
+      "3":   { "type": "uint8_t",       "name": "c_u8_3" },
+      "4":   { "type": "int8_t",        "name": "d_i8_4" },
+      "10":  { "type": "uint16_t",      "name": "e_u16_be", "endian": 0 },
+      "11":  { "type": "uint16_t",      "name": "f_u16_le", "endian": 1 },
+      "12":  { "type": "uint16_t",      "name": "g_u16_ne", "endian": 2 },
+      "13":  { "type": "int16_t",       "name": "h_i16_be", "endian": 0 },
+      "14":  { "type": "int16_t",       "name": "i_i16_le", "endian": 1 },
+      "15":  { "type": "int16_t",       "name": "j_i16_ne", "endian": 2 },
+      "20":  { "type": "uint32_t",      "name": "k_u32_be", "endian": 0 },
+      "21":  { "type": "uint32_t",      "name": "l_u32_le", "endian": 1 },
+      "22":  { "type": "uint32_t",      "name": "m_u32_ne", "endian": 2 },
+      "23":  { "type": "int32_t",       "name": "n_i32_be", "endian": 0 },
+      "24":  { "type": "int32_t",       "name": "o_i32_le", "endian": 1 },
+      "25":  { "type": "int32_t",       "name": "p_i32_ne", "endian": 2 },
+      "30":  { "type": "uint64_t",      "name": "q_u64_be", "endian": 0 },
+      "31":  { "type": "uint64_t",      "name": "r_u64_le", "endian": 1 },
+      "32":  { "type": "uint64_t",      "name": "s_u64_ne", "endian": 2 },
+      "33":  { "type": "int64_t",       "name": "t_i64_be", "endian": 0 },
+      "34":  { "type": "int64_t",       "name": "u_i64_le", "endian": 1 },
+      "35":  { "type": "int64_t",       "name": "v_i64_ne", "endian": 2 },
+      "40":  { "type": "float",         "name": "w_f32_be", "endian": 0 },
+      "41":  { "type": "float",         "name": "x_f32_le", "endian": 1 },
+      "42":  { "type": "float",         "name": "y_f32_ne", "endian": 2 },
+      "43":  { "type": "double",        "name": "z_f64_be", "endian": 0 },
+      "44":  { "type": "double",        "name": "za_f64_le", "endian": 1 },
+      "45":  { "type": "double",        "name": "zb_f64_ne", "endian": 2 },
+      "50":  { "type": "string",        "name": "str_one", "length": 1 },
+      "51":  { "type": "string",        "name": "str_exact", "length": 7 },
+      "52":  { "type": "string",        "name": "str_forty", "length": 40 },
+      "60":  { "type": "uint32_t",      "name": "type", "endian": 1 },
+      "61":  { "type": "int16_t",       "name": "camelCase", "endian": 0 }
+   }
+}
