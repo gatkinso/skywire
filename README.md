@@ -157,7 +157,8 @@ rustfmt is installed), and on clippy warnings (when clippy is installed).
 
 `skywire_ring:Serial` passes one serialized message through the generated code
 of every language (C, C++, Swift, Go, Java, Python and Rust), in a random order each
-run. Each step checks the message for corruption or loss. Its input file is
+run, ending back in the language it started in. Each step checks the message for
+corruption or loss. Its input file is
 written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
 and `scripts/README.md`.
 

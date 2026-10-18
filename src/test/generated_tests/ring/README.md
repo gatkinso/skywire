@@ -1,10 +1,11 @@
 # Cross-language serial test
 
 `skywire_ring:Serial` passes one serialized message through every language's
-generated code in turn, in a random order each run:
+generated code in turn, in a random order each run, and back to the language
+it started in:
 
 ```
-RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Rust -> hop7.bin
+RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Rust -> hop7.bin -> C++ -> hop8.bin
 ```
 
 ```
@@ -29,6 +30,10 @@ byte-for-byte identical to the original input. Each hop therefore starts from
 verified input, so a failure belongs to the language at that hop. Check 3 is
 what catches a symmetric bug, such as a member read and written in the wrong
 byte order: that bug round-trips its own bytes perfectly.
+
+The last hop closes the ring: the first language's relay, the same build that
+began the chain, reads the bytes every other language has passed along and
+must accept them and write them out unchanged.
 
 Before the chain runs, every relay must reject three damaged copies of the
 input: one byte inverted (a random offset each run), one byte short, and one

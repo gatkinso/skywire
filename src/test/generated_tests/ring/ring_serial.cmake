@@ -5,7 +5,11 @@
 #  generated relay of every available language, one after another, in a random
 #  order:
 #
-#      input.bin -> L1 -> hop1.bin -> L2 -> hop2.bin -> ... -> Ln -> hopN.bin
+#      input.bin -> L1 -> hop1.bin -> L2 -> hop2.bin -> ... -> Ln -> hopN.bin -> L1
+#
+#  The ring closes: the first language's relay (the same build) reads the last
+#  hop's output, so the bytes that come back must satisfy the language they
+#  started in.
 #
 #  Each relay deserializes its input file, checks every member against the
 #  shared test values, re-serializes, checks the bytes are unchanged and writes
@@ -269,8 +273,12 @@ if(n LESS 2)
     return()
 endif()
 
+# The first language closes the ring.
+list(GET order 0 first_lang)
+set(hops ${order} ${first_lang})
+
 set(path "")
-foreach(lang ${order})
+foreach(lang ${hops})
     list(APPEND path "${display_${lang}}")
 endforeach()
 string(REPLACE ";" " -> " path "${path}")
@@ -326,7 +334,7 @@ endfunction()
 set(current ${INPUT})
 set(previous "the input file")
 set(hop 0)
-foreach(lang ${order})
+foreach(lang ${hops})
     math(EXPR hop "${hop} + 1")
     set(next ${WORKDIR}/hop${hop}_${lang}.bin)
 
