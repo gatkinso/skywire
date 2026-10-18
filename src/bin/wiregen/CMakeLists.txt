@@ -22,7 +22,6 @@ set(_SOURCES main.cpp)
 
 set(DEPLOY_JSONS   c/lang.c.json
                    cpp/lang.cpp.json
-                   c++11/lang.cpp11.json
                    go/lang.go.json
                    java/lang.java.json
                    proto/lang.proto3.json
