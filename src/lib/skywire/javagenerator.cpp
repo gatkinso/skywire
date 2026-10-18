@@ -251,6 +251,12 @@ std::string JavaGenerator::imp_serialize()
         const std::string& type = std::get<member_type>(member.second);
         std::string key;
 
+        if (is_bitfield(member.second))
+        {
+            body += serialize_bitfield(member.first, member.second);
+            continue;
+        }
+
         if (is_string_type(type))
             key = "serialize_string_mem_str";
         else if (!is_native_type(type))
@@ -274,6 +280,12 @@ std::string JavaGenerator::imp_deserialize()
         const std::string& type = std::get<member_type>(member.second);
         std::string key;
 
+        if (is_bitfield(member.second))
+        {
+            body += deserialize_bitfield(member.first, member.second);
+            continue;
+        }
+
         if (is_string_type(type))
             key = "deserialize_string_mem_str";
         else if (!is_native_type(type))
@@ -293,23 +305,29 @@ std::string JavaGenerator::imp_size()
 {
     const std::string separator = lang_spec_.get_value_string("size_separator_str");
 
-    std::string body;
-    size_t i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
 
-        if (is_string_type(type))
-            body += std::to_string(std::get<member_length>(member.second));
-        else if (!is_native_type(type))
-            body += subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
-        else
-            body += std::to_string(java_wire(type).bits / 8);
-
-        if (++i < ordered_members_.size())
+        if (is_bitfield(member.second))
         {
-            body += separator;
+            // A storage unit counts once, at its first field.
+            if (place_of(member.first).first)
+                terms.push_back(std::to_string(java_wire(type).bits / 8));
         }
+        else if (is_string_type(type))
+            terms.push_back(std::to_string(std::get<member_length>(member.second)));
+        else if (!is_native_type(type))
+            terms.push_back(subst(lang_spec_.get_value_string("size_user_mem_str"), member.second));
+        else
+            terms.push_back(std::to_string(java_wire(type).bits / 8));
+    }
+
+    std::string body;
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        body += (i ? separator : "") + terms[i];
     }
 
     return body;
@@ -414,6 +432,11 @@ std::string JavaGenerator::imp_get_set_functions()
         }
 
         body += separator + subst(lang_spec_.get_value_string(get_key), member.second);
+        if (is_bitfield(member.second))
+        {
+            body += separator + set_bitfield(member.second);
+            continue;
+        }
         body += separator + subst(lang_spec_.get_value_string(set_key), member.second);
     }
 
@@ -430,6 +453,124 @@ std::string JavaGenerator::block(const std::string block_id, const std::string& 
     block_str = std::regex_replace(block_str, std::regex(body_token_str), body);
 
     return block_str;
+}
+
+// The bits of Java integer type jtype (int arithmetic covers byte and short).
+static unsigned int java_bits(const std::string& jtype)
+{
+    return jtype == "long" ? 64 : 32;
+}
+
+// A bitfield's storage unit is a long local, unit_<n>: its first field
+// declares it, each field ors itself in, and the last one writes it.
+std::string JavaGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const wire_t wire = java_wire(unit.type);
+    const std::string var = "unit_" + std::to_string(place.unit);
+    const std::string jtype = java_type(std::get<member_type>(member));
+
+    std::string body;
+    if (place.first)
+    {
+        body += "            long " + var + " = 0;\n";
+    }
+
+    std::string field = "this." + std::get<member_name>(member);
+    if (jtype != "long")
+    {
+        field = "(long) " + field;
+    }
+    field = "(" + field + " & " + bitfields::hex(bitfields::mask(place.bits)) + "L)";
+    body += "            " + var + " |= " + field + (place.shift ? " << " + std::to_string(place.shift) : "") + ";\n";
+
+    if (place.last)
+    {
+        if (wire.bits == 8)
+            body += "            buf.put((byte) " + var + ");\n";
+        else if (wire.bits == 64)
+            body += "            buf.order(" + java_endian(unit.endian) + ").putLong(" + var + ");\n";
+        else
+            body += "            buf.order(" + java_endian(unit.endian) + ").put" + wire.accessor + "((" + wire.type + ") " + var + ");\n";
+    }
+
+    return body;
+}
+
+std::string JavaGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& member)
+{
+    static const std::map<unsigned int, std::string> masks = {
+        { 8, "0xFFL" }, { 16, "0xFFFFL" }, { 32, "0xFFFFFFFFL" },
+    };
+
+    const bitfields::place_t& place = place_of(tag);
+    const bitfields::unit_t& unit = unit_of(tag);
+    const wire_t wire = java_wire(unit.type);
+    const std::string var = "unit_" + std::to_string(place.unit);
+    const std::string& type = std::get<member_type>(member);
+    const std::string jtype = java_type(type);
+
+    std::string body;
+    if (place.first)
+    {
+        std::string read = wire.bits == 8 ? "buf.get()" : "buf.order(" + java_endian(unit.endian) + ").get" + wire.accessor + "()";
+        if (wire.bits < 64)
+        {
+            read += " & " + masks.at(wire.bits);
+        }
+        body += "            long " + var + " = " + read + ";\n";
+    }
+
+    // Shifting the field to the top of the long and back down masks it
+    // (>>>) or sign-extends it (>>).
+    const unsigned int up = 64 - place.shift - place.bits;
+    const unsigned int down = 64 - place.bits;
+    std::string value = up ? "(" + var + " << " + std::to_string(up) + ")" : var;
+    if (down)
+    {
+        value += (bitfields::is_signed(type) ? " >> " : " >>> ") + std::to_string(down);
+    }
+    if (jtype != "long")
+    {
+        value = "(" + jtype + ") (" + value + ")";
+    }
+    body += "            this." + std::get<member_name>(member) + " = " + value + ";\n";
+
+    return body;
+}
+
+// Keeps only the field's bits: unsigned fields are masked, signed ones
+// shifted to the top of their Java type and back to sign-extend them.
+std::string JavaGenerator::set_bitfield(const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const std::string jtype = java_type(type);
+    const unsigned int bits = std::get<member_bits>(member);
+    const unsigned int width = java_bits(jtype);
+
+    std::string value = "newval";
+    if (false == bitfields::is_signed(type))
+    {
+        if (bits < bitfields::width(type) || is_widened(type))
+        {
+            value += " & " + bitfields::hex(bitfields::mask(bits)) + (width == 64 ? "L" : "");
+        }
+    }
+    else if (bits < width)
+    {
+        const std::string unused = std::to_string(width - bits);
+        value = "(" + value + " << " + unused + ") >> " + unused;
+        if (jtype == "byte" || jtype == "short")
+        {
+            value = "(" + jtype + ") (" + value + ")";
+        }
+    }
+
+    return "    /** Keeps the low " + std::to_string(bits) + " bits, the field's width on the wire. */\n"
+           "    public void Set_" + std::get<member_name>(member) + "(" + jtype + " newval) {\n"
+           "        this." + std::get<member_name>(member) + " = " + value + ";\n"
+           "    }\n";
 }
 
 }

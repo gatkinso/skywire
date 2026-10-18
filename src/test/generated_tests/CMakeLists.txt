@@ -142,7 +142,7 @@ add_dependencies(${TARGETNAME} specification skywire wiregen)
 add_test(NAME skywire_generated_tests:SwiftRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
             -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_swift_wiregen
@@ -157,7 +157,7 @@ set_tests_properties(skywire_generated_tests:SwiftRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:GoRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/GopherMcGoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/GopherMcGoface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/go/lang.go.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_go_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/go_roundtrip.cmake)
@@ -170,7 +170,7 @@ set_tests_properties(skywire_generated_tests:GoRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:PythonRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SnakeyMcSnakeface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SnakeyMcSnakeface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/python/lang.python3.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_python_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/py_roundtrip.cmake)
@@ -184,7 +184,7 @@ set_tests_properties(skywire_generated_tests:PythonRoundTrip PROPERTIES
 add_test(NAME skywire_generated_tests:JavaRoundTrip
     COMMAND ${CMAKE_COMMAND}
             -DWIREGEN=$<TARGET_FILE:wiregen>
-            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/CoffeeMcCofface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/CoffeeMcCofface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/java/lang.java.json
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_java_wiregen
             -P ${CMAKE_CURRENT_SOURCE_DIR}/java_roundtrip.cmake)
