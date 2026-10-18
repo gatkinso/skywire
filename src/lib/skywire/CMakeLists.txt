@@ -42,6 +42,7 @@ set(_GENERATORS
              py3testgenerator.cpp
              naming.cpp
              rustgenerator.cpp
+             rusttestgenerator.cpp
              crelaygenerator.cpp
              cpprelaygenerator.cpp
              gorelaygenerator.cpp
@@ -67,6 +68,7 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/py3testgenerator.h
              ${TARGET_INC_DIR}/relaygenerators.h
              ${TARGET_INC_DIR}/rustgenerator.h
+             ${TARGET_INC_DIR}/rusttestgenerator.h
              ${TARGET_INC_DIR}/swiftgenerator.h
              ${TARGET_INC_DIR}/swifttestgenerator.h
              ${TARGET_INC_DIR}/test_values.h

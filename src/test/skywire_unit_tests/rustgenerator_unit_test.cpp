@@ -441,3 +441,63 @@ TEST(RustNames, NamingLints)
     EXPECT_FALSE(RustGenerator::is_camel_case("Test_Class"));
     EXPECT_FALSE(RustGenerator::is_camel_case("lower"));
 }
+
+// Runs RustTestGenerator over a spec, using the shipped Rust lang file.
+class RustTestGeneratorUnitTest : public RustGeneratorUnitTest
+{
+protected:
+    bool generate_test(const std::string& members, const std::string& string_values = R"("classname":"TestClass")")
+    {
+        std::string json = R"({"stringValues":{)" + string_values + R"(},"members":)" + members + "}";
+        EXPECT_TRUE(msg_spec_.read_string(json));
+
+        RustTestGenerator unit(msg_spec_, lang_spec_);
+        bool success = unit.generate(errorcode);
+        auto results = unit.get_results();
+        rs = results["unittest"];
+        return success;
+    }
+};
+
+TEST_F(RustTestGeneratorUnitTest, TestsAreASiblingModule)
+{
+    ASSERT_TRUE(generate_test(R"({"1":{"type":"uint16_t","name":"a"}})", R"("classname":"HTTPHeader")"));
+
+    EXPECT_TRUE(has("\n#![cfg(test)]\n"));
+    EXPECT_TRUE(has_line("use super::http_header::HTTPHeader;"));
+    EXPECT_TRUE(has("\nfn sample() -> HTTPHeader {\n    let mut s = HTTPHeader::default();\n    s.set_a(60000);\n    s\n}\n"));
+    EXPECT_TRUE(has_line("fn round_trip() {"));
+    EXPECT_TRUE(has_line("fn short_buffer() {"));
+    // uint16_t 60000, big-endian.
+    EXPECT_TRUE(has("    #[rustfmt::skip]\n    let want: [u8; 2] = [\n        0xea, 0x60,\n    ];\n"));
+}
+
+TEST_F(RustTestGeneratorUnitTest, NestedOnlySampleIsDefault)
+{
+    ASSERT_TRUE(generate_test(R"({"1":{"type":"NestyInner","name":"inner"}})"));
+
+    EXPECT_TRUE(has("\nfn sample() -> TestClass {\n    TestClass::default()\n}\n"));
+    // A nested member has no shared test value, so no expected bytes.
+    EXPECT_FALSE(has("fn wire()"));
+}
+
+TEST_F(RustTestGeneratorUnitTest, KeywordMemberUsesRawGetter)
+{
+    ASSERT_TRUE(generate_test(R"({"1":{"type":"uint8_t","name":"type","bits":4},"2":{"type":"string","name":"match","length":3}})"));
+
+    EXPECT_TRUE(has_line("    s.set_type(5);"));
+    EXPECT_TRUE(has_line("    assert_eq!(s.r#type(), 5);"));
+    EXPECT_TRUE(has_line("    s.set_match(b\"skywire\");"));
+    EXPECT_TRUE(has_line("    assert_eq!(s.r#match(), &[b'x'; 3]);"));
+}
+
+TEST_F(RustTestGeneratorUnitTest, SignedOutOfRangeValueIsCastFromItsBitPattern)
+{
+    // A 7-bit field's out-of-range value sets bit 7, above i8::MAX as a literal.
+    ASSERT_TRUE(generate_test(R"({"1":{"type":"int8_t","name":"s","bits":7},"2":{"type":"uint8_t","name":"u","bits":1}})"));
+
+    EXPECT_TRUE(has(".set_s(0x"));
+    EXPECT_TRUE(has("u8 as i8);\n"));
+    EXPECT_TRUE(has_line("    s.set_u(0x3);"));
+    EXPECT_TRUE(has_line("    assert_eq!(s.u(), 1);"));
+}

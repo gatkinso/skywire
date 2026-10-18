@@ -28,5 +28,6 @@
 #include "py3testgenerator.h"
 #include "relaygenerators.h"
 #include "rustgenerator.h"
+#include "rusttestgenerator.h"
 #include "swiftgenerator.h"
 #include "swifttestgenerator.h"
