@@ -17,7 +17,7 @@ Skywire (c) 2014-2018 Skyloupe, LLC.  All rights reserved.
 Welcome to Skywire!
 
 In this repository you will find a simple yet surprisingly versatile message 
-serialization generator for C and C++.
+serialization generator for C, C++, Go, Java, Python, Rust and Swift.
 
 Based on Google Protocol Buffer technology, Skywire takes protocol buffers to 
 a place it fears to tread:  namely, the ability to define a wire protocol.
@@ -39,7 +39,7 @@ Currently, wiregen will supports generating messages in
 * Java
 * Javascript (future)
 * Python
-* Rust (future)
+* Rust
 * Swift
 
 The message specification itself is defined using a JSON object which is in turn 
@@ -147,9 +147,18 @@ type
 
 to run them.
 
+The `skywire_generated_tests:*RoundTrip` tests generate each language's code
+with its unit tests, then compile and run them. They need that language's
+toolchain (swiftc; go 1.21 or newer; python3; a JDK; rustc 1.58 or newer) and
+report Skipped without it. `RustRoundTrip` also finds a rustup install in
+`~/.cargo/bin` when it isn't on `PATH`, builds with plain `rustc` (no Cargo),
+and fails on any compiler warning, on output that isn't rustfmt-clean (when
+rustfmt is installed), and on clippy warnings (when clippy is installed).
+
 `skywire_ring:Serial` passes one serialized message through the generated code
-of every language (C, C++, Swift, Go, Java and Python), in a random order each
-run. Each step checks the message for corruption or loss. Its input file is
+of every language (C, C++, Swift, Go, Java, Python and Rust), in a random order each
+run, ending back in the language it started in. Each step checks the message for
+corruption or loss. Its input file is
 written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
 and `scripts/README.md`.
 
@@ -168,7 +177,8 @@ they must agree. (`--langfile` is the old spelling of `--lang_file`.)
 `--namespace <name>` replaces the specification's `namespace` (the C++
 namespace, or the Go, Java or Python package), so one specification can be
 generated into different namespaces. The specification need not have a
-namespace at all when the command line gives one.
+namespace at all when the command line gives one. Rust has no use for it: a
+Rust module's path is wherever you declare it with `mod`.
 
 Without `--write_to_file` the generated code is printed to standard output.
 
@@ -178,7 +188,7 @@ Without `--write_to_file` the generated code is printed to standard output.
 |---|---|
 | `--input_file <file>` | The message specification to read. |
 | `--input_str <json>` | The message specification, given on the command line instead. |
-| `--language <name>` | The language to generate, using its lang file installed next to wiregen: `c`, `c++` (or `cpp`), `go`, `java`, `proto3`, `python3` (or `python`), `swift`. |
+| `--language <name>` | The language to generate, using its lang file installed next to wiregen: `c`, `c++` (or `cpp`), `go`, `java`, `proto3`, `python3` (or `python`), `rust`, `swift`. |
 | `--lang_file <file>` | A lang file to use instead of the installed one (`--langfile` is the old spelling). |
 | `--langspec <json>` | Lang file contents, given on the command line instead. |
 | `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
@@ -385,6 +395,7 @@ warns about it. Use the setters, or keep values in range:
 | Swift | Within the module that compiles the message: the stored properties are `internal`. |
 | C++ | No: the members are `private`. |
 | Java | No: the fields are `private`. |
+| Rust | No: the fields are private to the message's module. |
 
 In protobuf (PZ) mode a bitfield is an ordinary field under its own tag, of its
 type's proto3 type; decoding cuts an out-of-range value to the field's bits,
@@ -406,14 +417,65 @@ namespace (package, module).
 
 Generate `Inner` from its own specification, into the same place. The generated
 code imports it where the language needs that: `#include "Inner.h"` in C and
-C++, `from Inner import Inner` in Python, `import "Inner.proto";` in proto3;
-Go, Java and Swift need nothing. The specification does not need to list it in
-`includes`.
+C++, `from Inner import Inner` in Python, `import "Inner.proto";` in proto3,
+`use super::inner::Inner;` in Rust; Go, Java and Swift need nothing. The
+specification does not need to list it in `includes`.
 
 On the wire a nested message is its own serialization, inline, in tag order
 like any member. Its members keep their own byte orders, so the nested member's
 `endian` has no effect. Its size is the nested message's size, and if it fails
 to deserialize, so does the message containing it.
+
+#### Rust
+
+`--language rust` writes each message as a module of its own, named after the
+class in snake_case: `NestyMcNestface` becomes `nesty_mc_nestface.rs`. The code
+uses only `std`, so there is no runtime crate to add; it needs rustc 1.58 or
+newer (edition 2021) and is rustfmt- and clippy-clean. Declare the module next
+to the modules of the messages it contains, which it imports as
+`super::<module>`:
+
+```rust
+mod nesty_inner;
+mod nesty_mc_nestface;
+
+use nesty_mc_nestface::NestyMcNestface;
+
+fn main() -> std::io::Result<()> {
+    let mut msg = NestyMcNestface::default();
+    msg.set_a_myuint8_1(7);
+    msg.b_first2_mut().set_a_myint16_1(-3);
+
+    let wire = msg.serialize(); // NestyMcNestface::SIZE bytes
+    let back = NestyMcNestface::from_bytes(&wire)?;
+    assert_eq!(back, msg);
+    Ok(())
+}
+```
+
+| Item | Notes |
+|---|---|
+| `#[derive(Debug, Clone, Copy, Default, PartialEq)]` | `Default` is written out instead when a string is longer than 32 bytes, which std can't derive. |
+| `SIZE`, `size()` | The wire size, a constant. |
+| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends, as nested messages do. |
+| `deserialize(&mut self, &[u8])`, `from_bytes(&[u8])` | Read from the start of the slice; extra bytes are ignored. A slice shorter than `SIZE` returns an `UnexpectedEof` `std::io::Error` and leaves the message unchanged. |
+| `equals(&other)` | The same as `==`. |
+| `x()`, `set_x(v)` | Fields are private. A bitfield setter keeps only the field's bits. |
+| `x() -> &[u8; N]`, `set_x(&[u8])` | A string; the setter truncates or zero-pads to `N` bytes. |
+| `x() -> &T`, `x_mut()`, `set_x(T)` | A nested message. |
+
+A member named after a Rust keyword becomes a raw identifier (`r#type`, with
+the setter `set_type`). wiregen rejects a member named `self`, `Self`,
+`super`, `crate` or `_`, and one whose accessors would collide with the
+generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `deserialize`,
+`from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
+Names that aren't snake_case, and a class name that isn't CamelCase, are kept
+as they are, with `#![allow(non_snake_case)]` or
+`#![allow(non_camel_case_types)]` at the top of the module.
+
+The specification's `namespace` and `includes` are not used. A nested message
+is imported from its default module name, so generate it without overriding
+its `outputimplfilename`. PZ mode is not available in Rust.
 
 #### Protobuf (PZ) mode
 
@@ -498,7 +560,8 @@ selects the generator. wiregen ignores (with a warning) a `"language"` value in 
 message specification.
 
 The lang file also names each output file, with `{classname}` standing for the
-message's `classname`:
+message's `classname` and `{classname_snake}` for it in snake_case
+(`RingyMcRingface` becomes `ringy_mc_ringface`):
 
 | Language | Header (`outputheaderfilename`) | Implementation (`outputimplfilename`) | Test (`outputtestfilename`) | Relay (`outputrelayfilename`) |
 |----------|-------------|---------------------|-------------------------|------------------------|
@@ -508,10 +571,11 @@ message's `classname`:
 | java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
 | proto3   |                 | `{classname}.proto` | `{classname}Test.txtpb` |                        |
 | python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
+| rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
 A message specification may set any of these keys to use a different name for
-that one message; its value may also use `{classname}`. A name must be a plain
+that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain
 file name (no directories). Java requires a public class's file to be named
 after the class, so the Java generator names the test and relay classes after
 their files.
@@ -542,6 +606,9 @@ message's header or module is imported without it (see Nested messages).
 | swift    | `Foundation` |
 
 The Go, Java and Python generators add the imports their code uses themselves.
+The Rust generator needs no imports beyond `use super::<module>::<Type>;` for
+each nested message, which it adds itself, and ignores a specification's
+`includes`.
 
 More detail on this to come.
 

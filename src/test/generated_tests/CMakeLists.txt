@@ -179,6 +179,20 @@ set_tests_properties(skywire_generated_tests:PythonRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "PYTHON3_NOT_FOUND")
 
 
+# Rust generated round-trip and wire-format test. The Rust toolchain is detected
+# when the test runs (see rust_roundtrip.cmake); without rustc the test reports Skipped.
+add_test(NAME skywire_generated_tests:RustRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/RustyMcRustface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/rust/lang.rust.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_rust_wiregen
+            -DEXE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/rust_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:RustRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "RUST_TOOLCHAIN_NOT_FOUND")
+
 # Java generated round-trip and wire-format test. The JDK is detected when the
 # test runs (see java_roundtrip.cmake); without javac the test reports Skipped.
 add_test(NAME skywire_generated_tests:JavaRoundTrip

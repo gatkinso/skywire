@@ -8,10 +8,15 @@
 #  Required -D variables: WIREGEN, SPECS, LANGFILE, RUNTIME, OUTDIR
 #  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
 #  nested message types must be among them.
-#  Each test has its own @main, so each is built separately, with every
-#  message source.
+#  Each test has its own @main, so each is built separately, with the runtime,
+#  its own message and the messages nested in it. swiftc starts from scratch
+#  every time, so the builds run at once.
 #  Optional -D variables: EXE_SUFFIX
 #
+
+# Script mode starts with every policy at OLD; match the project's minimum so
+# IN_LIST and the other newer features behave the same on every CMake version.
+cmake_minimum_required(VERSION 3.28)
 
 find_program(SWIFTC_EXECUTABLE swiftc)
 
@@ -25,12 +30,34 @@ message("Using swiftc: ${SWIFTC_EXECUTABLE}")
 file(MAKE_DIRECTORY ${OUTDIR})
 string(REPLACE "," ";" SPECS "${SPECS}")
 
+# A member type that isn't one of the lang file's native types names a
+# nested message.
+file(READ ${LANGFILE} lang_json)
+string(JSON native_count LENGTH "${lang_json}" native_types)
+set(native_types "")
+math(EXPR last "${native_count} - 1")
+foreach(i RANGE ${last})
+    string(JSON type GET "${lang_json}" native_types ${i})
+    list(APPEND native_types "${type}")
+endforeach()
+
 set(classnames "")
-set(impls "")
 foreach(spec ${SPECS})
     get_filename_component(classname ${spec} NAME_WE)
     list(APPEND classnames ${classname})
-    list(APPEND impls ${OUTDIR}/${classname}.swift)
+
+    # The message types this one contains directly.
+    file(READ ${spec} spec_json)
+    string(JSON member_count LENGTH "${spec_json}" members)
+    set(nested_${classname} "")
+    math(EXPR last "${member_count} - 1")
+    foreach(i RANGE ${last})
+        string(JSON tag MEMBER "${spec_json}" members ${i})
+        string(JSON type GET "${spec_json}" members ${tag} type)
+        if(NOT type IN_LIST native_types)
+            list(APPEND nested_${classname} ${type})
+        endif()
+    endforeach()
 
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
@@ -41,17 +68,54 @@ foreach(spec ${SPECS})
     endif()
 endforeach()
 
+# Sets out to classname and every message nested in it, at any depth.
+function(with_nested classname out)
+    set(found ${classname})
+    set(pending ${classname})
+    while(pending)
+        list(POP_FRONT pending current)
+        foreach(type ${nested_${current}})
+            if(NOT type IN_LIST classnames)
+                message(FATAL_ERROR "${current} contains ${type}, which is not among SPECS")
+            endif()
+            if(NOT type IN_LIST found)
+                list(APPEND found ${type})
+                list(APPEND pending ${type})
+            endif()
+        endforeach()
+    endwhile()
+    set(${out} ${found} PARENT_SCOPE)
+endfunction()
+
+# execute_process runs all its COMMANDs at the same time (as a pipeline;
+# swiftc reads no input, so nothing passes between them).
+set(builds "")
 foreach(classname ${classnames})
-    set(bin ${OUTDIR}/${classname}_test${EXE_SUFFIX})
+    with_nested(${classname} messages)
+    set(sources ${RUNTIME})
+    foreach(message ${messages})
+        list(APPEND sources ${OUTDIR}/${message}.swift)
+    endforeach()
+    list(APPEND builds COMMAND ${SWIFTC_EXECUTABLE} -o ${OUTDIR}/${classname}_test${EXE_SUFFIX}
+                               ${sources} ${OUTDIR}/${classname}_test.swift)
+endforeach()
 
-    execute_process(
-        COMMAND ${SWIFTC_EXECUTABLE} -o ${bin} ${RUNTIME} ${impls} ${OUTDIR}/${classname}_test.swift
-        RESULT_VARIABLE rc)
+execute_process(${builds}
+    RESULTS_VARIABLE results
+    OUTPUT_VARIABLE out ERROR_VARIABLE out)
+set(failed "")
+foreach(classname rc IN ZIP_LISTS classnames results)
     if(NOT rc EQUAL 0)
-        message(FATAL_ERROR "swiftc failed on ${classname} (${rc})")
+        list(APPEND failed "${classname} (${rc})")
     endif()
+endforeach()
+if(failed)
+    list(JOIN failed ", " failed)
+    message(FATAL_ERROR "swiftc failed on ${failed}:\n${out}")
+endif()
 
-    execute_process(COMMAND ${bin} RESULT_VARIABLE rc)
+foreach(classname ${classnames})
+    execute_process(COMMAND ${OUTDIR}/${classname}_test${EXE_SUFFIX} RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "Swift round-trip ${classname} failed (${rc})")
     endif()

@@ -41,6 +41,7 @@ set(UNIT_TESTS
                 generator_unit_test.cpp
                 processor_unit_test.cpp
                 proto3generator_unit_test.cpp
+                rustgenerator_unit_test.cpp
                 specification_unit_test.cpp
                 stream_unit_test.cpp
                 pz_stream_unit_test.cpp
@@ -88,6 +89,12 @@ add_test(NAME wiregen_cli:LanguageAlias
     COMMAND wiregen --language cpp --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:Language wiregen_cli:LanguageAlias PROPERTIES
     PASS_REGULAR_EXPRESSION "class ClassyMcClassface")
+
+# Rust writes one module per message, named in snake_case.
+add_test(NAME wiregen_cli:LanguageRust
+    COMMAND wiregen --language rust --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:LanguageRust PROPERTIES
+    PASS_REGULAR_EXPRESSION "pub struct ClassyMcClassface")
 
 add_test(NAME wiregen_cli:LangFile
     COMMAND wiregen --lang_file ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})

@@ -21,6 +21,7 @@
 #include "gotestgenerator.h"
 #include "javatestgenerator.h"
 #include "py3testgenerator.h"
+#include "rusttestgenerator.h"
 #include "swifttestgenerator.h"
 
 namespace skyloupe
@@ -74,6 +75,13 @@ class Py3RelayGenerator : public Py3TestGenerator
 {
 public:
     Py3RelayGenerator(Specification& mspec, Specification& lspec) : Py3TestGenerator(mspec, lspec) {}
+    bool generate(int& errorcode) override;
+};
+
+class RustRelayGenerator : public RustTestGenerator
+{
+public:
+    RustRelayGenerator(Specification& mspec, Specification& lspec) : RustTestGenerator(mspec, lspec) {}
     bool generate(int& errorcode) override;
 };
 
