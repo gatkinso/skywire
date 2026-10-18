@@ -22,7 +22,10 @@ python3 scripts/make_ring_bin.py --check    # exit 1 if the file is out of date
 ```
 
 It reads the members from the spec, in numeric tag order, with each member's
-byte order and string length. A member whose type is another message is that
+byte order and string length. Bitfield members are packed into storage units
+by the script's own copy of the rules in `include/skywire/bitfields.h`
+(including the spec's `bitorder`), with the values from its `bits_value()`,
+which must match `test_values::bits_value`; each unit is one row of the table. A member whose type is another message is that
 message's own encoding, inline, read from `<type>.json` beside the spec. It prints a Markdown table of offsets and bytes
 in the same format as the table in the ring README, so you can paste it in.
 

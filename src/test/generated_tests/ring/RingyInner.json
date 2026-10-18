@@ -1,13 +1,16 @@
 {
    "stringValues": {
       "classname": "RingyInner",
-      "namespace": "ring"
+      "namespace": "ring",
+      "bitorder": "msb"
    },
    "members": {
       "3": { "type": "double",   "name": "f64_le", "endian": 1 },
       "1": { "type": "uint16_t", "name": "u16_le", "endian": 1 },
       "4": { "type": "string",   "name": "text",   "length": 5 },
       "2": { "type": "int32_t",  "name": "i32_be", "endian": 0 },
-      "5": { "type": "int8_t",   "name": "i8" }
+      "5": { "type": "int8_t",   "name": "i8" },
+      "7": { "type": "int16_t",  "name": "s11",    "bits": 11, "endian": 1 },
+      "6": { "type": "int16_t",  "name": "s5",     "bits": 5,  "endian": 1 }
    }
 }
