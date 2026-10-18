@@ -14,6 +14,10 @@
 #  Optional -D variables: EXE_SUFFIX
 #
 
+# Script mode starts with every policy at OLD; match the project's minimum so
+# IN_LIST and the other newer features behave the same on every CMake version.
+cmake_minimum_required(VERSION 3.28)
+
 find_program(SWIFTC_EXECUTABLE swiftc)
 
 if(NOT SWIFTC_EXECUTABLE)
