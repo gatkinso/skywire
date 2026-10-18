@@ -48,6 +48,7 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_equality(errorcode);
     test_short_buffer(errorcode);
     test_wire(errorcode);
+    test_bitfield_setters(errorcode);
     test_pz_round_trip(errorcode);
     test_pz_wire(errorcode);
     test_pz_empty(errorcode);
@@ -119,25 +120,30 @@ bool CppTestGenerator::test_size(int& errorcode)
     insert_indents(1);
     ss_ << "ASSERT_EQ(msg.size(), ";
 
-    int i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
-        if (is_string_type(std::get<member_type>(member.second)))
+        if (is_bitfield(member.second))
         {
-            ss_ << std::get<member_length>(member.second);
+            if (place_of(member.first).first)
+                terms.push_back("sizeof(" + bitfields::unsigned_type(unit_of(member.first).type) + ")");
+        }
+        else if (is_string_type(std::get<member_type>(member.second)))
+        {
+            terms.push_back(std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_user_type(std::get<member_type>(member.second)))
         {
-            ss_ << namespac << "::" << std::get<member_type>(member.second) << "::size()";
+            terms.push_back(namespac + "::" + std::get<member_type>(member.second) + "::size()");
         }
         else
         {
-            ss_ << "sizeof(" << std::get<member_type>(member.second) << ")";
+            terms.push_back("sizeof(" + std::get<member_type>(member.second) + ")");
         }
-        if (i++ < ordered_members_.size() - 1)
-        {
-            ss_ << "+";
-        }
+    }
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        ss_ << terms[i] << (i + 1 < terms.size() ? "+" : "");
     }
 
     ss_ << ");\n";
@@ -190,7 +196,7 @@ bool CppTestGenerator::do_sets(int& errorcode)
         }
         else if (test_values::literal(type))
         {
-            ss_ << "    in.Set_" << name << "(" << test_values::literal(type) << ");\n";
+            ss_ << "    in.Set_" << name << "(" << test_literal(member.second) << ");\n";
         }
     }
 
@@ -235,14 +241,10 @@ bool CppTestGenerator::test_wire(int& errorcode)
     std::string testname = classname + "Test";
 
     std::vector<uint8_t> wire;
-    for (auto& member : ordered_members_)
+    if (false == expected_wire(wire))
     {
-        if (!test_values::encode(std::get<member_type>(member.second), std::get<member_endianness>(member.second),
-                                 std::get<member_length>(member.second), wire))
-        {
-            // A user-defined member has no shared test value.
-            return true;
-        }
+        // A user-defined member has no shared test value.
+        return true;
     }
 
     ss_ << "TEST(" << testname << ", Wire)\n";
@@ -265,6 +267,41 @@ bool CppTestGenerator::test_wire(int& errorcode)
     ss_ << "    ASSERT_TRUE(in.serialize(stream));\n";
     ss_ << "    ASSERT_EQ(sizeof(want), stream.byte_size());\n";
     ss_ << "    ASSERT_EQ(0, std::memcmp(stream.data(), want, sizeof(want)));\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// A bitfield setter keeps only the field's bits: a value with a bit set
+// above the field reads back as the field's value.
+bool CppTestGenerator::test_bitfield_setters(int& errorcode)
+{
+    std::string namespac = msg_spec_.get_value_string("namespace");
+    std::string classname = msg_spec_.get_value_string("classname");
+
+    std::stringstream body;
+    for (auto& member : ordered_members_)
+    {
+        const std::string wide = out_of_range_hex(member.second);
+        if (wide.empty())
+        {
+            continue;
+        }
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+        body << "    msg.Set_" << name << "(static_cast<" << type << ">(" << wide << "ull));\n";
+        body << "    ASSERT_EQ(static_cast<" << type << ">(" << test_literal(member.second) << "), msg.Get_" << name << "());\n";
+    }
+
+    if (body.str().empty())
+    {
+        return true;
+    }
+
+    ss_ << "TEST(" << classname << "Test, BitfieldSetters)\n";
+    ss_ << "{\n";
+    ss_ << "    " << namespac << "::" << classname << " msg;\n";
+    ss_ << body.str();
     ss_ << "}\n\n";
 
     return true;
@@ -311,7 +348,7 @@ bool CppTestGenerator::test_pz_wire(int& errorcode)
             continue;
         }
         if (!test_values::encode_pb(std::get<member_type>(member.second), member.first,
-                                    std::get<member_length>(member.second), wire))
+                                    std::get<member_length>(member.second), wire, std::get<member_bits>(member.second)))
         {
             return true;
         }

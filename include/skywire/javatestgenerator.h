@@ -40,7 +40,7 @@ protected:
 
     // The shared test literal for a native type, cast or suffixed to suit the
     // member's Java type (e.g. "(byte) -50", "3000000000L", "3.5f").
-    std::string java_literal(const std::string& type);
+    std::string java_literal(const std::string& type, const std::string& literal);
 };
 
 }

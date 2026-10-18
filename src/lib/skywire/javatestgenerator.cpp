@@ -58,11 +58,9 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     std::vector<uint8_t> wire;
     bool have_wire = true;
     bool have_string = false;
+    have_wire = expected_wire(wire);
     for (auto& member : ordered_members_)
     {
-        have_wire = have_wire && test_values::encode(std::get<member_type>(member.second),
-                                                     std::get<member_endianness>(member.second),
-                                                     std::get<member_length>(member.second), wire);
         have_string = have_string || is_string_type(std::get<member_type>(member.second));
     }
 
@@ -130,6 +128,30 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     ss_ << "        check(in.equals(out), \"ByteBuffer round-trip value mismatch\\n in \" + in + \"\\nout \" + out);\n";
     ss_ << "    }\n";
 
+    // A bitfield setter keeps only the field's bits: a value with a bit set
+    // above the field reads back as the field's value.
+    std::string setters;
+    for (auto& member : ordered_members_)
+    {
+        const std::string wide = out_of_range_hex(member.second);
+        if (wide.empty())
+        {
+            continue;
+        }
+        const std::string& name = std::get<member_name>(member.second);
+        const std::string& type = std::get<member_type>(member.second);
+        setters += "        msg.Set_" + name + "(" + java_literal(type, wide) + ");\n";
+        setters += "        check(msg.Get_" + name + "() == " + java_literal(type, test_literal(member.second)) +
+                   ", \"" + name + ": got \" + msg.Get_" + name + "());\n";
+    }
+    if (false == setters.empty())
+    {
+        ss_ << "\n    static void testBitfieldSetters() {\n";
+        ss_ << "        " << classname << " msg = new " << classname << "();\n";
+        ss_ << setters;
+        ss_ << "    }\n";
+    }
+
     if (have_wire)
     {
         ss_ << "\n";
@@ -157,6 +179,10 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     {
         ss_ << "        failures += run(\"Wire\", " << testclass << "::testWire);\n";
     }
+    if (false == setters.empty())
+    {
+        ss_ << "        failures += run(\"BitfieldSetters\", " << testclass << "::testBitfieldSetters);\n";
+    }
     ss_ << "        if (failures > 0) {\n";
     ss_ << "            System.exit(1);\n";
     ss_ << "        }\n";
@@ -168,9 +194,8 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     return true;
 }
 
-std::string JavaTestGenerator::java_literal(const std::string& type)
+std::string JavaTestGenerator::java_literal(const std::string& type, const std::string& literal)
 {
-    const std::string literal = test_values::literal(type);
     const std::string jtype = lang_spec_.get_value_string(type);
 
     if (jtype == "byte" || jtype == "short")
@@ -205,7 +230,7 @@ std::string JavaTestGenerator::set_line(const std::string& target, const member_
     }
     if (test_values::literal(type))
     {
-        return "        " + target + ".Set_" + name + "(" + java_literal(type) + ");\n";
+        return "        " + target + ".Set_" + name + "(" + java_literal(type, test_literal(member)) + ");\n";
     }
     return "";
 }

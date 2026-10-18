@@ -22,6 +22,7 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
+#include "bitfields.h"
 #include "errorcodes.h"
 #include "types.h"
 #include "specification/specification.h"
@@ -32,8 +33,8 @@ namespace skyloupe
 class Generator
 {
 public:
-    enum member_index { member_type = 0, member_name = 1, member_endianness = 2, member_length = 3 };
-    typedef std::tuple<std::string, std::string, unsigned int, unsigned int> member_desc_t;
+    enum member_index { member_type = 0, member_name = 1, member_endianness = 2, member_length = 3, member_bits = 4 };
+    typedef std::tuple<std::string, std::string, unsigned int, unsigned int, unsigned int> member_desc_t;
 
     Generator() = delete;
     Generator(Specification& msg_specification, Specification& lang_specification);
@@ -45,6 +46,8 @@ public:
     // A member type that is neither native nor a string names another
     // generated message, in the same namespace.
     bool is_user_type(const std::string& type);
+    // A member with a "bits" width, packed into a storage unit (bitfields.h).
+    static bool is_bitfield(const member_desc_t& member) { return std::get<member_bits>(member) != 0; }
     virtual results_t get_results() const { return results_; }  //copy???
 
     // The specs of the nested message types this message uses (and those
@@ -80,6 +83,27 @@ protected:
     typedef std::function<void(const std::vector<std::string>& path, const member_desc_t& member)> leaf_visitor_t;
 
     static members_t members_of(Specification& spec);
+
+    // How this message's bitfield members pack into storage units, from the
+    // spec's "bitorder" ("lsb", the default, or "msb").
+    bitfields::layout_t bit_layout_;
+    static bitfields::layout_t layout_of(Specification& spec, const members_t& members);
+    const bitfields::place_t& place_of(uint32_t tag) const { return bit_layout_.places.at(tag); }
+    const bitfields::unit_t& unit_of(uint32_t tag) const { return bit_layout_.units[place_of(tag).unit]; }
+
+    // The shared test value of a native member as a literal (bitfields get
+    // test_values::literal_bits), or empty for strings and nested messages.
+    static std::string test_literal(const member_desc_t& member);
+
+    // The expected wire bytes of this message holding the shared test
+    // values, bitfields packed into their units. False, leaving out
+    // unspecified, if a member has no test value (a nested message).
+    bool expected_wire(std::vector<uint8_t>& out);
+
+    // For a bitfield narrower than its type: a value of the type with a bit
+    // set above the field (hex, e.g. "0x25"), which its setter must cut back
+    // to test_literal(member). Empty for other members.
+    static std::string out_of_range_hex(const member_desc_t& member);
 
     // Nested types' members, from set_nested_specs.
     std::map<std::string, members_t> nested_members_;

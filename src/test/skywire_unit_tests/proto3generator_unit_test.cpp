@@ -224,3 +224,20 @@ TEST_F(Proto3GeneratorUnitTest, TestMessageLeavesOutNestedType)
               "# expected: 10c901\n"
               "a: 201\n");
 }
+
+TEST_F(Proto3GeneratorUnitTest, BitfieldsKeepTheirTypeAndRecordTheirBits)
+{
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint8_t","name":"a","bits":3},"2":{"type":"uint8_t","name":"b","bits":4},)"
+                         R"("3":{"type":"int16_t","name":"c","bits":9,"endian":0}})"));
+    EXPECT_TRUE(has_line("    uint32 a = 1; // uint8_t:3, bits 0-2")) << proto;
+    EXPECT_TRUE(has_line("    uint32 b = 2; // uint8_t:4, bits 3-6")) << proto;
+    EXPECT_TRUE(has_line("    int32 c = 3; // int16_t:9, bits 0-8, big-endian")) << proto;
+}
+
+TEST_F(Proto3GeneratorUnitTest, MsbBitfieldsTakeTheHighBits)
+{
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint8_t","name":"a","bits":3},"2":{"type":"uint8_t","name":"b","bits":4}})",
+                         R"("classname":"TestClass","namespace":"testspace","bitorder":"msb")"));
+    EXPECT_TRUE(has_line("    uint32 a = 1; // uint8_t:3, bits 5-7")) << proto;
+    EXPECT_TRUE(has_line("    uint32 b = 2; // uint8_t:4, bits 1-4")) << proto;
+}

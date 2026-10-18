@@ -143,7 +143,7 @@ bool CRelayGenerator::generate(int& errorcode)
         }
         else
         {
-            ss_ << "    want." << name << " = " << test_values::literal(type) << ";\n";
+            ss_ << "    want." << name << " = " << test_literal(leaf.member) << ";\n";
         }
     }
     ss_ << "\n";

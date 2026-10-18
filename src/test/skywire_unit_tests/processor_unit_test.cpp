@@ -350,6 +350,33 @@ TEST_F(ProcessorValidationTest, RejectsUnknownEndian)
     expect_rejected(make_spec(R"({"1":{"type":"float","name":"a","endian":3}})"));
 }
 
+TEST_F(ProcessorValidationTest, AcceptsBitfields)
+{
+    ASSERT_TRUE(run(make_spec(R"({"1":{"type":"uint8_t","name":"a","bits":3},"2":{"type":"int64_t","name":"b","bits":64}})")));
+    ASSERT_TRUE(run(make_spec(R"({"1":{"type":"uint16_t","name":"a","bits":1}})", R"(,"bitorder":"msb")")));
+    ASSERT_TRUE(run(make_spec(R"({"1":{"type":"uint16_t","name":"a","bits":1}})", R"(,"bitorder":"lsb")")));
+}
+
+TEST_F(ProcessorValidationTest, RejectsBitsOnOtherTypes)
+{
+    for (const char* type : { "float", "double", "char", "unsigned char", "string", "Nested" })
+    {
+        SCOPED_TRACE(type);
+        expect_rejected(make_spec(std::string(R"({"1":{"type":")") + type + R"(","name":"a","bits":3,"length":4}})"));
+    }
+}
+
+TEST_F(ProcessorValidationTest, RejectsBitsWiderThanType)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"uint8_t","name":"a","bits":9}})"));
+    expect_rejected(make_spec(R"({"1":{"type":"int32_t","name":"a","bits":33}})"));
+}
+
+TEST_F(ProcessorValidationTest, RejectsUnknownBitorder)
+{
+    expect_rejected(make_spec(R"({"1":{"type":"uint8_t","name":"a","bits":3}})", R"(,"bitorder":"MSB")"));
+}
+
 static std::string member_with_tag(const std::string& tag)
 {
     return R"({")" + tag + R"(":{"type":"float","name":"a"}})";

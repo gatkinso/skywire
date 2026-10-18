@@ -40,6 +40,7 @@ protected:
     virtual bool test_equality(int& errorcode);
     virtual bool test_short_buffer(int& errorcode);
     virtual bool test_wire(int& errorcode);
+    virtual bool test_bitfield_setters(int& errorcode);
     virtual bool test_pz_round_trip(int& errorcode);
     virtual bool test_pz_wire(int& errorcode);
     virtual bool test_pz_empty(int& errorcode);

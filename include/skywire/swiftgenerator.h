@@ -34,6 +34,8 @@ protected:
     std::string swift_type(const std::string& type);
     // Resolves a member's endian flag to a Swift Endianness literal.
     std::string swift_endian(unsigned int endian_flag);
+    void serialize_bitfield(uint32_t tag, const member_desc_t& member);
+    void deserialize_bitfield(uint32_t tag, const member_desc_t& member);
 
 private:
     virtual bool do_implementation(int& errorcode);

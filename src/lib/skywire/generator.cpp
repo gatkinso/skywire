@@ -28,6 +28,7 @@ Generator::Generator(Specification& msg_specification, Specification& lang_speci
 , results_()
 {
     ordered_members_ = members_of(msg_spec_);
+    bit_layout_ = layout_of(msg_spec_, ordered_members_);
 
     for (auto& member : lang_spec_.get_proto().native_types()) {
         native_types_.insert(member);
@@ -40,10 +41,23 @@ Generator::members_t Generator::members_of(Specification& spec)
 
     for (auto& member : spec.get_proto().members())
     {
-        members[member.first] = std::make_tuple(member.second.type(), member.second.name(), member.second.endian(), member.second.length());
+        members[member.first] = std::make_tuple(member.second.type(), member.second.name(), member.second.endian(), member.second.length(), member.second.bits());
     }
 
     return members;
+}
+
+bitfields::layout_t Generator::layout_of(Specification& spec, const members_t& members)
+{
+    std::vector<bitfields::field_t> fields;
+
+    for (auto& member : members)
+    {
+        fields.push_back({ member.first, std::get<member_type>(member.second), std::get<member_endianness>(member.second),
+                           std::get<member_bits>(member.second) });
+    }
+
+    return bitfields::layout(fields, spec.get_value_string("bitorder", "lsb") == "msb");
 }
 
 void Generator::set_nested_specs(const std::map<std::string, Specification>& specs)
@@ -160,6 +174,60 @@ bool Generator::relay_leaves(std::vector<leaf_t>& leaves, int& errorcode)
     {
         errorcode |= SW_FILE_IMP;
         return false;
+    }
+
+    return true;
+}
+
+std::string Generator::test_literal(const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    if (is_bitfield(member))
+    {
+        return test_values::literal_bits(type, std::get<member_bits>(member));
+    }
+    const char* literal = test_values::literal(type);
+    return literal ? literal : "";
+}
+
+std::string Generator::out_of_range_hex(const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const unsigned int bits = std::get<member_bits>(member);
+    if (bits == 0 || bits >= bitfields::width(type))
+    {
+        return "";
+    }
+    return bitfields::hex(test_values::bits_value(type, bits) & bitfields::mask(bits) | (uint64_t(1) << bits));
+}
+
+bool Generator::expected_wire(std::vector<uint8_t>& out)
+{
+    for (auto& member : ordered_members_)
+    {
+        if (false == is_bitfield(member.second))
+        {
+            if (false == test_values::encode(std::get<member_type>(member.second), std::get<member_endianness>(member.second),
+                                             std::get<member_length>(member.second), out))
+            {
+                return false;
+            }
+            continue;
+        }
+
+        // A unit is encoded once, at its first field.
+        if (false == place_of(member.first).first)
+        {
+            continue;
+        }
+
+        const bitfields::unit_t& unit = unit_of(member.first);
+        std::vector<test_values::bitfield_t> fields;
+        for (uint32_t tag : unit.tags)
+        {
+            fields.push_back({ place_of(tag).shift, place_of(tag).bits });
+        }
+        test_values::encode_unit(unit.type, unit.endian, fields, out);
     }
 
     return true;

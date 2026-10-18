@@ -83,13 +83,7 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
 
     // The expected bytes are computed by wiregen, shared with every language.
     std::vector<uint8_t> wire;
-    bool have_wire = true;
-    for (auto& member : ordered_members_)
-    {
-        have_wire = have_wire && test_values::encode(std::get<member_type>(member.second),
-                                                     std::get<member_endianness>(member.second),
-                                                     std::get<member_length>(member.second), wire);
-    }
+    bool have_wire = expected_wire(wire);
     if (have_wire)
     {
         ss_ << "\n";
@@ -105,6 +99,21 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
         ss_ << "        let wire = SWStream()\n";
         ss_ << "        check(input.serialize(wire), \"serialize failed\")\n";
         ss_ << "        check(wire.read(wire.remaining())! == want, \"wire mismatch\")\n";
+    }
+
+    // A bitfield setter keeps only the field's bits: a value with a bit set
+    // above the field reads back as the field's value.
+    for (auto& member : ordered_members_)
+    {
+        const std::string wide = out_of_range_hex(member.second);
+        if (wide.empty())
+        {
+            continue;
+        }
+        const std::string& name = std::get<member_name>(member.second);
+        const std::string type = lang_spec_.get_value_string(std::get<member_type>(member.second));
+        ss_ << "        input.Set_" << name << "(" << type << "(truncatingIfNeeded: UInt64(" << wide << ")))\n";
+        ss_ << "        check(input.Get_" << name << "() == " << test_literal(member.second) << ", \"" << name << " setter kept bits outside the field\")\n";
     }
     ss_ << "        print(\"PASS " << classname << " round-trip\")\n";
     ss_ << "    }\n";
@@ -139,7 +148,7 @@ std::string SwiftTestGenerator::set_line(const std::string& target, const member
     }
     if (test_values::literal(type))
     {
-        return "        " + target + ".Set_" + name + "(" + test_values::literal(type) + ")\n";
+        return "        " + target + ".Set_" + name + "(" + test_literal(member) + ")\n";
     }
     return "";
 }

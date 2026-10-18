@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <regex>
 #include <set>
+#include "bitfields.h"
 #include "file_writer.h"
 #include "processor.h"
 #include "sw_endian.h"
@@ -498,6 +499,12 @@ bool Processor::validate_spec(int& errorcode)
         valid = spec_error(errorcode, "namespace '" + printable(name_space->second) + "' must be identifiers joined by '.' or '::'");
     }
 
+    auto bitorder = values.find("bitorder");
+    if (bitorder != values.end() && bitorder->second != "lsb" && bitorder->second != "msb")
+    {
+        valid = spec_error(errorcode, "bitorder '" + printable(bitorder->second) + "' must be lsb or msb");
+    }
+
     for (const auto& slot : output_slots)
     {
         auto file = values.find(slot.second);
@@ -557,6 +564,15 @@ bool Processor::validate_spec(int& errorcode)
         if (m.type() == "string" && m.length() == 0)
         {
             valid = spec_error(errorcode, where + "string needs a length of at least 1");
+        }
+
+        if (m.bits() != 0 && bitfields::width(m.type()) == 0)
+        {
+            valid = spec_error(errorcode, where + "bits needs a type from uint8_t to int64_t, not '" + printable(m.type()) + "'");
+        }
+        else if (m.bits() > bitfields::width(m.type()))
+        {
+            valid = spec_error(errorcode, where + "bits " + std::to_string(m.bits()) + " is wider than " + m.type());
         }
 
         if (m.endian() > SW_NATIVE_ENDIAN_FLAG)

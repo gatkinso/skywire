@@ -57,6 +57,9 @@ private:
     void method(const std::string& def_key, const std::string& doc_key = "");
     void line(const std::string& text, unsigned int indents = 2);
     std::string subst(std::string template_str, const member_desc_t& member);
+    std::string unit_format(const bitfields::unit_t& unit);
+    std::string py_fit(const std::string& type, unsigned int bits, const std::string& expr);
+    std::string serialize_unit(uint32_t tag);
 };
 
 }

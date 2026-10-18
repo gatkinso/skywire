@@ -222,6 +222,16 @@ bool Py3Generator::imp_serialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
+        if (is_bitfield(member.second))
+        {
+            // One struct.pack per storage unit, at its first field.
+            if (place_of(member.first).first)
+            {
+                line(serialize_unit(member.first), 3);
+            }
+            continue;
+        }
+
         if (is_native_type(std::get<member_type>(member.second)))
         {
             std::string template_str = lang_spec_.get_value_string("serialize_member_str");
@@ -261,6 +271,21 @@ bool Py3Generator::imp_deserialize(int& errorcode)
         const std::string offset = std::to_string(fixed_offset) + dynamic_offset;
         std::string template_str;
 
+        if (is_bitfield(member.second))
+        {
+            const bitfields::place_t& place = place_of(member.first);
+            const std::string var = "unit_" + std::to_string(place.unit);
+            if (place.first)
+            {
+                const bitfields::unit_t& unit = unit_of(member.first);
+                line("(" + var + ",) = struct.unpack_from(\"" + unit_format(unit) + "\", buffer, " + offset + ")\n");
+                fixed_offset += bitfields::width(unit.type) / 8;
+            }
+            const std::string field = place.shift ? "(" + var + " >> " + std::to_string(place.shift) + ")" : var;
+            line("self." + std::get<member_name>(member.second) + " = " + py_fit(std::get<member_type>(member.second), place.bits, field) + "\n");
+            continue;
+        }
+
         if (is_native_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("deserialize_member_str");
@@ -286,19 +311,25 @@ bool Py3Generator::imp_size(int& errorcode)
 
     const std::string separator = lang_spec_.get_value_string("size_separator_str");
 
-    std::string body = lang_spec_.get_value_string("size_start");
-    size_t i = 0;
+    std::vector<std::string> terms;
     for (auto& member : ordered_members_)
     {
-        if (is_native_type(std::get<member_type>(member.second)))
-            body += std::to_string(py_size(member.second));
-        else
-            body += subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
-
-        if (++i < ordered_members_.size())
+        if (is_bitfield(member.second))
         {
-            body += separator;
+            // A storage unit counts once, at its first field.
+            if (place_of(member.first).first)
+                terms.push_back(std::to_string(bitfields::width(std::get<member_type>(member.second)) / 8));
         }
+        else if (is_native_type(std::get<member_type>(member.second)))
+            terms.push_back(std::to_string(py_size(member.second)));
+        else
+            terms.push_back(subst(lang_spec_.get_value_string("size_user_mem_str"), member.second));
+    }
+
+    std::string body = lang_spec_.get_value_string("size_start");
+    for (size_t i = 0; i < terms.size(); i++)
+    {
+        body += (i ? separator : "") + terms[i];
     }
 
     line(body + "\n");
@@ -377,10 +408,57 @@ bool Py3Generator::imp_set_functions(int& errorcode)
 
         ss_ << std::endl;
         line(subst(lang_spec_.get_value_string("set_fcn_str"), member.second), 1);
+        if (is_bitfield(member.second))
+        {
+            // Keeps only the field's bits, sign-extending signed ones.
+            line("self." + std::get<member_name>(member.second) + " = " + py_fit(type, std::get<member_bits>(member.second), "newval") + "\n");
+            continue;
+        }
         line(subst(lang_spec_.get_value_string(body_key), member.second));
     }
 
     return true;
+}
+
+// The struct format of a bitfield storage unit: its byte order and the
+// unsigned type of its width (fields are packed as bits).
+std::string Py3Generator::unit_format(const bitfields::unit_t& unit)
+{
+    member_desc_t desc{ bitfields::unsigned_type(unit.type), "", unit.endian, 0, 0 };
+    return py_format(desc);
+}
+
+// expr's low bits bits as the field's value: masked, and sign-extended for
+// signed types with (v ^ sign) - sign.
+std::string Py3Generator::py_fit(const std::string& type, unsigned int bits, const std::string& expr)
+{
+    const std::string masked = "(" + expr + " & " + bitfields::hex(bitfields::mask(bits)) + ")";
+    if (false == bitfields::is_signed(type))
+    {
+        return masked;
+    }
+    const std::string sign = bitfields::hex(uint64_t(1) << (bits - 1));
+    return "(" + masked + " ^ " + sign + ") - " + sign;
+}
+
+// One storage unit: struct.pack of every field's bits, each at its shift.
+std::string Py3Generator::serialize_unit(uint32_t tag)
+{
+    const bitfields::unit_t& unit = unit_of(tag);
+
+    std::string value;
+    for (uint32_t field_tag : unit.tags)
+    {
+        const bitfields::place_t& place = place_of(field_tag);
+        std::string field = "(self." + std::get<member_name>(ordered_members_.at(field_tag)) + " & " + bitfields::hex(bitfields::mask(place.bits)) + ")";
+        if (place.shift)
+        {
+            field = "(" + field + " << " + std::to_string(place.shift) + ")";
+        }
+        value += (value.empty() ? "" : " | ") + field;
+    }
+
+    return "struct.pack(\"" + unit_format(unit) + "\", " + value + "),\n";
 }
 
 }
