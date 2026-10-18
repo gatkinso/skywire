@@ -337,6 +337,11 @@ bool Processor::process(results_t& output_str_map, int& errorcode, bool generate
         {
             test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::RustTestGenerator(msg_spec_, lang_spec_));
         }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::RustRelayGenerator(msg_spec_, lang_spec_));
+        }
     }
     else
     {

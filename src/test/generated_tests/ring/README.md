@@ -4,7 +4,7 @@
 generated code in turn, in a random order each run:
 
 ```
-RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Python -> hop6.bin
+RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Rust -> hop7.bin
 ```
 
 ```
@@ -14,7 +14,8 @@ ctest -R skywire_ring -V
 ## What is checked
 
 At every hop, the language's generated **relay** program (`wiregen` writes it,
-as `RingyMcRingfaceRelay.*`, when given `--generate_relay`):
+as `RingyMcRingfaceRelay.*`, or `ringy_mc_ringface_relay.rs` for Rust, when given
+`--generate_relay`):
 
 1. Checks the input is exactly `size()` bytes. A byte short or a byte extra fails.
 2. Deserializes it and checks that every byte was consumed.
@@ -38,12 +39,15 @@ byte extra. This proves the checks can fail.
 | Environment | Effect |
 |---|---|
 | `SKYWIRE_RING_SEED=<n>` | Repeat an earlier run's order and inverted byte. Each run prints its seed. |
-| `SKYWIRE_RING_ORDER=cpp,c,java,swift,go,python` | Run exactly this order. |
+| `SKYWIRE_RING_ORDER=cpp,c,java,swift,go,python,rust` | Run exactly this order. |
 | `SKYWIRE_RING_REQUIRE_ALL=1` | Fail, instead of skipping, a language whose toolchain is missing. |
 
-The C and C++ relays build with the project. The Swift, Go and Java relays are
-compiled when the test runs. A missing toolchain prints `RING_LANG_SKIPPED`,
-and fewer than two languages reports the test as Skipped.
+The C and C++ relays build with the project. The Swift, Go, Java and Rust
+relays are compiled when the test runs. A missing toolchain prints
+`RING_LANG_SKIPPED`, and fewer than two languages reports the test as Skipped.
+The Rust relay is a crate root that declares the two message modules; it is
+built with plain `rustc` (1.58 or newer, also found in `~/.cargo/bin`), and
+must be rustfmt- and clippy-clean when those are installed.
 
 ## The message
 

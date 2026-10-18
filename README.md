@@ -149,14 +149,14 @@ to run them.
 
 The `skywire_generated_tests:*RoundTrip` tests generate each language's code
 with its unit tests, then compile and run them. They need that language's
-toolchain (swiftc; go 1.21 or newer; python3; a JDK; rustc 1.56 or newer) and
+toolchain (swiftc; go 1.21 or newer; python3; a JDK; rustc 1.58 or newer) and
 report Skipped without it. `RustRoundTrip` also finds a rustup install in
 `~/.cargo/bin` when it isn't on `PATH`, builds with plain `rustc` (no Cargo),
 and fails on any compiler warning, on output that isn't rustfmt-clean (when
 rustfmt is installed), and on clippy warnings (when clippy is installed).
 
 `skywire_ring:Serial` passes one serialized message through the generated code
-of every language (C, C++, Swift, Go, Java and Python), in a random order each
+of every language (C, C++, Swift, Go, Java, Python and Rust), in a random order each
 run. Each step checks the message for corruption or loss. Its input file is
 written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
 and `scripts/README.md`.

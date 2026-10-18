@@ -1,11 +1,12 @@
 #
 #  Rust round-trip test driver, run by CTest via `cmake -P`.
 #
-#  Detects the Rust toolchain at test time. If rustc is absent (or older than
-#  1.56, the first with edition 2021) it prints the skip marker matched by the
-#  test's SKIP_REGULAR_EXPRESSION; otherwise it generates the Rust modules and
-#  their tests with wiregen, checks they are rustfmt-clean, and builds and runs
-#  them as one crate with `rustc --test -D warnings`. When clippy-driver is
+#  Detects the Rust toolchain at test time. If rustc is absent, or older than
+#  1.58 (edition 2021, and the inline format arguments the relays use), it
+#  prints the skip marker matched by the test's SKIP_REGULAR_EXPRESSION;
+#  otherwise it generates the Rust modules and their tests with wiregen,
+#  checks they are rustfmt-clean, and builds and runs them as one crate with
+#  `rustc --test -D warnings`. When clippy-driver is
 #  present the crate must also be clippy-clean.
 #
 #  Plain rustc, no Cargo: the generated code has no dependencies, and the
@@ -30,8 +31,8 @@ endif()
 execute_process(COMMAND ${RUSTC_EXECUTABLE} --version
     OUTPUT_VARIABLE rustc_version OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(REGEX REPLACE "^rustc ([0-9]+\\.[0-9]+).*" "\\1" rustc_version_num "${rustc_version}")
-if(rustc_version_num VERSION_LESS 1.56)
-    message("RUST_TOOLCHAIN_NOT_FOUND: ${rustc_version} is older than rustc 1.56; skipping Rust round-trip test")
+if(rustc_version_num VERSION_LESS 1.58)
+    message("RUST_TOOLCHAIN_NOT_FOUND: ${rustc_version} is older than rustc 1.58; skipping Rust round-trip test")
     return()
 endif()
 

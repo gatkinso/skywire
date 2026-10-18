@@ -48,6 +48,7 @@ set(_GENERATORS
              gorelaygenerator.cpp
              javarelaygenerator.cpp
              py3relaygenerator.cpp
+             rustrelaygenerator.cpp
              swiftrelaygenerator.cpp
              swiftgenerator.cpp
              swifttestgenerator.cpp

@@ -501,3 +501,37 @@ TEST_F(RustTestGeneratorUnitTest, SignedOutOfRangeValueIsCastFromItsBitPattern)
     EXPECT_TRUE(has_line("    s.set_u(0x3);"));
     EXPECT_TRUE(has_line("    assert_eq!(s.u(), 1);"));
 }
+
+TEST_F(RustTestGeneratorUnitTest, RelayIsCrateRootCheckingNestedLeaves)
+{
+    ASSERT_TRUE(msg_spec_.read_string(R"({"stringValues":{"classname":"Zed"},"members":{
+        "1":{"type":"uint8_t","name":"a"},
+        "2":{"type":"AlphaInner","name":"inner"},
+        "3":{"type":"string","name":"a_rather_long_string_member_name_for_wrapping","length":4}}})"));
+    Specification inner;
+    ASSERT_TRUE(inner.read_string(R"({"stringValues":{"classname":"AlphaInner"},"members":{"1":{"type":"int16_t","name":"type"}}})"));
+
+    RustRelayGenerator unit(msg_spec_, lang_spec_);
+    unit.set_nested_specs({ { "AlphaInner", inner } });
+    ASSERT_TRUE(unit.generate(errorcode));
+    rs = unit.get_results()["relay"];
+
+    // Modules and uses are sorted, as rustfmt sorts them.
+    EXPECT_TRUE(has("\nmod alpha_inner;\nmod zed;\n\nuse std::process::exit;\nuse zed::Zed as Message;\n"));
+    EXPECT_TRUE(has_line("    s.inner_mut().set_type(-12345);"));
+    EXPECT_TRUE(has_line("    c.check(\"inner.type\", |m| m.inner().r#type());"));
+    // Too wide for one line: one argument per line.
+    EXPECT_TRUE(has("\n    c.check(\n"
+                    "        \"a_rather_long_string_member_name_for_wrapping\",\n"
+                    "        |m| *m.a_rather_long_string_member_name_for_wrapping(),\n"
+                    "    );\n"));
+    EXPECT_TRUE(has("PASS rust: {} bytes, 3 members intact"));
+}
+
+TEST_F(RustTestGeneratorUnitTest, RelayNeedsNestedSpecs)
+{
+    ASSERT_TRUE(msg_spec_.read_string(R"({"stringValues":{"classname":"Zed"},"members":{"1":{"type":"AlphaInner","name":"inner"}}})"));
+
+    RustRelayGenerator unit(msg_spec_, lang_spec_);
+    ASSERT_FALSE(unit.generate(errorcode));
+}
