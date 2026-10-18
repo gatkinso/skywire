@@ -498,7 +498,8 @@ selects the generator. wiregen ignores (with a warning) a `"language"` value in 
 message specification.
 
 The lang file also names each output file, with `{classname}` standing for the
-message's `classname`:
+message's `classname` and `{classname_snake}` for it in snake_case
+(`RingyMcRingface` becomes `ringy_mc_ringface`):
 
 | Language | Header (`outputheaderfilename`) | Implementation (`outputimplfilename`) | Test (`outputtestfilename`) | Relay (`outputrelayfilename`) |
 |----------|-------------|---------------------|-------------------------|------------------------|
@@ -508,10 +509,11 @@ message's `classname`:
 | java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
 | proto3   |                 | `{classname}.proto` | `{classname}Test.txtpb` |                        |
 | python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
+| rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
 A message specification may set any of these keys to use a different name for
-that one message; its value may also use `{classname}`. A name must be a plain
+that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain
 file name (no directories). Java requires a public class's file to be named
 after the class, so the Java generator names the test and relay classes after
 their files.
@@ -542,6 +544,9 @@ message's header or module is imported without it (see Nested messages).
 | swift    | `Foundation` |
 
 The Go, Java and Python generators add the imports their code uses themselves.
+The Rust generator needs no imports beyond `use super::<module>::<Type>;` for
+each nested message, which it adds itself, and ignores a specification's
+`includes`.
 
 More detail on this to come.
 

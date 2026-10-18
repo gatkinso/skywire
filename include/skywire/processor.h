@@ -57,6 +57,7 @@ private:
     std::string java_str_ = "java";
     std::string proto3_str_ = "proto3";
     std::string py3_str_ = "python3";
+    std::string rust_str_ = "rust";
 
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     virtual void resolve_output_filenames();

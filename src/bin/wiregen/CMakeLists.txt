@@ -27,6 +27,7 @@ set(DEPLOY_JSONS   c/lang.c.json
                    java/lang.java.json
                    proto/lang.proto3.json
                    python/lang.python3.json
+                   rust/lang.rust.json
                    swift/lang.swift.json)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
