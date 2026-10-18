@@ -367,8 +367,24 @@ with its neighbours into a storage unit:
 - In every language the member is held in its full type (in C a plain struct
   field, not a C bitfield). Setters keep only the field's bits, and signed
   fields are sign-extended: `Set_delta(-3)` reads back -3, `Set_flags(0x1f)`
-  reads back 15. Serialize masks again, so a C struct field written directly
-  can't spill into its neighbours, but it is compared by `Equals` as written.
+  reads back 15.
+
+**Caution: writing a bitfield member without its setter.** In some languages
+the member can be assigned directly, skipping the setter's masking. Serialize
+masks again, so an out-of-range value never spills into its neighbours. But
+the message keeps the value as written: `Equals`, the getter and printing all
+see it, while the wire carries only the low bits. A message that goes through
+serialize and deserialize then no longer equals the original, and nothing
+warns about it. Use the setters, or keep values in range:
+
+| Language | Direct writes possible? |
+|---|---|
+| C | Yes: the members are plain struct fields (`msg.version = 20;`). |
+| Python | Yes: the members are public attributes (`msg.version = 20`). |
+| Go | Within the message's own package: the fields are unexported. |
+| Swift | Within the module that compiles the message: the stored properties are `internal`. |
+| C++ | No: the members are `private`. |
+| Java | No: the fields are `private`. |
 
 In protobuf (PZ) mode a bitfield is an ordinary field under its own tag, of its
 type's proto3 type; decoding cuts an out-of-range value to the field's bits,
