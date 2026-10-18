@@ -35,7 +35,8 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
                        cpp.test.json
                        go.test.json
                        proto3.test.json
-                       python3.test.json)
+                       python3.test.json
+                       rust.test.json)
 endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 
 #set(TEST_SCRIPTS   test_wiregen)
