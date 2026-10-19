@@ -25,10 +25,12 @@ Rust benchmarks and prints one table:
 ```
 | Language | Serialize | Deserialize | Notes |
 |---|---:|---:|---|
-| C | 176.7 | 152.0 |  |
-| C++ | 174.4 | 68.5 | reused-stream round trip 196.2 ns |
+| C | 8.6 | 12.5 |  |
+| C++ | 7.7 | 11.8 | reused-stream round trip 14.3 ns |
 ...
 ```
+
+The main README (section 4.1) has a full table from one machine.
 
 To run some languages only, or again without rebuilding:
 
