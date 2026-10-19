@@ -68,6 +68,8 @@ protected:
     bool insert_indents(unsigned int indents = 0);
     bool gen_one_line(const std::string& key, unsigned int indents = 0);
     bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
+    // Writes each line of text, indented.
+    void gen_lines(std::string text, unsigned int indents);
     bool inorder_members(int& errorcode, unsigned int indents = 0);
     bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
     bool inorder_member_names(int& errorcode, unsigned int indents = 0);

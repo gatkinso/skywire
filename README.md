@@ -162,6 +162,38 @@ corruption or loss. Its input file is
 written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
 and `scripts/README.md`.
 
+# [4.1] Benchmarks
+
+`bench/` times the generated code of every language on the ring message (135
+bytes, a different byte order on nearly every field, a nested message,
+bitfields and fixed-length strings). The benchmarks are not part of ctest.
+Build them in a Release directory without sanitizers:
+
+	cmake -S skywire -B build-bench -DCMAKE_BUILD_TYPE=Release -DSKYWIRE_BENCH=ON <your usual options>
+	cmake --build build-bench --target bench
+
+or, after a build, `bench/run.sh --build build-bench [c cpp swift go python java rust]`.
+`bench/README.md` says exactly what each number times and how to run them on
+Windows.
+
+Nanoseconds per message on an Apple M1 Pro (October 2026; Apple clang, Swift
+6.4 with `-wmo`, Go 1.21, Python 3.14, JDK 19, Rust 1.99), serializing into a
+reused buffer:
+
+| Language | Serialize | Deserialize | Notes |
+|---|---:|---:|---|
+| C++ | 7.7 | 11.8 | |
+| C | 8.6 | 12.5 | |
+| Go | 8.8 | 8.6 | `Serialize()` to a new slice: 32 |
+| Rust | 10.0 | 8.1 | `serialize()` to a new `Vec`: 26 |
+| Java | 30 | 32 | `serialize()` to a new `byte[]`: 35 |
+| Swift | 35 | 43 | |
+| Python | 1114 | 854 | 368 / 446 for a message in one byte order |
+
+The deserialize times for C, C++ and Swift include copying the input into the
+stream. Expect Swift to be slower without `-wmo` (whole-module optimization,
+the default for SwiftPM and Xcode release builds).
+
 # [5.0] Deploying and running
 
     wiregen.exe --language c++ --input_file e:\some_directory\MyClass.json --outdir E:\some_other_directory --write_to_file
@@ -426,6 +458,43 @@ like any member. Its members keep their own byte orders, so the nested member's
 `endian` has no effect. Its size is the nested message's size, and if it fails
 to deserialize, so does the message containing it.
 
+#### Serializing in place
+
+In C, C++, Swift, Go and Rust the generated code handles a whole message at
+once: it claims `size()` bytes from the stream (or slice), then stores each
+member at its offset in the requested byte order, with no per-member calls into
+the runtime; reading is the same in reverse. Python packs and unpacks one
+`struct` per byte order, and Java uses `ByteBuffer`. The functions that work in
+place are public, so a message can also be written into, or read from, memory
+you manage:
+
+| Language | Stream functions | In place | Runtime |
+|---|---|---|---|
+| C | `X_Serialize`, `X_Deserialize` | `char* X_SerializeSw(const X*, char*)`, `const char* X_DeserializeSw(X*, const char*)` | `cstream_claim`, `cstream_consume`; `sw_put`, `sw_get` in `cstream.h` |
+| C++ | `serialize(Stream&)`, `deserialize(Stream&)` | `char* serialize_sw(char*) const`, `const char* deserialize_sw(const char*)` | `Stream::claim`, `Stream::consume` (SW mode); `skyloupe::wire::put`, `get` |
+| Swift | `serialize(stream)`, `deserialize(stream)` | `serialize(into: &p)`, `deserialize(from: &p)` | `SWStream.claim`, `consume`, `clear`, `reserve`; `SWWire.put`, `get` |
+| Go | `Serialize()`, `AppendTo(o)`, `Deserialize(o)` | `Put(b)` | `const XSize` |
+| Rust | `serialize()`, `serialize_into(&mut Vec)`, `deserialize(&[u8])` | `write_to(&mut [u8])` | `X::SIZE` |
+| Python | `serialize()`, `deserialize(buffer)` | | `X.SIZE` |
+| Java | `serialize()`, `serialize(ByteBuffer)`, `deserialize(...)` | | |
+
+The C, C++ and Swift in-place functions don't check bounds: give them at least
+`size()` bytes. They return (C, C++) or advance `p` to (Swift) the end of what
+they wrote or read. Go's `Put` and Rust's `write_to` panic on a slice shorter
+than the message. A nested message is written and read in place by the same
+functions.
+
+Notes:
+
+* C `X_Serialize` returns -1 if the stream cannot grow.
+* C++ `Stream::clear()` keeps the buffer, so writes after it neither reallocate
+  nor zero-fill. The C++ runtime is header-only; it does not need `cstream.c`.
+* Swift `SWStream.byteSize()` is the number of unread bytes, the same as
+  `remaining()`. A stream used for many messages reuses the space it has read.
+* Go's `XSize` constant (e.g. `RingyMcRingfaceSize`) is a package-level name.
+* Java's `hashCode()` gives the same values as `Objects.hash` of the members,
+  without boxing them.
+
 #### Rust
 
 `--language rust` writes each message as a module of its own, named after the
@@ -457,7 +526,8 @@ fn main() -> std::io::Result<()> {
 |---|---|
 | `#[derive(Debug, Clone, Copy, Default, PartialEq)]` | `Default` is written out instead when a string is longer than 32 bytes, which std can't derive. |
 | `SIZE`, `size()` | The wire size, a constant. |
-| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends, as nested messages do. |
+| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends. |
+| `write_to(&mut [u8])` | Writes into the first `SIZE` bytes of the slice, as nested messages do; panics if it is shorter. |
 | `deserialize(&mut self, &[u8])`, `from_bytes(&[u8])` | Read from the start of the slice; extra bytes are ignored. A slice shorter than `SIZE` returns an `UnexpectedEof` `std::io::Error` and leaves the message unchanged. |
 | `equals(&other)` | The same as `==`. |
 | `x()`, `set_x(v)` | Fields are private. A bitfield setter keeps only the field's bits. |
@@ -467,8 +537,8 @@ fn main() -> std::io::Result<()> {
 A member named after a Rust keyword becomes a raw identifier (`r#type`, with
 the setter `set_type`). wiregen rejects a member named `self`, `Self`,
 `super`, `crate` or `_`, and one whose accessors would collide with the
-generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `deserialize`,
-`from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
+generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `write_to`,
+`deserialize`, `from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
 Names that aren't snake_case, and a class name that isn't CamelCase, are kept
 as they are, with `#![allow(non_snake_case)]` or
 `#![allow(non_camel_case_types)]` at the top of the module.

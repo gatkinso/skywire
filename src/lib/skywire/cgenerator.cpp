@@ -174,7 +174,8 @@ bool CGenerator::hdr_structtype(int& errorcode)
 
 bool CGenerator::hdr_serialize(int& errorcode)
 {
-    bool success = gen_one_line_subst("serialize_decl_str", "classname", "classname_substr", 1);
+    bool success = gen_one_line_subst("serialize_decl_str", "classname", "classname_substr", 1) &&
+                   gen_one_line_subst("serialize_sw_decl_str", "classname", "classname_substr", 1);
     if (false == success)
     {
         errorcode |= SW_LANG_C_HDR_SERIALIZE;
@@ -186,7 +187,8 @@ bool CGenerator::hdr_serialize(int& errorcode)
 
 bool CGenerator::hdr_deserialize(int& errorcode)
 {
-    bool success = gen_one_line_subst("deserialize_decl_str", "classname", "classname_substr", 1);
+    bool success = gen_one_line_subst("deserialize_decl_str", "classname", "classname_substr", 1) &&
+                   gen_one_line_subst("deserialize_sw_decl_str", "classname", "classname_substr", 1);
     if (false == success)
     {
         errorcode |= SW_LANG_C_HDR_DESERIALIZE;
@@ -308,103 +310,82 @@ bool CGenerator::imp_includes(int& errorcode)
     return success;
 }
 
+// _Serialize claims the whole message from the stream at once and writes it
+// with _SerializeSw, which a containing message also calls to write this one
+// in place.
 bool CGenerator::imp_serialize(int& errorcode)
 {
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-    const std::string null_check_str = lang_spec_.get_value_string("struct_str_null_check_str");
-    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
-    bool success = gen_one_line_subst("serialize_impl_str", "classname", "classname_substr", 0);
-    if (false == success)
+    if (false == imp_stream_function("serialize", errorcode))
     {
         errorcode |= SW_LANG_C_IMP_SERIALIZE;
-        return success;
+        return false;
     }
- 
-    insert_indents(1);
-    ss_ << null_check_str;
-
-    for (auto& member : ordered_members_)
-    {
-        const std::string& type = std::get<member_type>(member.second);
-        if (is_bitfield(member.second))
-        {
-            write_bitfield(member.first, member.second);
-            continue;
-        }
-        // A nested message is written by its own function, with its own members' byte orders.
-        std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "write_user_template_str" : "write_native_template_str");
-        insert_indents(1);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
-
-        if (is_string_type(std::get<member_type>(member.second)))
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
-        else if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG");
-        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
-        else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
-
-        ss_ << template_str;
-        ss_ << std::endl;
-    }
-
-    insert_indents(1);
-    ss_ << lang_spec_.get_value_string("endfunction_success_str");
-
-    return success;
+    return true;
 }
 
+// _Deserialize takes the whole message from the stream at once, rejecting a
+// short stream before touching any field, and reads it with _DeserializeSw.
 bool CGenerator::imp_deserialize(int& errorcode)
 {
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-    const std::string null_check_str = lang_spec_.get_value_string("struct_str_null_check_str");
-    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
-    bool success = gen_one_line_subst("deserialize_impl_str", "classname", "classname_substr", 0);
-    if (false == success)
+    if (false == imp_stream_function("deserialize", errorcode))
     {
         errorcode |= SW_LANG_C_IMP_DESERIALIZE;
-        return success;
+        return false;
     }
+    return true;
+}
 
-    insert_indents(1);
-    ss_ << null_check_str;
+// Writes _Serialize and _SerializeSw (direction "serialize") or
+// _Deserialize and _DeserializeSw ("deserialize").
+bool CGenerator::imp_stream_function(const std::string& direction, int& errorcode)
+{
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string member_substr = lang_spec_.get_value_string("member_substr");
+    const std::string type_substr = lang_spec_.get_value_string("type_substr");
+    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
+    const bool writing = direction == "serialize";
 
-    // Reject a short stream before touching any field, like the Go, Java and Python generators.
-    gen_one_line_subst("deserialize_size_check_str", "classname", "classname_substr", 1);
+    if (false == gen_one_line_subst(direction + "_impl_str", "classname", "classname_substr", 0))
+    {
+        return false;
+    }
+    gen_lines(std::regex_replace(lang_spec_.get_value_string(direction + "_body_str"), std::regex(classname_substr), classname), 1);
+    gen_one_line("endfunction_str");
+
+    if (false == gen_one_line_subst(direction + "_sw_impl_str", "classname", "classname_substr", 0))
+    {
+        return false;
+    }
 
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
         if (is_bitfield(member.second))
         {
-            read_bitfield(member.first, member.second);
+            if (writing)
+                write_bitfield(member.first, member.second);
+            else
+                read_bitfield(member.first, member.second);
             continue;
         }
-        // A nested message is written by its own function, with its own members' byte orders.
-        std::string template_str = lang_spec_.get_value_string(is_user_type(type) ? "read_user_template_str" : "read_native_template_str");
-        insert_indents(1);
+        // A nested message is handled by its own function, with its own members' byte orders.
+        const std::string key = std::string(writing ? "write" : "read") + (is_user_type(type) ? "_user_template_str" : "_native_template_str");
+        std::string template_str = lang_spec_.get_value_string(key);
         template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
+        template_str = std::regex_replace(template_str, std::regex(type_substr), type);
+        const unsigned int endian = is_string_type(type) ? SW_NATIVE_ENDIAN_FLAG : std::get<member_endianness>(member.second);
+        template_str = std::regex_replace(template_str, std::regex(endian_substr), endian_flag(endian));
 
-        if (is_string_type(std::get<member_type>(member.second)))
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
-        else if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_BIG_ENDIAN_FLAG");
-        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_LITTLE_ENDIAN_FLAG");
-        else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "SW_NATIVE_ENDIAN_FLAG");
-
-        ss_ << template_str;
-        ss_ << std::endl;
+        insert_indents(1);
+        ss_ << template_str << std::endl;
     }
 
     insert_indents(1);
-    ss_ << lang_spec_.get_value_string("endfunction_success_str");
+    ss_ << "return p;" << std::endl;
+    gen_one_line("endfunction_str");
 
-    return success;
+    return true;
 }
 
 bool CGenerator::imp_size(int& errorcode)
@@ -620,7 +601,7 @@ void CGenerator::write_bitfield(uint32_t tag, const member_desc_t& member)
     if (place.last)
     {
         insert_indents(1);
-        ss_ << "cstream_write(str, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
+        ss_ << "p = sw_put(p, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
     }
 }
 
@@ -635,7 +616,7 @@ void CGenerator::read_bitfield(uint32_t tag, const member_desc_t& member)
         insert_indents(1);
         ss_ << bitfields::unsigned_type(unit.type) << " " << var << ";" << std::endl;
         insert_indents(1);
-        ss_ << "cstream_read(str, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
+        ss_ << "p = sw_get(p, &" << var << ", sizeof(" << var << "), " << endian_flag(unit.endian) << ");" << std::endl;
     }
 
     insert_indents(1);

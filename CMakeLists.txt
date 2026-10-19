@@ -48,6 +48,10 @@ if(SKYWIRE_SANITIZE)
     message(STATUS "Sanitizers enabled")
 endif()
 
+# Build the benchmarks in bench/ (not part of ctest). Use a Release build
+# directory without sanitizers; see bench/README.md.
+option(SKYWIRE_BENCH "Build the generated-code benchmarks in bench/" OFF)
+
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)
@@ -106,3 +110,7 @@ endif(UNIX AND NOT APPLE)
 
 add_subdirectory(3rd_party/qwikpirate)
 add_subdirectory(src)
+
+if(SKYWIRE_BENCH)
+    add_subdirectory(bench)
+endif()

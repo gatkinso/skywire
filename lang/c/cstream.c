@@ -16,45 +16,34 @@
 #include <stdint.h>
 #include "cstream.h"
 
-static void sw_swap(char* l, char* r)
-{
-    char t = *l;
-    *l = *r;
-    *r = t;
-}
-
 void sw_swap16(char* d)
 {
+    uint16_t v;
     if (!d) return;
 
-    sw_swap(&d[0], &d[1]);
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP16(v);
+    memcpy(d, &v, sizeof(v));
 }
 
 void sw_swap32(char* d)
 {
+    uint32_t v;
     if (!d) return;
 
-    sw_swap(&d[0], &d[3]);
-    sw_swap(&d[1], &d[2]);
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP32(v);
+    memcpy(d, &v, sizeof(v));
 }
 
 void sw_swap64(char* d)
 {
+    uint64_t v;
     if (!d) return;
 
-    sw_swap(&d[0], &d[7]);
-    sw_swap(&d[1], &d[6]);
-    sw_swap(&d[2], &d[5]);
-    sw_swap(&d[3], &d[4]);
-}
-
-static unsigned int host_endian(void)
-{
-#if SW_HOST_LITTLE_ENDIAN
-    return SW_LITTLE_ENDIAN_FLAG;
-#else
-    return SW_BIG_ENDIAN_FLAG;
-#endif
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP64(v);
+    memcpy(d, &v, sizeof(v));
 }
 
 int cstream_init(Cstream* streamer, size_t size)
@@ -149,40 +138,49 @@ static int cstream_reserve(Cstream* streamer, size_t sz)
     return 0;
 }
 
+char* cstream_claim(Cstream* streamer, size_t sz)
+{
+    char* p = NULL;
+
+    if (streamer == NULL || sz == 0 || cstream_reserve(streamer, sz) != 0)
+    {
+        return NULL;
+    }
+
+    p = streamer->tail_;
+    streamer->tail_ += sz;
+    return p;
+}
+
+const char* cstream_consume(Cstream* streamer, size_t sz)
+{
+    const char* p = NULL;
+
+    if (sz == 0 || cstream_available(streamer) < sz)
+    {
+        return NULL;
+    }
+
+    p = streamer->head_;
+    streamer->head_ += sz;
+    return p;
+}
+
 int cstream_write(Cstream* streamer, const void* d, size_t sz, unsigned int endian)
 {
+    char* p = NULL;
+
     if (sz == 0)
     {
         return 0;
     }
 
-    if (streamer == NULL || d == NULL || cstream_reserve(streamer, sz) != 0)
+    if (d == NULL || (p = cstream_claim(streamer, sz)) == NULL)
     {
         return -1;
     }
 
-    memcpy(streamer->tail_, d, sz);
-
-    if (endian != SW_NATIVE_ENDIAN_FLAG && endian != host_endian())
-    {
-        switch (sz)
-        {
-        case 2:
-            sw_swap16(streamer->tail_);
-            break;
-        case 4:
-            sw_swap32(streamer->tail_);
-            break;
-        case 8:
-            sw_swap64(streamer->tail_);
-            break;
-        default:
-            break;
-        }
-    }
-
-    streamer->tail_ += sz;
-
+    sw_put(p, d, sz, endian);
     return 0;
 }
 
@@ -198,37 +196,18 @@ size_t cstream_available(const Cstream* streamer)
 
 int cstream_read(Cstream* streamer, void* d, size_t sz, unsigned int endian)
 {
+    const char* p = NULL;
+
     if (sz == 0)
     {
         return 0;
     }
 
-    if (d == NULL || cstream_available(streamer) < sz)
+    if (d == NULL || (p = cstream_consume(streamer, sz)) == NULL)
     {
         return -1;
     }
 
-    memcpy(d, streamer->head_, sz);
-
-    if (endian != SW_NATIVE_ENDIAN_FLAG && endian != host_endian())
-    {
-        switch (sz)
-        {
-        case 2:
-            sw_swap16((char*)d);
-            break;
-        case 4:
-            sw_swap32((char*)d);
-            break;
-        case 8:
-            sw_swap64((char*)d);
-            break;
-        default:
-            break;
-        }
-    }
-
-    streamer->head_ += sz;
-
+    sw_get(p, d, sz, endian);
     return 0;
 }
