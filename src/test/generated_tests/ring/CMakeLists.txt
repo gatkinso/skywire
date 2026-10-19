@@ -36,8 +36,7 @@ foreach(lang c cpp)
         set(langfile ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json)
         set(outputs ${RING_DIR}/cpp/RingyMcRingface.h ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp)
         set(inner_outputs ${RING_DIR}/cpp/RingyInner.h)
-        # stream.h swaps float/double bytes with sw_swap32/64 from cstream.c.
-        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${RING_DIR}/cpp/RingyInner.h ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
+        set(sources ${RING_DIR}/cpp/RingyMcRingfaceRelay.cpp ${RING_DIR}/cpp/RingyInner.h)
     endif()
 
     file(MAKE_DIRECTORY ${RING_DIR}/${lang})

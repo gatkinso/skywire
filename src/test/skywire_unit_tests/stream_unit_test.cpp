@@ -450,3 +450,117 @@ TEST_F(StreamUnitTest, ManySmallReads)
     }
     ASSERT_EQ(ss.byte_size(), 0);
 }
+
+TEST_F(StreamUnitTest, ClearKeepsBuffer)
+{
+    // clear() keeps the buffer, so the next write neither reallocates nor
+    // zero-fills it.
+    skyloupe::Stream ss(64, 64);
+    const char bytes[] = { 1, 2, 3, 4 };
+
+    ss.write(bytes, sizeof(bytes));
+    const char* before = ss.data();
+    const size_t size = ss.size();
+    ss.clear();
+    ASSERT_EQ(ss.byte_size(), 0u);
+    ASSERT_EQ(ss.size(), size);
+
+    ss.write(bytes, sizeof(bytes));
+    ASSERT_EQ(ss.data(), before);
+    ASSERT_EQ(ss.byte_size(), sizeof(bytes));
+}
+
+TEST_F(StreamUnitTest, ClaimAndConsume)
+{
+    skyloupe::Stream ss(8, 8);
+    const char bytes[] = { 10, 20, 30, 40, 50, 60 };
+
+    // A claim counts as written, growing the buffer when needed.
+    char* p = ss.claim(4);
+    ASSERT_NE(p, nullptr);
+    std::memcpy(p, bytes, 4);
+    p = ss.claim(sizeof(bytes) + 16);
+    ASSERT_NE(p, nullptr);
+    std::memset(p, 7, sizeof(bytes) + 16);
+    ASSERT_EQ(ss.byte_size(), 4 + sizeof(bytes) + 16);
+
+    // A short consume takes nothing.
+    ASSERT_EQ(ss.consume(ss.byte_size() + 1), nullptr);
+    ASSERT_EQ(ss.byte_size(), 4 + sizeof(bytes) + 16);
+
+    const char* q = ss.consume(4);
+    ASSERT_NE(q, nullptr);
+    ASSERT_EQ(0, std::memcmp(q, bytes, 4));
+    q = ss.consume(sizeof(bytes) + 16);
+    ASSERT_NE(q, nullptr);
+    ASSERT_EQ(q[0], 7);
+    ASSERT_EQ(ss.byte_size(), 0u);
+
+    ASSERT_EQ(ss.claim(0), nullptr);
+    ASSERT_EQ(ss.consume(0), nullptr);
+}
+
+TEST_F(StreamUnitTest, ClaimReusesReadSpace)
+{
+    // A claim that does not fit slides unread bytes to the front first.
+    skyloupe::Stream ss(8, 8);
+    const char bytes[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    char out[6] = {};
+
+    ss.write(bytes, sizeof(bytes));
+    ss.read(out, sizeof(out));
+    char* p = ss.claim(4);
+    ASSERT_NE(p, nullptr);
+    std::memcpy(p, bytes, 4);
+
+    ASSERT_EQ(ss.size(), 8u);
+    ASSERT_EQ(ss.byte_size(), 6u);
+    const char want[] = { 7, 8, 1, 2, 3, 4 };
+    ASSERT_EQ(0, std::memcmp(ss.data(), want, sizeof(want)));
+}
+
+TEST_F(StreamUnitTest, ClaimAndConsumeNeedSwMode)
+{
+    skyloupe::Stream ss(512, 512, skyloupe::Stream::PZ);
+    ASSERT_EQ(ss.claim(4), nullptr);
+    ASSERT_EQ(ss.consume(0), nullptr);
+}
+
+TEST_F(StreamUnitTest, WireByteOrder)
+{
+    char buf[8];
+    const char* end = nullptr;
+
+    // Big and little endian are fixed on the wire; native is the host's order.
+    ASSERT_EQ(skyloupe::wire::put(buf, uint32_t(0x01020304), skyloupe::Endianness::Big), buf + 4);
+    ASSERT_EQ(0, std::memcmp(buf, "\x01\x02\x03\x04", 4));
+    skyloupe::wire::put(buf, uint32_t(0x01020304), skyloupe::Endianness::Little);
+    ASSERT_EQ(0, std::memcmp(buf, "\x04\x03\x02\x01", 4));
+    const uint32_t host = 0x01020304;
+    skyloupe::wire::put(buf, host, skyloupe::Endianness::Native);
+    ASSERT_EQ(0, std::memcmp(buf, &host, 4));
+
+    skyloupe::wire::put(buf, int16_t(-2), skyloupe::Endianness::Big);
+    ASSERT_EQ(0, std::memcmp(buf, "\xff\xfe", 2));
+
+    // 3.5f is 0x40600000; 3.5 is 0x400c000000000000.
+    skyloupe::wire::put(buf, 3.5f, skyloupe::Endianness::Big);
+    ASSERT_EQ(0, std::memcmp(buf, "\x40\x60\x00\x00", 4));
+    skyloupe::wire::put(buf, 3.5, skyloupe::Endianness::Little);
+    ASSERT_EQ(0, std::memcmp(buf, "\x00\x00\x00\x00\x00\x00\x0c\x40", 8));
+
+    double d = 0;
+    end = skyloupe::wire::get(buf, d, skyloupe::Endianness::Little);
+    ASSERT_EQ(end, buf + 8);
+    ASSERT_EQ(d, 3.5);
+
+    uint64_t u = 0;
+    std::memcpy(buf, "\x00\x00\x00\x02\xcb\x41\x78\x00", 8);
+    skyloupe::wire::get(buf, u, skyloupe::Endianness::Big);
+    ASSERT_EQ(u, 12000000000ull);
+
+    char text[3] = {};
+    ASSERT_EQ(skyloupe::wire::put_bytes(buf, "sky", 3), buf + 3);
+    ASSERT_EQ(skyloupe::wire::get_bytes(buf, text, 3), buf + 3);
+    ASSERT_EQ(0, std::memcmp(text, "sky", 3));
+}

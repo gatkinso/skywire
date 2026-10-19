@@ -59,6 +59,7 @@ protected:
     void gen_lines(std::string text, unsigned int indents);
     std::string pb_key(const std::string& direction, const std::string& type);
     static std::string endianness(unsigned int endian);
+    bool members_sw(const std::string& direction, int& errorcode);
     void write_bitfield(uint32_t tag, const member_desc_t& member);
     void read_bitfield(uint32_t tag, const member_desc_t& member);
     std::string pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member);
