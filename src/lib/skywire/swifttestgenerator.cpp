@@ -99,6 +99,12 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
         ss_ << "        let wire = SWStream()\n";
         ss_ << "        check(input.serialize(wire), \"serialize failed\")\n";
         ss_ << "        check(wire.read(wire.remaining())! == want, \"wire mismatch\")\n";
+        // clear() drops what was written; the stream is then reused.
+        ss_ << "        check(input.serialize(wire), \"serialize failed\")\n";
+        ss_ << "        wire.clear()\n";
+        ss_ << "        check(wire.remaining() == 0, \"clear() left bytes\")\n";
+        ss_ << "        check(input.serialize(wire), \"serialize after clear() failed\")\n";
+        ss_ << "        check(wire.read(wire.remaining())! == want, \"wire mismatch after clear()\")\n";
     }
 
     // One stream reused for many messages, reading two of every three it

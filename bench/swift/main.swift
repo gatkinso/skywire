@@ -68,15 +68,17 @@ for _ in 0..<iters {
 }
 let rssAfter = maxRSS()
 
+// Like C++, one stream is reused: cleared after each serialize, and drained by
+// each deserialize.
+let stream = SWStream()
 let ser = bestNs {
-    let s = SWStream()
-    _ = m.serialize(s)
-    sink &+= s.remaining()
+    _ = m.serialize(stream)
+    sink &+= stream.remaining()
+    stream.clear()
 }
 let de = bestNs {
-    let s = SWStream()
-    s.write(bin)
-    _ = m2.deserialize(s)
+    stream.write(bin)
+    _ = m2.deserialize(stream)
     sink &+= Int(m2.Get_u8())
 }
 let reuse = bestNs {

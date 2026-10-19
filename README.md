@@ -457,7 +457,8 @@ fn main() -> std::io::Result<()> {
 |---|---|
 | `#[derive(Debug, Clone, Copy, Default, PartialEq)]` | `Default` is written out instead when a string is longer than 32 bytes, which std can't derive. |
 | `SIZE`, `size()` | The wire size, a constant. |
-| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends, as nested messages do. |
+| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends. |
+| `write_to(&mut [u8])` | Writes into the first `SIZE` bytes of the slice, as nested messages do; panics if it is shorter. |
 | `deserialize(&mut self, &[u8])`, `from_bytes(&[u8])` | Read from the start of the slice; extra bytes are ignored. A slice shorter than `SIZE` returns an `UnexpectedEof` `std::io::Error` and leaves the message unchanged. |
 | `equals(&other)` | The same as `==`. |
 | `x()`, `set_x(v)` | Fields are private. A bitfield setter keeps only the field's bits. |
@@ -467,8 +468,8 @@ fn main() -> std::io::Result<()> {
 A member named after a Rust keyword becomes a raw identifier (`r#type`, with
 the setter `set_type`). wiregen rejects a member named `self`, `Self`,
 `super`, `crate` or `_`, and one whose accessors would collide with the
-generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `deserialize`,
-`from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
+generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `write_to`,
+`deserialize`, `from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
 Names that aren't snake_case, and a class name that isn't CamelCase, are kept
 as they are, with `#![allow(non_snake_case)]` or
 `#![allow(non_camel_case_types)]` at the top of the module.

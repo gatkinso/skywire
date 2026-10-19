@@ -171,8 +171,13 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
     insert_indents(1);
     gen_one_line("serialize_str");
 
-    // Grow the stream once for the whole message rather than field by field.
-    gen_one_line("serialize_reserve_str", 2);
+    // Claim the whole message from the stream at once, then write it in
+    // place with serialize(into:), which a containing message also calls.
+    gen_lines(lang_spec_.get_value_string("serialize_claim_str"), 2);
+    insert_indents(1);
+    gen_one_line("endfunction_str");
+    ss_ << std::endl;
+    gen_lines(lang_spec_.get_value_string("serialize_into_str"), 1);
 
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
@@ -210,8 +215,6 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
         ss_ << template_str << std::endl;
     }
 
-    insert_indents(2);
-    ss_ << "return true" << std::endl;
     insert_indents(1);
     gen_one_line("endfunction_str");
     ss_ << std::endl;
@@ -224,8 +227,13 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
     insert_indents(1);
     gen_one_line("deserialize_str");
 
-    // Reject a short stream before touching any field, like the Go, Java and Python generators.
-    gen_one_line("deserialize_size_check_str", 2);
+    // Take the whole message from the stream at once, rejecting a short
+    // stream before touching any field, then read it with deserialize(from:).
+    gen_lines(lang_spec_.get_value_string("deserialize_consume_str"), 2);
+    insert_indents(1);
+    gen_one_line("endfunction_str");
+    ss_ << std::endl;
+    gen_lines(lang_spec_.get_value_string("deserialize_from_str"), 1);
 
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
@@ -263,8 +271,6 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
         ss_ << template_str << std::endl;
     }
 
-    insert_indents(2);
-    ss_ << "return true" << std::endl;
     insert_indents(1);
     gen_one_line("endfunction_str");
     ss_ << std::endl;
@@ -480,7 +486,7 @@ void SwiftGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& membe
     if (place.last)
     {
         insert_indents(2);
-        ss_ << "stream.serialize(" << var << ", " << swift_endian(unit.endian) << ")" << std::endl;
+        ss_ << "SWWire.put(&p, " << var << ", " << swift_endian(unit.endian) << ")" << std::endl;
     }
 }
 
@@ -494,7 +500,7 @@ void SwiftGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& mem
     if (place.first)
     {
         insert_indents(2);
-        ss_ << "let " << var << ": " << swift_type(bitfields::unsigned_type(unit.type)) << " = stream.read("
+        ss_ << "let " << var << ": " << swift_type(bitfields::unsigned_type(unit.type)) << " = SWWire.get(&p, "
             << swift_endian(unit.endian) << ")" << std::endl;
     }
 

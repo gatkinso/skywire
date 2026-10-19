@@ -260,24 +260,34 @@ bool GoGenerator::imp_serialize(int& errorcode)
     });
 }
 
+// Each member is read at its offset from the start of o, which the length
+// check covers, so o is never resliced. Offsets past a nested message add its
+// Size(), which inlines to a constant.
 bool GoGenerator::imp_deserialize(int& errorcode)
 {
     return do_block("deserialize_fcn_block", [this]()->std::string {
+        const std::string at_substr = lang_spec_.get_value_string("at_substr");
+        const std::string index_substr = lang_spec_.get_value_string("index_substr");
         std::string body;
-        size_t i = 0;
+        unsigned int fixed = 0;
+        std::string dynamic;
+
         for (auto& member : ordered_members_)
         {
             const std::string& type = std::get<member_type>(member.second);
+            // gofmt writes an index expression without spaces: o[12+s.inner.Size():].
+            const std::string index = (fixed || dynamic.empty() ? std::to_string(fixed) : "") +
+                                      (fixed && !dynamic.empty() ? "+" : "") + dynamic;
+            const std::string at = index == "0" ? "o" : "o[" + index + ":]";
             std::string key;
-            std::string advance_key = "deserialize_advance_str";
 
             if (is_bitfield(member.second))
             {
-                body += deserialize_bitfield(member.first, member.second);
+                body += deserialize_bitfield(member.first, member.second, index, at);
                 // A unit is consumed after its last field.
-                if (++i < ordered_members_.size() && place_of(member.first).last)
+                if (place_of(member.first).last)
                 {
-                    body += "\to = o[" + std::to_string(go_bits(type) / 8) + ":]\n";
+                    fixed += go_bits(type) / 8;
                 }
                 continue;
             }
@@ -285,10 +295,7 @@ bool GoGenerator::imp_deserialize(int& errorcode)
             if (is_string_type(type))
                 key = "deserialize_string_mem_str";
             else if (!is_native_type(type))
-            {
                 key = "deserialize_user_mem_str";
-                advance_key = "deserialize_user_advance_str";
-            }
             else if (go_bits(type) == 8)
                 key = "deserialize_byte_mem_str";
             else if (is_float_type(type))
@@ -296,13 +303,17 @@ bool GoGenerator::imp_deserialize(int& errorcode)
             else
                 key = "deserialize_int_mem_str";
 
-            body += subst(lang_spec_.get_value_string(key), member.second);
+            std::string line = subst(lang_spec_.get_value_string(key), member.second);
+            line = std::regex_replace(line, std::regex(at_substr), at);
+            line = std::regex_replace(line, std::regex(index_substr), index);
+            body += line;
 
-            // Nothing reads past the last member, so don't advance after it.
-            if (++i < ordered_members_.size())
-            {
-                body += subst(lang_spec_.get_value_string(advance_key), member.second);
-            }
+            if (!is_native_type(type))
+                dynamic += (dynamic.empty() ? "" : "+") + subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
+            else if (is_string_type(type))
+                fixed += std::get<member_length>(member.second);
+            else
+                fixed += go_bits(type) / 8;
         }
 
         return body;
@@ -445,7 +456,7 @@ std::string GoGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& m
     return body;
 }
 
-std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& member)
+std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& member, const std::string& index, const std::string& at)
 {
     const bitfields::place_t& place = place_of(tag);
     const bitfields::unit_t& unit = unit_of(tag);
@@ -455,7 +466,7 @@ std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t&
     std::string body;
     if (place.first)
     {
-        body += "\t" + var + " := " + (width == 8 ? std::string("o[0]") : go_endian(unit.endian) + ".Uint" + std::to_string(width) + "(o)") + "\n";
+        body += "\t" + var + " := " + (width == 8 ? "o[" + index + "]" : go_endian(unit.endian) + ".Uint" + std::to_string(width) + "(" + at + ")") + "\n";
     }
 
     // Shifting the field to the top, converting, and shifting it back down
