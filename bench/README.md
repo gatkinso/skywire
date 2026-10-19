@@ -51,7 +51,7 @@ between runs; compare numbers from the same machine.
 | C | `RingyMcRingface_Serialize` into a reused `Cstream`, emptied each time | copy the 135 bytes into the `Cstream`, then `RingyMcRingface_Deserialize` |
 | C++ | `serialize` into a reused `skyloupe::Stream` (SW mode), then `clear()` | `write` the 135 bytes into the stream, then `deserialize` |
 | Swift | `serialize` into a reused `SWStream`, then `clear()` | `write` the 135 bytes into the stream, then `deserialize` |
-| Go | `Serialize()` (returns a new slice) | `Deserialize(bin)` |
+| Go | `AppendTo` a reused slice | `Deserialize(bin)` |
 | Python | `serialize()` (returns new `bytes`) | `deserialize(bin)` |
 | Java | `serialize(ByteBuffer)` into a reused buffer | `deserialize(byte[])` |
 | Rust | `serialize_into` a reused `Vec` | `deserialize(&bin)` |
@@ -63,7 +63,7 @@ Notes give the other forms:
 - **Swift:** how much the process's peak memory grew over 200,000 round trips
   through one reused stream. A stream that keeps the bytes it has already
   read grows here. Not measured on Windows.
-- **Go:** allocations per operation.
+- **Go:** `Serialize()` to a new slice, and allocations per operation.
 - **Java:** `serialize()` to a new `byte[]`, and `hashCode()`.
 - **Rust:** `serialize()` to a new `Vec`.
 

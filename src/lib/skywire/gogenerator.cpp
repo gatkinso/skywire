@@ -163,7 +163,7 @@ bool GoGenerator::imp_package(int& errorcode)
 bool GoGenerator::imp_imports(int& errorcode)
 {
     return do_block("import_block", [this]()->std::string {
-        std::set<std::string> packages = { "fmt" };
+        std::set<std::string> packages = { "fmt", "slices" };
 
         for (auto& member : ordered_members_)
         {
@@ -227,97 +227,81 @@ bool GoGenerator::imp_struct(int& errorcode)
     });
 }
 
+// Put stores each member at its offset in a, the message as an array
+// pointer, so no store needs a bounds check. Offsets past a nested message add
+// its Size constant.
 bool GoGenerator::imp_serialize(int& errorcode)
 {
     return do_block("serialize_fcn_block", [this]()->std::string {
-        std::string body;
-        for (auto& member : ordered_members_)
-        {
-            const std::string& type = std::get<member_type>(member.second);
-            std::string key;
-
-            if (is_bitfield(member.second))
-            {
-                body += serialize_bitfield(member.first, member.second);
-                continue;
-            }
-
-            if (is_string_type(type))
-                key = "serialize_string_mem_str";
-            else if (!is_native_type(type))
-                key = "serialize_user_mem_str";
-            else if (go_bits(type) == 8)
-                key = "serialize_byte_mem_str";
-            else if (is_float_type(type))
-                key = "serialize_float_mem_str";
-            else
-                key = "serialize_int_mem_str";
-
-            body += subst(lang_spec_.get_value_string(key), member.second);
-        }
-
-        return body;
+        return members_at("serialize");
     });
 }
 
-// Each member is read at its offset from the start of o, which the length
-// check covers, so o is never resliced. Offsets past a nested message add its
-// Size(), which inlines to a constant.
+// Deserialize reads each member at its offset in a, o as an array pointer.
 bool GoGenerator::imp_deserialize(int& errorcode)
 {
     return do_block("deserialize_fcn_block", [this]()->std::string {
-        const std::string at_substr = lang_spec_.get_value_string("at_substr");
-        const std::string index_substr = lang_spec_.get_value_string("index_substr");
-        std::string body;
-        unsigned int fixed = 0;
-        std::string dynamic;
+        return members_at("deserialize");
+    });
+}
 
-        for (auto& member : ordered_members_)
+// One line per member, reading or writing it at its offset in a.
+// direction is "serialize" or "deserialize".
+std::string GoGenerator::members_at(const std::string& direction)
+{
+    const std::string at_substr = lang_spec_.get_value_string("at_substr");
+    const std::string index_substr = lang_spec_.get_value_string("index_substr");
+    const bool writing = direction == "serialize";
+    std::string body;
+    unsigned int fixed = 0;
+    std::string dynamic;
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        // gofmt writes an index expression without spaces: a[12+RingyInnerSize:].
+        const std::string index = (fixed || dynamic.empty() ? std::to_string(fixed) : "") +
+                                  (fixed && !dynamic.empty() ? "+" : "") + dynamic;
+        const std::string at = "a[" + (index == "0" ? std::string() : index) + ":]";
+        std::string key;
+
+        if (is_bitfield(member.second))
         {
-            const std::string& type = std::get<member_type>(member.second);
-            // gofmt writes an index expression without spaces: o[12+s.inner.Size():].
-            const std::string index = (fixed || dynamic.empty() ? std::to_string(fixed) : "") +
-                                      (fixed && !dynamic.empty() ? "+" : "") + dynamic;
-            const std::string at = index == "0" ? "o" : "o[" + index + ":]";
-            std::string key;
-
-            if (is_bitfield(member.second))
+            body += writing ? serialize_bitfield(member.first, member.second, index, at)
+                            : deserialize_bitfield(member.first, member.second, index, at);
+            // A unit is consumed after its last field.
+            if (place_of(member.first).last)
             {
-                body += deserialize_bitfield(member.first, member.second, index, at);
-                // A unit is consumed after its last field.
-                if (place_of(member.first).last)
-                {
-                    fixed += go_bits(type) / 8;
-                }
-                continue;
-            }
-
-            if (is_string_type(type))
-                key = "deserialize_string_mem_str";
-            else if (!is_native_type(type))
-                key = "deserialize_user_mem_str";
-            else if (go_bits(type) == 8)
-                key = "deserialize_byte_mem_str";
-            else if (is_float_type(type))
-                key = "deserialize_float_mem_str";
-            else
-                key = "deserialize_int_mem_str";
-
-            std::string line = subst(lang_spec_.get_value_string(key), member.second);
-            line = std::regex_replace(line, std::regex(at_substr), at);
-            line = std::regex_replace(line, std::regex(index_substr), index);
-            body += line;
-
-            if (!is_native_type(type))
-                dynamic += (dynamic.empty() ? "" : "+") + subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
-            else if (is_string_type(type))
-                fixed += std::get<member_length>(member.second);
-            else
                 fixed += go_bits(type) / 8;
+            }
+            continue;
         }
 
-        return body;
-    });
+        if (is_string_type(type))
+            key = direction + "_string_mem_str";
+        else if (!is_native_type(type))
+            key = direction + "_user_mem_str";
+        else if (go_bits(type) == 8)
+            key = direction + "_byte_mem_str";
+        else if (is_float_type(type))
+            key = direction + "_float_mem_str";
+        else
+            key = direction + "_int_mem_str";
+
+        std::string line = subst(lang_spec_.get_value_string(key), member.second);
+        line = std::regex_replace(line, std::regex(at_substr), at);
+        line = std::regex_replace(line, std::regex(index_substr), index);
+        body += line;
+
+        if (!is_native_type(type))
+            dynamic += (dynamic.empty() ? "" : "+") + go_type(type) + "Size";
+        else if (is_string_type(type))
+            fixed += std::get<member_length>(member.second);
+        else
+            fixed += go_bits(type) / 8;
+    }
+
+    return body;
 }
 
 bool GoGenerator::imp_equals(int& errorcode)
@@ -428,8 +412,8 @@ bool GoGenerator::do_block(const std::string block_id, std::function<std::string
 }
 
 // A bitfield's storage unit is a local, u<n>: its first field declares it,
-// each field ors itself in, and the last one appends it.
-std::string GoGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& member)
+// each field ors itself in, and the last one stores it.
+std::string GoGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& member, const std::string& index, const std::string& at)
 {
     const bitfields::place_t& place = place_of(tag);
     const bitfields::unit_t& unit = unit_of(tag);
@@ -449,8 +433,8 @@ std::string GoGenerator::serialize_bitfield(uint32_t tag, const member_desc_t& m
 
     if (place.last)
     {
-        body += width == 8 ? "\to = append(o, " + var + ")\n"
-                           : "\to = " + go_endian(unit.endian) + ".AppendUint" + std::to_string(width) + "(o, " + var + ")\n";
+        body += width == 8 ? "\ta[" + index + "] = " + var + "\n"
+                           : "\t" + go_endian(unit.endian) + ".PutUint" + std::to_string(width) + "(" + at + ", " + var + ")\n";
     }
 
     return body;
@@ -466,7 +450,7 @@ std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t&
     std::string body;
     if (place.first)
     {
-        body += "\t" + var + " := " + (width == 8 ? "o[" + index + "]" : go_endian(unit.endian) + ".Uint" + std::to_string(width) + "(" + at + ")") + "\n";
+        body += "\t" + var + " := " + (width == 8 ? "a[" + index + "]" : go_endian(unit.endian) + ".Uint" + std::to_string(width) + "(" + at + ")") + "\n";
     }
 
     // Shifting the field to the top, converting, and shifting it back down

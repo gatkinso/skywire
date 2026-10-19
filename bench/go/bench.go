@@ -56,7 +56,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Like the other languages, serialize into a reused buffer.
+	buf := make([]byte, 0, 4096)
 	ser, serAllocs := best(func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			buf = m.AppendTo(buf[:0])
+		}
+		sink = buf
+	})
+	serNew, _ := best(func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			sink = m.Serialize()
 		}
@@ -70,5 +78,5 @@ func main() {
 
 	fmt.Printf("RESULT serialize %.1f\n", ser)
 	fmt.Printf("RESULT deserialize %.1f\n", de)
-	fmt.Printf("NOTE allocs/op: serialize %d, deserialize %d\n", serAllocs, deAllocs)
+	fmt.Printf("NOTE Serialize() to a new slice %.1f ns; allocs/op: AppendTo %d, deserialize %d\n", serNew, serAllocs, deAllocs)
 }
