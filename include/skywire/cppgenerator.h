@@ -56,7 +56,6 @@ protected:
     virtual bool hdr_namespaceend(int& errorcode);
 
     // Writes a multi-line template, indenting every line.
-    void gen_lines(std::string text, unsigned int indents);
     std::string pb_key(const std::string& direction, const std::string& type);
     static std::string endianness(unsigned int endian);
     bool members_sw(const std::string& direction, int& errorcode);

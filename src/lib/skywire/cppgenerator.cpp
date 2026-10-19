@@ -377,22 +377,6 @@ bool CppGenerator::members_sw(const std::string& direction, int& errorcode)
     return true;
 }
 
-void CppGenerator::gen_lines(std::string text, unsigned int indents)
-{
-    size_t start = 0;
-    while (start < text.size())
-    {
-        size_t end = text.find('\n', start);
-        if (end == std::string::npos)
-        {
-            end = text.size();
-        }
-        insert_indents(indents);
-        ss_ << text.substr(start, end - start) << std::endl;
-        start = end + 1;
-    }
-}
-
 std::string CppGenerator::pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member)
 {
     const std::string& type = std::get<member_type>(member);

@@ -51,6 +51,68 @@ extern "C" {
     // Number of unread bytes.
     size_t cstream_available(const Cstream* streamer);
 
+    // Reserves sz bytes after the unread ones and returns where to write
+    // them; they count as written. Space already read is reused before the
+    // buffer grows. Returns NULL (stream unchanged) on a NULL stream, a sz of
+    // 0 or a failed allocation. Generated _Serialize functions claim a whole
+    // message at once.
+    char* cstream_claim(Cstream* streamer, size_t sz);
+
+    // Consumes the next sz unread bytes and returns where they start, or NULL
+    // (nothing consumed) on a NULL stream, a sz of 0 or fewer than sz unread
+    // bytes. The bytes stay valid until the next write.
+    const char* cstream_consume(Cstream* streamer, size_t sz);
+
+// Stores and loads of one value in a given byte order, for code that has
+// already claimed or consumed the space; nothing is bounds-checked. sz is the
+// value's size: 2, 4 and 8 byte values are swapped when endian is not the
+// host's order, anything else (bytes, char[N]) is copied as is. Each returns
+// the pointer just past the value. With constant sz and endian, as in
+// generated code, each compiles to a load or store and at most one swap.
+#if defined(_MSC_VER) && !defined(__cplusplus)
+    #define SW_INLINE static __inline
+#else
+    #define SW_INLINE static inline
+#endif
+
+    SW_INLINE int sw_needs_swap(unsigned int endian)
+    {
+        return endian != SW_NATIVE_ENDIAN_FLAG &&
+               endian != (SW_HOST_LITTLE_ENDIAN ? SW_LITTLE_ENDIAN_FLAG : SW_BIG_ENDIAN_FLAG);
+    }
+
+    SW_INLINE char* sw_put(char* p, const void* d, size_t sz, unsigned int endian)
+    {
+        if (sw_needs_swap(endian))
+        {
+            switch (sz)
+            {
+            case 2: { uint16_t v; memcpy(&v, d, 2); v = SW_BSWAP16(v); memcpy(p, &v, 2); return p + 2; }
+            case 4: { uint32_t v; memcpy(&v, d, 4); v = SW_BSWAP32(v); memcpy(p, &v, 4); return p + 4; }
+            case 8: { uint64_t v; memcpy(&v, d, 8); v = SW_BSWAP64(v); memcpy(p, &v, 8); return p + 8; }
+            default: break;
+            }
+        }
+        memcpy(p, d, sz);
+        return p + sz;
+    }
+
+    SW_INLINE const char* sw_get(const char* p, void* d, size_t sz, unsigned int endian)
+    {
+        if (sw_needs_swap(endian))
+        {
+            switch (sz)
+            {
+            case 2: { uint16_t v; memcpy(&v, p, 2); v = SW_BSWAP16(v); memcpy(d, &v, 2); return p + 2; }
+            case 4: { uint32_t v; memcpy(&v, p, 4); v = SW_BSWAP32(v); memcpy(d, &v, 4); return p + 4; }
+            case 8: { uint64_t v; memcpy(&v, p, 8); v = SW_BSWAP64(v); memcpy(d, &v, 8); return p + 8; }
+            default: break;
+            }
+        }
+        memcpy(d, p, sz);
+        return p + sz;
+    }
+
 #ifdef __cplusplus
 }
 #endif

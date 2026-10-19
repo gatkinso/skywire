@@ -315,6 +315,22 @@ bool Generator::gen_one_line(const std::string& key, unsigned int indents)
     return true;
 }
 
+void Generator::gen_lines(std::string text, unsigned int indents)
+{
+    size_t start = 0;
+    while (start < text.size())
+    {
+        size_t end = text.find('\n', start);
+        if (end == std::string::npos)
+        {
+            end = text.size();
+        }
+        insert_indents(indents);
+        ss_ << text.substr(start, end - start) << std::endl;
+        start = end + 1;
+    }
+}
+
 bool Generator::gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
 {
     std::string template_str = lang_spec_.get_value_string(template_key);
