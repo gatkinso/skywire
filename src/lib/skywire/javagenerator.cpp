@@ -368,23 +368,32 @@ std::string JavaGenerator::imp_equals()
     return body;
 }
 
+// 31 * h + each member's hash, as Objects.hash computes it, using the
+// primitive hashCode methods so nothing is boxed.
 std::string JavaGenerator::imp_hashcode()
 {
-    const std::string separator = lang_spec_.get_value_string("hashcode_separator_str");
+    static const std::map<std::string, std::string> boxes = {
+        { "byte", "Byte" }, { "short", "Short" }, { "int", "Integer" },
+        { "long", "Long" }, { "float", "Float" }, { "double", "Double" },
+    };
 
     std::string body;
-    size_t i = 0;
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
-        std::string key = is_string_type(type) ? "hashcode_string_mem_str" : "hashcode_mem_str";
+        std::string template_str;
 
-        body += subst(lang_spec_.get_value_string(key), member.second);
-
-        if (++i < ordered_members_.size())
+        if (is_string_type(type))
+            template_str = lang_spec_.get_value_string("hashcode_string_mem_str");
+        else if (!is_native_type(type))
+            template_str = lang_spec_.get_value_string("hashcode_user_mem_str");
+        else
         {
-            body += separator;
+            template_str = lang_spec_.get_value_string("hashcode_mem_str");
+            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("box_substr")), boxes.at(java_type(type)));
         }
+
+        body += subst(template_str, member.second);
     }
 
     return body;

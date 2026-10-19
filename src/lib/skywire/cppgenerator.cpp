@@ -269,6 +269,9 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
     return true;
 }
 
+// serialize() handles PZ mode, then claims the whole SW message from the
+// stream at once and writes it with serialize_sw(), which nested messages
+// also call to write themselves in place.
 bool CppGenerator::hdr_serialize(int& errorcode)
 {
     if (false == gen_one_line("serialize_str", 2))
@@ -278,67 +281,28 @@ bool CppGenerator::hdr_serialize(int& errorcode)
     }
 
     gen_lines(lang_spec_.get_value_string("serialize_pz_branch_str"), 3);
+    gen_lines(lang_spec_.get_value_string("serialize_sw_call_str"), 3);
+    insert_indents(2);
+    gen_one_line("endfunction_str");
 
-    const std::string member_substr = lang_spec_.get_value_string("member_substr");
-    const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
-    const std::string length_substr = lang_spec_.get_value_string("length_substr");
+    gen_lines(lang_spec_.get_value_string("serialize_sw_str"), 2);
 
-    if (msg_spec_.get_proto().members_size() == 0 || member_substr == "@NOTFOUND")
+    if (false == members_sw("serialize", errorcode))
     {
-        errorcode |= SW_LANG_C_HDR_SERIALIZE;
         return false;
     }
 
-    for (auto& member : ordered_members_)
-    {
-        std::string template_str;
-
-        if (is_bitfield(member.second))
-        {
-            write_bitfield(member.first, member.second);
-            continue;
-        }
-
-        if (is_string_type(std::get<member_type>(member.second)))
-        {
-            template_str = lang_spec_.get_value_string("serialize_string_mem_str");
-            insert_indents(3);
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
-            ss_ << template_str << std::endl;
-            continue;
-        }
-
-        if (is_native_type(std::get<member_type>(member.second)))
-        {
-            template_str = lang_spec_.get_value_string("serialize_native_mem_str");
-        }
-        else
-        {
-            template_str = lang_spec_.get_value_string("serialize_user_mem_str");
-        }
-
-        insert_indents(3);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-
-        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Big");
-        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Little");
-        else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Native");
-
-        ss_ << template_str << std::endl;
-    }
-
     insert_indents(3);
-    ss_ << "return true;" << std::endl;
+    ss_ << "return p;" << std::endl;
     insert_indents(2);
     gen_one_line("endfunction_str");
 
     return true;
 }
 
+// deserialize() handles PZ mode, then takes the whole SW message from the
+// stream at once (rejecting a short stream before touching any field) and
+// reads it with deserialize_sw().
 bool CppGenerator::hdr_deserialize(int& errorcode)
 {
     if (false == gen_one_line("deserialize_str", 2))
@@ -350,10 +314,29 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     std::string pz_branch = lang_spec_.get_value_string("deserialize_pz_branch_str");
     pz_branch = std::regex_replace(pz_branch, std::regex(lang_spec_.get_value_string("classname_substr")), msg_spec_.get_value_string("classname"));
     gen_lines(pz_branch, 3);
+    gen_lines(lang_spec_.get_value_string("deserialize_sw_call_str"), 3);
+    insert_indents(2);
+    gen_one_line("endfunction_str");
 
-    // Reject a short stream before touching any field, like the Go, Java and Python generators.
-    gen_one_line("deserialize_size_check_str", 3);
+    gen_lines(lang_spec_.get_value_string("deserialize_sw_str"), 2);
 
+    if (false == members_sw("deserialize", errorcode))
+    {
+        return false;
+    }
+
+    insert_indents(3);
+    ss_ << "return p;" << std::endl;
+    insert_indents(2);
+    gen_one_line("endfunction_str");
+
+    return true;
+}
+
+// The body of serialize_sw() or deserialize_sw(): one line per member, in
+// wire order. direction is "serialize" or "deserialize".
+bool CppGenerator::members_sw(const std::string& direction, int& errorcode)
+{
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");
@@ -366,67 +349,32 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
 
     for (auto& member : ordered_members_)
     {
-        std::string template_str;
-
         if (is_bitfield(member.second))
         {
-            read_bitfield(member.first, member.second);
+            if (direction == "serialize")
+                write_bitfield(member.first, member.second);
+            else
+                read_bitfield(member.first, member.second);
             continue;
         }
 
+        std::string template_str;
         if (is_string_type(std::get<member_type>(member.second)))
-        {
-            template_str = lang_spec_.get_value_string("deserialize_string_mem_str");
-            insert_indents(3);
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
-            ss_ << template_str << std::endl;
-            continue;
-        }
-
-        if (is_native_type(std::get<member_type>(member.second)))
-        {
-            template_str = lang_spec_.get_value_string("deserialize_native_mem_str");
-        }
+            template_str = lang_spec_.get_value_string(direction + "_string_mem_str");
+        else if (is_native_type(std::get<member_type>(member.second)))
+            template_str = lang_spec_.get_value_string(direction + "_native_mem_str");
         else
-        {
-            template_str = lang_spec_.get_value_string("deserialize_user_mem_str");
-        }
+            template_str = lang_spec_.get_value_string(direction + "_user_mem_str");
+
+        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+        template_str = std::regex_replace(template_str, std::regex(endian_substr), endianness(std::get<member_endianness>(member.second)));
 
         insert_indents(3);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-
-        if (std::get<member_endianness>(member.second) == SW_BIG_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Big");
-        else if (std::get<member_endianness>(member.second) == SW_LITTLE_ENDIAN_FLAG)
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Little");
-        else
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), "skyloupe::Endianness::Native");
         ss_ << template_str << std::endl;
     }
 
-    insert_indents(3);
-    ss_ << "return true;" << std::endl;
-    insert_indents(2);
-    gen_one_line("endfunction_str");
-
     return true;
-}
-
-void CppGenerator::gen_lines(std::string text, unsigned int indents)
-{
-    size_t start = 0;
-    while (start < text.size())
-    {
-        size_t end = text.find('\n', start);
-        if (end == std::string::npos)
-        {
-            end = text.size();
-        }
-        insert_indents(indents);
-        ss_ << text.substr(start, end - start) << std::endl;
-        start = end + 1;
-    }
 }
 
 std::string CppGenerator::pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member)
@@ -710,7 +658,7 @@ void CppGenerator::write_bitfield(uint32_t tag, const member_desc_t& member)
     if (place.last)
     {
         insert_indents(3);
-        ss_ << "str.serialize(" << var << ", " << endianness(unit.endian) << ");" << std::endl;
+        ss_ << "p = skyloupe::wire::put(p, " << var << ", " << endianness(unit.endian) << ");" << std::endl;
     }
 }
 
@@ -725,7 +673,7 @@ void CppGenerator::read_bitfield(uint32_t tag, const member_desc_t& member)
         insert_indents(3);
         ss_ << bitfields::unsigned_type(unit.type) << " " << var << " = 0;" << std::endl;
         insert_indents(3);
-        ss_ << "str.deserialize(" << var << ", " << endianness(unit.endian) << ");" << std::endl;
+        ss_ << "p = skyloupe::wire::get(p, " << var << ", " << endianness(unit.endian) << ");" << std::endl;
     }
 
     insert_indents(3);

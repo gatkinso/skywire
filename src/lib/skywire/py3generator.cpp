@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <algorithm>
 #include <regex>
 #include <map>
 #include <set>
@@ -110,6 +111,11 @@ bool Py3Generator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (false == layout(errorcode))
+    {
+        return false;
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -125,6 +131,7 @@ bool Py3Generator::do_implementation(int& errorcode)
 
     imp_banner(errorcode);
     imp_includes(errorcode);
+    imp_structs(errorcode);
     imp_classname(errorcode);
     imp_cons(errorcode);
     imp_serialize(errorcode);
@@ -182,7 +189,15 @@ bool Py3Generator::imp_includes(int& errorcode)
 
 bool Py3Generator::imp_classname(int& errorcode)
 {
-    return gen_one_line_subst("classname_str", "classname", "classname_substr", 0);
+    if (false == gen_one_line_subst("classname_str", "classname", "classname_substr", 0))
+    {
+        return false;
+    }
+
+    ss_ << std::endl;
+    line("SIZE = " + size_expr_ + "\n", 1);
+
+    return true;
 }
 
 bool Py3Generator::imp_cons(int& errorcode)
@@ -213,38 +228,345 @@ bool Py3Generator::imp_cons(int& errorcode)
     return true;
 }
 
-bool Py3Generator::imp_serialize(int& errorcode)
+// The wire layout. Byte order only matters for 2, 4 and 8 byte values, so
+// single bytes, fixed-length strings and 8-bit bitfield units go with
+// whichever struct is handy. Deserialize unpacks one struct per byte order,
+// each covering the whole message with pad bytes ("x") over everything it
+// does not read. Serialize packs the primary byte order the same way, then
+// each run of another byte order with its own struct: packing pads writes
+// zeros, so only one struct may cover the whole message.
+bool Py3Generator::layout(int& errorcode)
 {
-    method("serialize_fcn_str", "serialize_doc_str");
-    line(lang_spec_.get_value_string("serialize_start"));
+    items_.clear();
+    runs_.clear();
+    orders_.clear();
+    offset_names_.clear();
+    offset_order_.clear();
+    run_structs_ = 0;
 
-    const std::string format_substr = lang_spec_.get_value_string("format_substr");
+    unsigned int fixed = 0;
+    std::string dynamic;
 
     for (auto& member : ordered_members_)
     {
+        const std::string offset = std::to_string(fixed) + dynamic;
+        const std::string& name = std::get<member_name>(member.second);
+        const std::string& type = std::get<member_type>(member.second);
+        item_t item;
+        item.offset = offset;
+
         if (is_bitfield(member.second))
         {
-            // One struct.pack per storage unit, at its first field.
-            if (place_of(member.first).first)
+            const bitfields::place_t& place = place_of(member.first);
+            const std::string var = "unit_" + std::to_string(place.unit);
+            const std::string field = place.shift ? "(" + var + " >> " + std::to_string(place.shift) + ")" : var;
+            const std::string assign = "self." + name + " = " + py_fit(type, place.bits, field);
+            if (!place.first)
             {
-                line(serialize_unit(member.first), 3);
+                // The unit was added at its first field.
+                items_.back().after.push_back(assign);
+                continue;
             }
-            continue;
+            const bitfields::unit_t& unit = unit_of(member.first);
+            const std::string format = unit_format(unit);
+            item.size = bitfields::width(unit.type) / 8;
+            item.order = item.size > 1 ? format.substr(0, 1) : "";
+            item.code = format.substr(1);
+            item.value = serialize_unit(member.first);
+            item.target = var;
+            item.after.push_back(assign);
+            fixed += item.size;
         }
-
-        if (is_native_type(std::get<member_type>(member.second)))
+        else if (is_native_type(type))
         {
-            std::string template_str = lang_spec_.get_value_string("serialize_member_str");
-            template_str = std::regex_replace(template_str, std::regex(format_substr), py_format(member.second));
-            line(subst(template_str, member.second), 3);
+            const std::string format = py_format(member.second);
+            item.size = py_size(member.second);
+            if (is_string_type(type) || item.size == 1)
+            {
+                item.code = is_string_type(type) ? format : format.substr(1);
+            }
+            else
+            {
+                item.order = format.substr(0, 1);
+                item.code = format.substr(1);
+            }
+            item.value = "self." + name;
+            item.target = "self." + name;
+            fixed += item.size;
         }
         else
         {
-            line(subst(lang_spec_.get_value_string("serialize_user_member_str"), member.second), 3);
+            item.nested = name;
+            item.type = type;
+            dynamic += " + " + type + ".SIZE";
+        }
+
+        items_.push_back(item);
+    }
+
+    size_expr_ = std::to_string(fixed) + dynamic;
+
+    // The byte orders present, in order of first use.
+    for (auto& item : items_)
+    {
+        if (!item.order.empty() && std::find(orders_.begin(), orders_.end(), item.order) == orders_.end())
+        {
+            orders_.push_back(item.order);
         }
     }
 
-    line(lang_spec_.get_value_string("serialize_end"));
+    // Runs of consecutive items in each byte order.
+    std::map<std::string, std::vector<std::vector<size_t>>> runs;
+    std::string current;
+    for (size_t i = 0; i < items_.size(); i++)
+    {
+        const std::string& order = items_[i].order;
+        if (order.empty())
+        {
+            current.clear();
+            continue;
+        }
+        if (order != current)
+        {
+            runs[order].emplace_back();
+            current = order;
+        }
+        runs[order].back().push_back(i);
+    }
+
+    // The byte order with the most runs is packed in one struct; the others
+    // are left with as few runs as possible. With none, use big endian.
+    primary_ = lang_spec_.get_value_string("big_endian_str");
+    size_t most = 0;
+    for (auto& order : orders_)
+    {
+        if (runs[order].size() > most)
+        {
+            most = runs[order].size();
+            primary_ = order;
+        }
+    }
+    if (orders_.empty())
+    {
+        orders_.push_back(primary_);
+    }
+    else
+    {
+        // The primary struct also carries every item whose order does not matter.
+        orders_.erase(std::find(orders_.begin(), orders_.end(), primary_));
+        orders_.insert(orders_.begin(), primary_);
+    }
+
+    for (auto& order : orders_)
+    {
+        if (order == primary_)
+        {
+            continue;
+        }
+        for (auto& items : runs[order])
+        {
+            // Runs with the same format share a struct.
+            std::string format = order;
+            for (size_t i : items)
+            {
+                format += items_[i].code;
+            }
+            std::string name;
+            for (auto& run : runs_)
+            {
+                if (run.format == format)
+                {
+                    name = run.name;
+                }
+            }
+            if (name.empty())
+            {
+                name = struct_name(order) + "_" + std::to_string(run_structs_++);
+            }
+            runs_.push_back({ name, order, format, items });
+        }
+    }
+
+    // Offsets that include a nested message's size become module constants,
+    // computed once at import.
+    for (size_t i = 0; i < items_.size(); i++)
+    {
+        const std::string& offset = items_[i].offset;
+        bool used = !items_[i].nested.empty();
+        for (auto& run : runs_)
+        {
+            used = used || run.items.front() == i;
+        }
+        if (used && offset.find('.') != std::string::npos && offset_names_.count(offset) == 0)
+        {
+            const std::string name = "_OFFSET_" + std::to_string(offset_names_.size());
+            offset_names_[offset] = name;
+            offset_order_.push_back(offset);
+        }
+    }
+
+    return true;
+}
+
+// Whole-message struct for one byte order: _BE, _LE or _NE.
+std::string Py3Generator::struct_name(const std::string& order) const
+{
+    if (order == ">")
+        return "_BE";
+    if (order == "<")
+        return "_LE";
+    return "_NE";
+}
+
+// An offset as written in a method: a literal, or a module constant for one
+// that includes a nested message's size.
+std::string Py3Generator::offset_ref(const std::string& offset) const
+{
+    auto it = offset_names_.find(offset);
+    return it == offset_names_.end() ? offset : it->second;
+}
+
+// The message size as written in a method: a literal, or the class constant.
+std::string Py3Generator::size_ref() const
+{
+    return size_expr_.find('.') == std::string::npos ? size_expr_ : "self.SIZE";
+}
+
+// prefix(names...)suffix, one name per line when there is more than one.
+void Py3Generator::tuple_line(const std::string& prefix, const std::vector<std::string>& names, const std::string& suffix)
+{
+    if (names.size() == 1)
+    {
+        line(prefix + names[0] + suffix + "\n");
+        return;
+    }
+    line(prefix.substr(0, prefix.find_last_not_of(' ') + 1) + "\n");
+    for (auto& name : names)
+    {
+        line(name + ",\n", 3);
+    }
+    line(suffix.substr(suffix.find_first_not_of(',')) + "\n");
+}
+
+// The module-level structs and offsets the methods use.
+bool Py3Generator::imp_structs(int& errorcode)
+{
+    ss_ << std::endl;
+
+    for (auto& order : orders_)
+    {
+        std::string format = order;
+        unsigned int pad = 0;
+        bool dynamic = false;
+        for (auto& item : items_)
+        {
+            const bool mine = item.order == order || (item.order.empty() && !item.code.empty() && order == primary_);
+            if (mine)
+            {
+                if (pad)
+                {
+                    format += std::to_string(pad) + "x";
+                    pad = 0;
+                }
+                format += item.code;
+            }
+            else if (!item.nested.empty())
+            {
+                if (pad)
+                {
+                    format += std::to_string(pad) + "x";
+                    pad = 0;
+                }
+                format += "{" + item.type + ".SIZE}x";
+                dynamic = true;
+            }
+            else
+            {
+                pad += item.size;
+            }
+        }
+        // Trailing pad bytes keep every struct the size of the whole message.
+        if (pad)
+        {
+            format += std::to_string(pad) + "x";
+        }
+        ss_ << struct_name(order) << " = struct.Struct(" << (dynamic ? "f" : "") << "\"" << format << "\")" << std::endl;
+    }
+
+    std::set<std::string> written;
+    for (auto& run : runs_)
+    {
+        if (written.insert(run.name).second)
+        {
+            ss_ << run.name << " = struct.Struct(\"" << run.format << "\")" << std::endl;
+        }
+    }
+
+    for (auto& offset : offset_order_)
+    {
+        ss_ << offset_names_.at(offset) << " = " << offset << std::endl;
+    }
+
+    return true;
+}
+
+bool Py3Generator::imp_serialize(int& errorcode)
+{
+    method("serialize_fcn_str", "serialize_doc_str");
+
+    // One struct covers a message with no nested message and one byte order.
+    bool nested = false;
+    for (auto& item : items_)
+    {
+        nested = nested || !item.nested.empty();
+    }
+    std::vector<std::string> values;
+    for (auto& item : items_)
+    {
+        if (item.order == primary_ || (item.order.empty() && !item.code.empty()))
+        {
+            values.push_back(item.value);
+        }
+    }
+
+    if (!nested && runs_.empty())
+    {
+        tuple_line("return " + struct_name(primary_) + ".pack(", values, ")");
+    }
+    else
+    {
+        line("buffer = bytearray(" + size_ref() + ")\n");
+        line("self._serialize_into(buffer, 0)\n");
+        line("return bytes(buffer)\n");
+    }
+
+    ss_ << std::endl;
+    line("def _serialize_into(self, buffer, offset):\n", 1);
+    line("\"\"\"Write the wire representation into buffer at offset.\"\"\"\n");
+    tuple_line(struct_name(primary_) + ".pack_into(buffer, offset, ", values, ")");
+
+    for (size_t i = 0; i < items_.size(); i++)
+    {
+        const item_t& item = items_[i];
+        if (!item.nested.empty())
+        {
+            line("self." + item.nested + "._serialize_into(buffer, offset + " + offset_ref(item.offset) + ")\n");
+            continue;
+        }
+        for (auto& run : runs_)
+        {
+            if (run.items.front() != i)
+            {
+                continue;
+            }
+            std::vector<std::string> run_values;
+            for (size_t j : run.items)
+            {
+                run_values.push_back(items_[j].value);
+            }
+            tuple_line(run.name + ".pack_into(buffer, offset + " + offset_ref(item.offset) + ", ", run_values, ")");
+        }
+    }
 
     return true;
 }
@@ -252,54 +574,42 @@ bool Py3Generator::imp_serialize(int& errorcode)
 bool Py3Generator::imp_deserialize(int& errorcode)
 {
     method("deserialize_fcn_str", "deserialize_doc_str");
-    line(lang_spec_.get_value_string("deserialize_check_str"));
+    const std::string size = size_ref();
+    line("if len(buffer) < " + size + ":\n");
+    line("raise ValueError(\"" + classname_ + ": need %d bytes, have %d\" % (" + size + ", len(buffer)))\n", 3);
+    line("self._deserialize_from(buffer, 0)\n");
 
-    std::string raise_str = lang_spec_.get_value_string("deserialize_raise_str");
-    raise_str = std::regex_replace(raise_str, std::regex(lang_spec_.get_value_string("classname_substr")), classname_);
-    line(raise_str, 3);
+    ss_ << std::endl;
+    line("def _deserialize_from(self, buffer, offset):\n", 1);
+    line("\"\"\"Read the wire representation from buffer at offset.\"\"\"\n");
 
-    const std::string format_substr = lang_spec_.get_value_string("format_substr");
-    const std::string offset_substr = lang_spec_.get_value_string("offset_substr");
-
-    // Offsets are constants until the first user-defined member, whose size
-    // is only known at run time.
-    unsigned int fixed_offset = 0;
-    std::string dynamic_offset;
-
-    for (auto& member : ordered_members_)
+    for (auto& order : orders_)
     {
-        const std::string offset = std::to_string(fixed_offset) + dynamic_offset;
-        std::string template_str;
-
-        if (is_bitfield(member.second))
+        std::vector<std::string> targets;
+        for (auto& item : items_)
         {
-            const bitfields::place_t& place = place_of(member.first);
-            const std::string var = "unit_" + std::to_string(place.unit);
-            if (place.first)
+            if (item.order == order || (item.order.empty() && !item.code.empty() && order == primary_))
             {
-                const bitfields::unit_t& unit = unit_of(member.first);
-                line("(" + var + ",) = struct.unpack_from(\"" + unit_format(unit) + "\", buffer, " + offset + ")\n");
-                fixed_offset += bitfields::width(unit.type) / 8;
+                targets.push_back(item.target);
             }
-            const std::string field = place.shift ? "(" + var + " >> " + std::to_string(place.shift) + ")" : var;
-            line("self." + std::get<member_name>(member.second) + " = " + py_fit(std::get<member_type>(member.second), place.bits, field) + "\n");
+        }
+        if (targets.empty())
+        {
             continue;
         }
+        tuple_line("(", targets, ",) = " + struct_name(order) + ".unpack_from(buffer, offset)");
+    }
 
-        if (is_native_type(std::get<member_type>(member.second)))
+    for (auto& item : items_)
+    {
+        if (!item.nested.empty())
         {
-            template_str = lang_spec_.get_value_string("deserialize_member_str");
-            template_str = std::regex_replace(template_str, std::regex(format_substr), py_format(member.second));
-            fixed_offset += py_size(member.second);
+            line("self." + item.nested + "._deserialize_from(buffer, offset + " + offset_ref(item.offset) + ")\n");
         }
-        else
+        for (auto& assign : item.after)
         {
-            template_str = lang_spec_.get_value_string("deserialize_user_member_str");
-            dynamic_offset += " + " + subst(lang_spec_.get_value_string("size_user_mem_str"), member.second);
+            line(assign + "\n");
         }
-
-        template_str = std::regex_replace(template_str, std::regex(offset_substr), offset);
-        line(subst(template_str, member.second));
     }
 
     return true;
@@ -308,31 +618,7 @@ bool Py3Generator::imp_deserialize(int& errorcode)
 bool Py3Generator::imp_size(int& errorcode)
 {
     method("size_fcn_str", "size_doc_str");
-
-    const std::string separator = lang_spec_.get_value_string("size_separator_str");
-
-    std::vector<std::string> terms;
-    for (auto& member : ordered_members_)
-    {
-        if (is_bitfield(member.second))
-        {
-            // A storage unit counts once, at its first field.
-            if (place_of(member.first).first)
-                terms.push_back(std::to_string(bitfields::width(std::get<member_type>(member.second)) / 8));
-        }
-        else if (is_native_type(std::get<member_type>(member.second)))
-            terms.push_back(std::to_string(py_size(member.second)));
-        else
-            terms.push_back(subst(lang_spec_.get_value_string("size_user_mem_str"), member.second));
-    }
-
-    std::string body = lang_spec_.get_value_string("size_start");
-    for (size_t i = 0; i < terms.size(); i++)
-    {
-        body += (i ? separator : "") + terms[i];
-    }
-
-    line(body + "\n");
+    line("return self.SIZE\n");
 
     return true;
 }
@@ -441,7 +727,7 @@ std::string Py3Generator::py_fit(const std::string& type, unsigned int bits, con
     return "(" + masked + " ^ " + sign + ") - " + sign;
 }
 
-// One storage unit: struct.pack of every field's bits, each at its shift.
+// One storage unit's value: every field's bits, each at its shift.
 std::string Py3Generator::serialize_unit(uint32_t tag)
 {
     const bitfields::unit_t& unit = unit_of(tag);
@@ -458,7 +744,7 @@ std::string Py3Generator::serialize_unit(uint32_t tag)
         value += (value.empty() ? "" : " | ") + field;
     }
 
-    return "struct.pack(\"" + unit_format(unit) + "\", " + value + "),\n";
+    return value;
 }
 
 }

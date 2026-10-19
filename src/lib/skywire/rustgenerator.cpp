@@ -47,7 +47,7 @@ const std::set<std::string> unusable_names = { "self", "Self", "super", "crate",
 // may not take one of these names. (An inherent default() would also hide
 // Default::default from Self::default().)
 const std::set<std::string> generated_names = {
-    "SIZE", "size", "serialize", "serialize_into", "deserialize", "from_bytes", "equals", "default",
+    "SIZE", "size", "serialize", "serialize_into", "write_to", "deserialize", "from_bytes", "equals", "default",
 };
 
 bool has_case(char c)
@@ -459,7 +459,8 @@ bool RustGenerator::imp_impl(int& errorcode)
                                            std::regex(lang_spec_.get_value_string("size_substr")), size_expression()));
         items.push_back(lang_spec_.get_value_string("size_fcn_str"));
         items.push_back(lang_spec_.get_value_string("serialize_fcn_str"));
-        items.push_back(with_body("serialize_into_fcn_block", serialize_body()));
+        items.push_back(lang_spec_.get_value_string("serialize_into_fcn_str"));
+        items.push_back(with_body("write_to_fcn_block", serialize_body()));
         items.push_back(with_body("deserialize_fcn_block", deserialize_body()));
         items.push_back(lang_spec_.get_value_string("from_bytes_fcn_str"));
         items.push_back(lang_spec_.get_value_string("equals_fcn_str"));
@@ -525,30 +526,49 @@ std::string RustGenerator::size_expression()
     return expression;
 }
 
+// The body of write_to: each member written at the front of buf, which then
+// moves past it, as deserialize reads. The sizes are constants, so the
+// bounds checks fold away.
 std::string RustGenerator::serialize_body()
 {
     std::string body;
+    size_t i = 0;
     for (auto& member : ordered_members_)
     {
         const std::string& type = std::get<member_type>(member.second);
         std::string key;
+        std::string advance_key = "serialize_advance_str";
 
         if (is_bitfield(member.second))
         {
             body += serialize_bitfield(member.first, member.second);
+            // A unit is written after its last field.
+            if (++i < ordered_members_.size() && place_of(member.first).last)
+            {
+                body += "        let buf = &mut buf[" + std::to_string(rust_bits(type) / 8) + "..];\n";
+            }
             continue;
         }
 
         if (is_string_type(type))
             key = "serialize_string_mem_str";
         else if (!is_native_type(type))
+        {
             key = "serialize_user_mem_str";
+            advance_key = "serialize_user_advance_str";
+        }
         else if (rust_bits(type) == 8)
             key = rust_type(type) == "u8" ? "serialize_byte_mem_str" : "serialize_signed_byte_mem_str";
         else
             key = "serialize_num_mem_str";
 
         body += subst(lang_spec_.get_value_string(key), member.second);
+
+        // Nothing is written past the last member, so don't advance after it.
+        if (++i < ordered_members_.size())
+        {
+            body += subst(lang_spec_.get_value_string(advance_key), member.second);
+        }
     }
     return body;
 }
@@ -680,8 +700,8 @@ std::string RustGenerator::serialize_bitfield(uint32_t tag, const member_desc_t&
 
     if (place.last)
     {
-        body += width == 8 ? "        out.push(" + var + ");\n"
-                           : "        out.extend_from_slice(&" + var + ".to_" + rust_endian(unit.endian) + "_bytes());\n";
+        body += width == 8 ? "        buf[0] = " + var + ";\n"
+                           : "        buf[.." + std::to_string(width / 8) + "].copy_from_slice(&" + var + ".to_" + rust_endian(unit.endian) + "_bytes());\n";
     }
 
     return body;

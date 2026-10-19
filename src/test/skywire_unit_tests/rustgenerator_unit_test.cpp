@@ -93,8 +93,21 @@ TEST_F(RustGeneratorUnitTest, WholeFile)
               "\n"
               "    /// Appends the wire representation of `self` to `out`.\n"
               "    pub fn serialize_into(&self, out: &mut Vec<u8>) {\n"
-              "        out.extend_from_slice(&self.a);\n"
-              "        out.extend_from_slice(&self.b.to_le_bytes());\n"
+              "        let start = out.len();\n"
+              "        out.resize(start + Self::SIZE, 0);\n"
+              "        self.write_to(&mut out[start..]);\n"
+              "    }\n"
+              "\n"
+              "    /// Writes the wire representation of `self` into the first [`Self::SIZE`]\n"
+              "    /// bytes of `buf`.\n"
+              "    ///\n"
+              "    /// # Panics\n"
+              "    ///\n"
+              "    /// If `buf` is shorter than [`Self::SIZE`].\n"
+              "    pub fn write_to(&self, buf: &mut [u8]) {\n"
+              "        buf[..8].copy_from_slice(&self.a);\n"
+              "        let buf = &mut buf[8..];\n"
+              "        buf[..4].copy_from_slice(&self.b.to_le_bytes());\n"
               "    }\n"
               "\n"
               "    /// Reads `self` from the wire representation at the start of `buf`.\n"
@@ -188,9 +201,9 @@ TEST_F(RustGeneratorUnitTest, BytesNeedNoByteOrder)
 {
     ASSERT_TRUE(generate(R"({"1":{"type":"uint8_t","name":"u"},"2":{"type":"int8_t","name":"i"},"3":{"type":"char","name":"c"}})"));
 
-    EXPECT_TRUE(has_line("        out.push(self.u);"));
-    EXPECT_TRUE(has_line("        out.push(self.i as u8);"));
-    EXPECT_TRUE(has_line("        out.push(self.c as u8);"));
+    EXPECT_TRUE(has_line("        buf[0] = self.u;"));
+    EXPECT_TRUE(has_line("        buf[0] = self.i as u8;"));
+    EXPECT_TRUE(has_line("        buf[0] = self.c as u8;"));
     EXPECT_TRUE(has_line("        self.u = buf[0];"));
     EXPECT_TRUE(has_line("        self.i = buf[0] as i8;"));
     EXPECT_TRUE(has_line("        self.c = buf[0] as i8;"));
@@ -203,9 +216,9 @@ TEST_F(RustGeneratorUnitTest, EndianSelectsByteConversion)
         "2":{"type":"int32_t","name":"little","endian":1},
         "3":{"type":"double","name":"native","endian":2}})"));
 
-    EXPECT_TRUE(has_line("        out.extend_from_slice(&self.big.to_be_bytes());"));
-    EXPECT_TRUE(has_line("        out.extend_from_slice(&self.little.to_le_bytes());"));
-    EXPECT_TRUE(has_line("        out.extend_from_slice(&self.native.to_ne_bytes());"));
+    EXPECT_TRUE(has_line("        buf[..2].copy_from_slice(&self.big.to_be_bytes());"));
+    EXPECT_TRUE(has_line("        buf[..4].copy_from_slice(&self.little.to_le_bytes());"));
+    EXPECT_TRUE(has_line("        buf[..8].copy_from_slice(&self.native.to_ne_bytes());"));
     EXPECT_TRUE(has_line("        self.big = u16::from_be_bytes(buf[..2].try_into().unwrap());"));
     EXPECT_TRUE(has_line("        self.little = i32::from_le_bytes(buf[..4].try_into().unwrap());"));
     EXPECT_TRUE(has_line("        self.native = f64::from_ne_bytes(buf[..8].try_into().unwrap());"));
@@ -230,7 +243,7 @@ TEST_F(RustGeneratorUnitTest, NestedTypesAreSiblingModules)
     EXPECT_TRUE(has("\nuse super::http_header::HTTPHeader;\nuse super::nesty_inner::NestyInner;\n"));
     EXPECT_TRUE(has_line("    first: NestyInner,"));
     EXPECT_TRUE(has_line("    pub const SIZE: usize = 1 + 2 * NestyInner::SIZE + HTTPHeader::SIZE;"));
-    EXPECT_TRUE(has_line("        self.first.serialize_into(out);"));
+    EXPECT_TRUE(has_line("        self.first.write_to(buf);"));
     EXPECT_TRUE(has_line("        self.first.deserialize(buf)?;"));
     EXPECT_TRUE(has_line("        let buf = &buf[NestyInner::SIZE..];"));
     EXPECT_TRUE(has_line("    pub fn first(&self) -> &NestyInner {"));
@@ -275,7 +288,7 @@ TEST_F(RustGeneratorUnitTest, KeywordMemberIsRawIdentifier)
     ASSERT_TRUE(generate(R"({"1":{"type":"uint32_t","name":"type"},"2":{"type":"NestyInner","name":"match"}})"));
 
     EXPECT_TRUE(has_line("    r#type: u32,"));
-    EXPECT_TRUE(has_line("        out.extend_from_slice(&self.r#type.to_be_bytes());"));
+    EXPECT_TRUE(has_line("        buf[..4].copy_from_slice(&self.r#type.to_be_bytes());"));
     EXPECT_TRUE(has_line("    pub fn r#type(&self) -> u32 {"));
     EXPECT_TRUE(has_line("    pub fn set_type(&mut self, newval: u32) {"));
     EXPECT_TRUE(has_line("        self.r#type = newval;"));
@@ -303,7 +316,7 @@ TEST_F(RustGeneratorUnitTest, RejectsKeywordTypeNames)
 
 TEST_F(RustGeneratorUnitTest, RejectsAccessorsNamedLikeGeneratedMethods)
 {
-    for (const char* name : { "size", "serialize", "serialize_into", "deserialize", "from_bytes", "equals", "default", "SIZE" })
+    for (const char* name : { "size", "serialize", "serialize_into", "write_to", "deserialize", "from_bytes", "equals", "default", "SIZE" })
     {
         errorcode = SW_SUCCESS;
         ASSERT_FALSE(generate(std::string(R"({"1":{"type":"uint8_t","name":")") + name + R"("}})")) << name;
@@ -363,12 +376,14 @@ TEST_F(RustGeneratorUnitTest, BitfieldsPackIntoLocalUnits)
 
     EXPECT_TRUE(has("\n        let mut u0 = self.a & 0x7;\n"
                     "        u0 |= (self.b & 0x1f) << 3;\n"
-                    "        out.push(u0);\n"
+                    "        buf[0] = u0;\n"
+                    "        let buf = &mut buf[1..];\n"
                     "        let mut u1 = (self.s5 as u16) & 0x1f;\n"
                     "        u1 |= ((self.s11 as u16) & 0x7ff) << 5;\n"
-                    "        out.extend_from_slice(&u1.to_le_bytes());\n"
+                    "        buf[..2].copy_from_slice(&u1.to_le_bytes());\n"
+                    "        let buf = &mut buf[2..];\n"
                     "        let u2 = self.whole;\n"
-                    "        out.extend_from_slice(&u2.to_be_bytes());\n"));
+                    "        buf[..4].copy_from_slice(&u2.to_be_bytes());\n"));
 
     EXPECT_TRUE(has("\n        let u0 = buf[0];\n"
                     "        self.a = (u0 << 5) >> 5;\n"

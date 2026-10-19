@@ -31,6 +31,72 @@ enum Endianness : uint32_t { Big = 0, Little = 1, Native = 2 };
 
 class Streamable;
 
+// Fixed-width stores and loads in a given byte order, used by generated
+// serialize_sw()/deserialize_sw() once the whole message has been claimed or
+// consumed. Nothing here checks bounds. Each returns the pointer just past
+// the bytes it handled; with a constant byte order the swap folds away.
+namespace wire
+{
+
+template <size_t N> struct uint_of;
+template <> struct uint_of<1> { typedef uint8_t type; };
+template <> struct uint_of<2> { typedef uint16_t type; };
+template <> struct uint_of<4> { typedef uint32_t type; };
+template <> struct uint_of<8> { typedef uint64_t type; };
+
+inline uint8_t bswap(uint8_t v) { return v; }
+inline uint16_t bswap(uint16_t v) { return SW_BSWAP16(v); }
+inline uint32_t bswap(uint32_t v) { return SW_BSWAP32(v); }
+inline uint64_t bswap(uint64_t v) { return SW_BSWAP64(v); }
+
+// Converts between host order and endian; the same operation both ways.
+template <typename U>
+inline U order(U v, Endianness endian)
+{
+    if (SW_HOST_LITTLE_ENDIAN)
+    {
+        return endian == Big ? bswap(v) : v;
+    }
+    return endian == Little ? bswap(v) : v;
+}
+
+template <typename T>
+inline char* put(char* p, T value, Endianness endian)
+{
+    typedef typename uint_of<sizeof(T)>::type U;
+    U u;
+    std::memcpy(&u, &value, sizeof(U));
+    u = order(u, endian);
+    std::memcpy(p, &u, sizeof(U));
+    return p + sizeof(U);
+}
+
+template <typename T>
+inline const char* get(const char* p, T& value, Endianness endian)
+{
+    typedef typename uint_of<sizeof(T)>::type U;
+    U u;
+    std::memcpy(&u, p, sizeof(U));
+    u = order(u, endian);
+    std::memcpy(&value, &u, sizeof(U));
+    return p + sizeof(U);
+}
+
+// Fixed-length strings (char[N]) travel verbatim.
+inline char* put_bytes(char* p, const char* data, size_t len)
+{
+    std::memcpy(p, data, len);
+    return p + len;
+}
+
+inline const char* get_bytes(const char* p, char* data, size_t len)
+{
+    std::memcpy(data, p, len);
+    return p + len;
+}
+
+} // namespace wire
+
 class SWStream
 {
 public:
@@ -42,406 +108,64 @@ public:
         buffer_.resize(size);
     }
 
-    void serialize(char d, Endianness)
-    {
-        write((char*)&d, sizeof(char));
-    }
-
+    void serialize(char d, Endianness endian) { put_value(d, endian); }
     // int8_t is signed char, a distinct type from char. Without this overload
     // it promotes to int and serializes as 4 bytes.
-    void serialize(signed char d, Endianness)
-    {
-        write((char*)&d, sizeof(signed char));
-    }
+    void serialize(signed char d, Endianness endian) { put_value(d, endian); }
+    void serialize(unsigned char d, Endianness endian) { put_value(d, endian); }
+    void serialize(int16_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(int32_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(int64_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(uint16_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(uint32_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(uint64_t d, Endianness endian) { put_value(d, endian); }
+    void serialize(float d, Endianness endian) { put_value(d, endian); }
+    void serialize(double d, Endianness endian) { put_value(d, endian); }
 
-    void serialize(int16_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe16(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone16(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole16(d);
-            break;
-        };
-        write((char*)&d, sizeof(int16_t));
-    }
+    // Each returns false, consuming nothing, if too few bytes are unread.
+    bool deserialize(char& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(signed char& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(unsigned char& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(int16_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(int32_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(int64_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(uint16_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(uint32_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(uint64_t& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(float& d, Endianness endian) { return get_value(d, endian); }
+    bool deserialize(double& d, Endianness endian) { return get_value(d, endian); }
 
-    void serialize(int32_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe32(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone32(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole32(d);
-            break;
-        };
-        write((char*)&d, sizeof(int32_t));
-    }
-
-    void serialize(int64_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe64(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone64(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole64(d);
-            break;
-        };
-        write((char*)&d, sizeof(int64_t));
-    }
-
-    void serialize(unsigned char d, Endianness)
-    {
-        write((char*)&d, sizeof(char));
-    }
-
-    void serialize(uint16_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe16(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone16(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole16(d);
-            break;
-        };
-        write((char*)&d, sizeof(uint16_t));
-    }
-
-    void serialize(uint32_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe32(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone32(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole32(d);
-            break;
-        };
-        write((char*)&d, sizeof(uint32_t));
-    }
-
-    void serialize(uint64_t d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = htobe64(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = htone64(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = htole64(d);
-            break;
-        };
-        write((char*)&d, sizeof(uint64_t));
-    }
-
-    void serialize(float d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            hftobef(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            hftonef(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            hftolef(d);
-            break;
-        };
-        write((char*)&d, sizeof(float));
-    }
-
-    void serialize(double d, Endianness endian)
-    {
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            hdtobed(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            hdtoned(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            hdtoled(d);
-            break;
-        };
-        write((char*)&d, sizeof(double));
-    }
-
-    bool deserialize(char& d, Endianness)
-    {
-        if (read((char*)&d, sizeof(char)) != sizeof(char))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    bool deserialize(signed char& d, Endianness)
-    {
-        if (read((char*)&d, sizeof(signed char)) != sizeof(signed char))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    bool deserialize(int16_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(int16_t)) != sizeof(int16_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be16toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne16toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le16toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(int32_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(int32_t)) != sizeof(int32_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be32toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne32toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le32toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(int64_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(int64_t)) != sizeof(int64_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be64toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne64toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le64toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(unsigned char& d, Endianness)
-    {
-        if (read((char*)&d, sizeof(char)) != sizeof(char))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    bool deserialize(uint16_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(uint16_t)) != sizeof(uint16_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be16toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne16toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le16toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(uint32_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(uint32_t)) != sizeof(uint32_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be32toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne32toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le32toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(uint64_t& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(uint64_t)) != sizeof(uint64_t))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            d = be64toh(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            d = ne64toh(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            d = le64toh(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(float& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(float)) != sizeof(float))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            beftohf(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            neftohf(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            leftohf(d);
-            break;
-        };
-        return true;
-    }
-
-    bool deserialize(double& d, Endianness endian)
-    {
-        if (read((char*)&d, sizeof(double)) != sizeof(double))
-        {
-            return false;
-        }
-        switch (endian)
-        {
-        case SW_BIG_ENDIAN_FLAG:
-            bedtohd(d);
-            break;
-        case SW_NATIVE_ENDIAN_FLAG:
-            nedtohd(d);
-            break;
-        case SW_LITTLE_ENDIAN_FLAG:
-        default:
-            ledtohd(d);
-            break;
-        };
-        return true;
-    }
-
-    size_t write(const void* data, size_t len)
+    // Reserves len bytes at the end of the stream and returns where to write
+    // them; they count as written. Space already read is reused before the
+    // buffer grows. Returns nullptr (nothing reserved) if len is 0 or too large.
+    char* claim(size_t len)
     {
         if (len == 0 || len > buffer_.max_size() - pos_)
         {
-            return 0;
+            return nullptr;
         }
 
-        if (buffer_.size() < pos_ + len)
+        if (buffer_.size() - pos_ < len)
         {
-            compact();
+            grow(len);
         }
 
-        if (buffer_.size() < pos_ + len)
-        {
-            size_t grow = expand_size_;
-            if (len > expand_size_)
-            {
-                grow = len + expand_size_;
-            }
-            buffer_.resize(pos_ + grow);
-        }
-
-        std::memcpy(buffer_.data() + pos_, data, len);
+        char* p = buffer_.data() + pos_;
         pos_ += len;
-
-        return len;
+        return p;
     }
 
-    size_t read(void* data, size_t len)
+    // Consumes the next len unread bytes and returns where they start, or
+    // nullptr (nothing consumed) if fewer are unread or len is 0. The bytes
+    // stay valid until the next write.
+    const char* consume(size_t len)
     {
         if (len == 0 || pos_ - read_pos_ < len)
         {
-            return 0;
+            return nullptr;
         }
 
-        std::memcpy(data, buffer_.data() + read_pos_, len);
+        const char* p = buffer_.data() + read_pos_;
         read_pos_ += len;
 
         // Fully drained: rewind so the buffer is reused from the start.
@@ -451,6 +175,30 @@ public:
             read_pos_ = 0;
         }
 
+        return p;
+    }
+
+    size_t write(const void* data, size_t len)
+    {
+        char* p = claim(len);
+        if (p == nullptr)
+        {
+            return 0;
+        }
+
+        std::memcpy(p, data, len);
+        return len;
+    }
+
+    size_t read(void* data, size_t len)
+    {
+        const char* p = consume(len);
+        if (p == nullptr)
+        {
+            return 0;
+        }
+
+        std::memcpy(data, p, len);
         return len;
     }
 
@@ -464,9 +212,10 @@ public:
         return pos_ - read_pos_;
     }
 
+    // Drops the unread bytes. The buffer keeps its size, so writes after a
+    // clear() reuse it without reallocating or zero-filling.
     void clear()
     {
-        buffer_.clear();
         pos_ = 0;
         read_pos_ = 0;
     }
@@ -498,6 +247,50 @@ protected:
     size_t read_pos_;
     size_t expand_size_;
     std::vector<char> buffer_;
+
+    template <typename T>
+    void put_value(T d, Endianness endian)
+    {
+        if (char* p = claim(sizeof(T)))
+        {
+            wire::put(p, d, endian);
+        }
+    }
+
+    template <typename T>
+    bool get_value(T& d, Endianness endian)
+    {
+        const char* p = consume(sizeof(T));
+        if (p == nullptr)
+        {
+            return false;
+        }
+        wire::get(p, d, endian);
+        return true;
+    }
+
+    // Makes room for len more bytes at pos_: first by sliding the unread
+    // bytes to the front, then by growing the buffer. Out of line, so claim()
+    // stays small enough to inline.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#else
+    __attribute__((noinline))
+#endif
+    void grow(size_t len)
+    {
+        compact();
+
+        if (buffer_.size() - pos_ < len)
+        {
+            size_t extra = expand_size_;
+            if (len > expand_size_)
+            {
+                extra = len + expand_size_;
+            }
+            buffer_.resize(pos_ + extra);
+        }
+    }
 
     // Slide unread bytes to the front so consumed space is reused before growing.
     void compact()
@@ -1007,6 +800,16 @@ public:
         } else {
             return pzstream_.read(data, len);
         }
+    }
+
+    // SW mode only (nullptr in PZ mode): see SWStream::claim and consume.
+    // Generated serialize()/deserialize() use them to handle a whole message
+    // at once.
+    char* claim(size_t len) {
+        return mode_ == SW ? swstream_.claim(len) : nullptr;
+    }
+    const char* consume(size_t len) {
+        return mode_ == SW ? swstream_.consume(len) : nullptr;
     }
 
     size_t size() const {
