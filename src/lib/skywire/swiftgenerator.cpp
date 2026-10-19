@@ -171,6 +171,9 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
     insert_indents(1);
     gen_one_line("serialize_str");
 
+    // Grow the stream once for the whole message rather than field by field.
+    gen_one_line("serialize_reserve_str", 2);
+
     const std::string member_substr = lang_spec_.get_value_string("member_substr");
     const std::string endian_substr = lang_spec_.get_value_string("endian_substr");
     const std::string length_substr = lang_spec_.get_value_string("length_substr");
@@ -491,9 +494,8 @@ void SwiftGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& mem
     if (place.first)
     {
         insert_indents(2);
-        ss_ << "var " << var << ": " << swift_type(bitfields::unsigned_type(unit.type)) << " = 0" << std::endl;
-        insert_indents(2);
-        ss_ << "stream.deserialize(&" << var << ", " << swift_endian(unit.endian) << ")" << std::endl;
+        ss_ << "let " << var << ": " << swift_type(bitfields::unsigned_type(unit.type)) << " = stream.read("
+            << swift_endian(unit.endian) << ")" << std::endl;
     }
 
     // Shifting the field to the top, converting, and shifting it back down

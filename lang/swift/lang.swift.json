@@ -14,13 +14,14 @@
         "cons_str":"public init() {}\n",
 
         "serialize_str":"public func serialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {\n",
+        "serialize_reserve_str":"stream.reserve(size())\n",
         "deserialize_str":"public func deserialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {\n",
         "deserialize_size_check_str":"guard stream.remaining() >= size() else { return false }\n",
         "size_str":"public func size() -> Int {\n",
         "equals_str":"public func Equals(_ other: __CLASSNAME__) -> Bool {\n",
 
         "serialize_native_mem_str":"stream.serialize(__MEMBERNAME__, __ENDIAN__)",
-        "deserialize_native_mem_str":"stream.deserialize(&__MEMBERNAME__, __ENDIAN__)",
+        "deserialize_native_mem_str":"__MEMBERNAME__ = stream.read(__ENDIAN__)",
         "serialize_user_mem_str":"guard __MEMBERNAME__.serialize(stream) else { return false }",
         "deserialize_user_mem_str":"guard __MEMBERNAME__.deserialize(stream) else { return false }",
         "size_native_mem_str":"MemoryLayout<__TYPE__>.size",

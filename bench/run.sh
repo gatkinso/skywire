@@ -116,7 +116,7 @@ bench_swift() {
     local dir=$workdir/swift
     generate swift || return 1
     cp "$here/swift/main.swift" "$dir/"
-    swiftc -O -o "$dir/bench_swift$exe" "$root/lang/swift/SWStream.swift" \
+    swiftc -O -wmo -o "$dir/bench_swift$exe" "$root/lang/swift/SWStream.swift" \
         "$dir/RingyInner.swift" "$dir/RingyMcRingface.swift" "$dir/main.swift" || return 1
     "$dir/bench_swift$exe" "$input"
 }

@@ -101,6 +101,30 @@ bool SwiftTestGenerator::do_test_implementation(int& errorcode)
         ss_ << "        check(wire.read(wire.remaining())! == want, \"wire mismatch\")\n";
     }
 
+    // One stream reused for many messages, reading two of every three it
+    // writes: unread bytes build up, so growing slides them to the front, and
+    // draining the rest empties the stream.
+    ss_ << "\n";
+    ss_ << "        let reused = SWStream()\n";
+    ss_ << "        var pending = 0\n";
+    ss_ << "        for i in 0..<1000 {\n";
+    ss_ << "            check(input.serialize(reused), \"reused stream serialize failed\")\n";
+    ss_ << "            pending += 1\n";
+    ss_ << "            if i % 3 != 2 {\n";
+    ss_ << "                let got = " << classname << "()\n";
+    ss_ << "                check(got.deserialize(reused) && input.Equals(got), \"reused stream round-trip mismatch\")\n";
+    ss_ << "                pending -= 1\n";
+    ss_ << "            }\n";
+    ss_ << "            check(reused.remaining() == pending * input.size(), \"reused stream byte count\")\n";
+    ss_ << "        }\n";
+    ss_ << "        check(reused.byteSize() == reused.remaining(), \"byteSize() is not the unread byte count\")\n";
+    ss_ << "        while pending > 0 {\n";
+    ss_ << "            let got = " << classname << "()\n";
+    ss_ << "            check(got.deserialize(reused) && input.Equals(got), \"reused stream drain mismatch\")\n";
+    ss_ << "            pending -= 1\n";
+    ss_ << "        }\n";
+    ss_ << "        check(reused.remaining() == 0, \"reused stream not drained\")\n";
+
     // A bitfield setter keeps only the field's bits: a value with a bit set
     // above the field reads back as the field's value.
     for (auto& member : ordered_members_)

@@ -68,7 +68,7 @@ Notes give the other forms:
 - **Rust:** `serialize()` to a new `Vec`.
 
 The C and C++ benchmarks use the build's compiler flags; the others are built
-with `swiftc -O`, `rustc -O`, `go build` and `javac` defaults.
+with `swiftc -O -wmo` (whole-module, as SwiftPM and Xcode release builds do), `rustc -O`, `go build` and `javac` defaults.
 
 ## Windows
 
