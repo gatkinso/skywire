@@ -12,3 +12,4 @@ CTestTestfile.cmake
 build
 __build*
 __pycache__
+CTestConfig.cmake

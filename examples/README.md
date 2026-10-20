@@ -100,7 +100,7 @@ Each example's README explains its build. In short:
 
 | Example | Include / import path | Compile and link with the messages | Lang file |
 |---|---|---|---|
-| C | generated dir, `lang/c` | `lang/c/cstream.c` | `lang/c/lang.c.json` |
+| C | generated dir, `lang/c` | nothing (header-only) | `lang/c/lang.c.json` |
 | C++ | generated dir, `lang/cpp`, `lang/c`, protozero `include` | nothing (header-only) | `lang/cpp/lang.cpp.json` |
 | Protobuf | as C++, plus protoc's output dir and protobuf `include` | protoc's `.pb.cc`, `libprotobuf` | `lang/cpp/lang.cpp.json`, `lang/proto/lang.proto3.json` |
 | Swift | none | `lang/swift/SWStream.swift`, same module | `lang/swift/lang.swift.json` |

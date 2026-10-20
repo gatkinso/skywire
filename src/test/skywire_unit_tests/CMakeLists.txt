@@ -22,14 +22,7 @@ include_directories(
                 ${PROJECT_SOURCE_DIR}/lang/c
                 ${PROTOZERO_INC_DIR})
 
-set(WIREGEN_C_FILES
-                ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
-
 set(WIREGEN_CPP_FILES)
-
-if(UNIX)
-    set_source_files_properties(${WIREGEN_C_FILES} PROPERTIES COMPILE_FLAGS -std=c99)
-endif(UNIX)
 
 set(UNIT_TESTS
                 bitfields_unit_test.cpp
@@ -50,7 +43,7 @@ set(UNIT_TESTS
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
 
-add_executable(${TARGETNAME} main.cpp ${WIREGEN_C_FILES} ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
+add_executable(${TARGETNAME} main.cpp ${WIREGEN_CPP_FILES} ${UNIT_TESTS})
 
 if(MSVC)
     set(PLATFORM_LINK_LIBS ws2_32)
