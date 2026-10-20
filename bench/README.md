@@ -25,8 +25,8 @@ Rust benchmarks and prints one table:
 ```
 | Language | Serialize | Deserialize | Notes |
 |---|---:|---:|---|
-| C | 8.6 | 12.5 |  |
-| C++ | 7.7 | 11.8 | reused-stream round trip 14.3 ns |
+| C | 7.9 | 10.3 |  |
+| C++ | 7.8 | 11.9 | reused-stream round trip 14.3 ns |
 ...
 ```
 

@@ -17,6 +17,7 @@
 #define __wiregen_endian_h
 
 #include <stdint.h>
+#include <string.h>
 
 #define SW_BIG_ENDIAN_FLAG    0
 #define SW_LITTLE_ENDIAN_FLAG 1
@@ -77,13 +78,46 @@
     #define SW_BSWAP64(x) __builtin_bswap64((uint64_t)(x))
 #endif
 
+// The runtime is header-only: its functions are static inline.
+#ifndef SW_INLINE
+    #if defined(_MSC_VER) && !defined(__cplusplus)
+        #define SW_INLINE static __inline
+    #else
+        #define SW_INLINE static inline
+    #endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void sw_swap16(char* d);
-void sw_swap32(char* d);
-void sw_swap64(char* d);
+// Reverse the 2, 4 or 8 bytes at d in place; NULL is ignored.
+SW_INLINE void sw_swap16(char* d)
+{
+    uint16_t v;
+    if (!d) return;
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP16(v);
+    memcpy(d, &v, sizeof(v));
+}
+
+SW_INLINE void sw_swap32(char* d)
+{
+    uint32_t v;
+    if (!d) return;
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP32(v);
+    memcpy(d, &v, sizeof(v));
+}
+
+SW_INLINE void sw_swap64(char* d)
+{
+    uint64_t v;
+    if (!d) return;
+    memcpy(&v, d, sizeof(v));
+    v = SW_BSWAP64(v);
+    memcpy(d, &v, sizeof(v));
+}
 
 #if SW_HOST_LITTLE_ENDIAN
     #ifndef htole16

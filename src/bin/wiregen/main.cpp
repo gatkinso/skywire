@@ -53,7 +53,7 @@ void print_help()
               << "  --input_file filename     message specification to read" << std::endl
               << "  --input_str json          message specification given on the command line" << std::endl
               << "  --language name           language to generate: " << language_names() << std::endl
-              << "                            (uses the lang file installed next to wiregen)" << std::endl
+              << "                            (uses the installed lang file)" << std::endl
               << "  --lang_file filename      lang file to use instead of the installed one" << std::endl
               << "                            (--langfile is the old spelling)" << std::endl
               << "  --langspec json           lang file contents to use instead of a file" << std::endl
@@ -327,6 +327,24 @@ std::filesystem::path executable_dir(const char* argv0)
     return ec ? fs::path(".") : from_argv.parent_path();
 }
 
+// A build keeps the lang files next to wiregen; an install puts them in
+// <prefix>/share/skywire/lang with wiregen in <prefix>/bin.
+std::filesystem::path installed_lang_path(const std::filesystem::path& exe_dir, const std::string& name)
+{
+    std::error_code ec;
+    const std::filesystem::path beside = exe_dir / name;
+    if (std::filesystem::exists(beside, ec))
+    {
+        return beside;
+    }
+    const std::filesystem::path shared = exe_dir.parent_path() / "share" / "skywire" / "lang" / name;
+    if (std::filesystem::exists(shared, ec))
+    {
+        return shared;
+    }
+    return beside;
+}
+
 bool read_text_file(const std::string& pathname, std::string& text)
 {
     std::ifstream in(pathname, std::ios::binary);
@@ -371,7 +389,7 @@ int main(int argc, const char* argv[])
 
         if (lang_file.empty() && langspec.empty())
         {
-            lang_file = (executable_dir(argv[0]) / installed_lang_file).string();
+            lang_file = installed_lang_path(executable_dir(argv[0]), installed_lang_file).string();
         }
     }
 

@@ -1,0 +1,75 @@
+#
+#  Copyright (C) 2026 Skyloupe, LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License").
+#  You may not use this file except in compliance with the License.
+#  A copy of the License is located at
+#
+#  https://www.apache.org/licenses/LICENSE-2.0.html
+#
+#  or in the "license" file accompanying this file. This file is distributed
+#  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+#  express or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+#
+#  find_package(skywire CONFIG [COMPONENTS c cpp]) gives a project:
+#
+#    skywire::wiregen      the code generator
+#    skywire::c_runtime    cstream.h for generated C (header-only)
+#    skywire::cpp_runtime  stream.h for generated C++ (header-only; needs protozero)
+#    skywire_generate()    runs wiregen at build time; see skywireGenerate.cmake
+#
+#  and SKYWIRE_INCLUDE_DIR, SKYWIRE_RUNTIME_DIR (swift/SWStream.swift) and
+#  SKYWIRE_LANG_DIR (the lang files).
+#
+#  The cpp component needs protozero, found on the include path or under
+#  PROTOZERO_DIR (or SKYWIRE_PROTOZERO_INCLUDE_DIR, the directory holding
+#  protozero/). Without it skywire::cpp_runtime is not defined, and a
+#  find_package that requires the cpp component fails.
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/skywireTargets.cmake")
+
+set_and_check(SKYWIRE_INCLUDE_DIR "@PACKAGE_SKYWIRE_INCLUDE_INSTALL_DIR@")
+set_and_check(SKYWIRE_RUNTIME_DIR "@PACKAGE_SKYWIRE_RUNTIME_INSTALL_DIR@")
+set_and_check(SKYWIRE_LANG_DIR "@PACKAGE_SKYWIRE_LANG_INSTALL_DIR@")
+
+# The C runtime is header-only.
+if(NOT TARGET skywire::c_runtime)
+    add_library(skywire::c_runtime INTERFACE IMPORTED)
+    target_include_directories(skywire::c_runtime INTERFACE "${SKYWIRE_INCLUDE_DIR}")
+endif()
+set(skywire_c_FOUND TRUE)
+
+# The C++ runtime is header-only too, but every generated C++ message has
+# protobuf (PZ) functions, which use protozero.
+if(NOT TARGET skywire::cpp_runtime)
+    find_path(SKYWIRE_PROTOZERO_INCLUDE_DIR protozero/pbf_reader.hpp
+              HINTS "${PROTOZERO_DIR}/include" "$ENV{PROTOZERO_DIR}/include"
+              DOC "Directory holding protozero/, for skywire::cpp_runtime")
+    if(SKYWIRE_PROTOZERO_INCLUDE_DIR)
+        add_library(skywire::cpp_runtime INTERFACE IMPORTED)
+        target_include_directories(skywire::cpp_runtime INTERFACE
+            "${SKYWIRE_INCLUDE_DIR}" "${SKYWIRE_PROTOZERO_INCLUDE_DIR}")
+        target_compile_features(skywire::cpp_runtime INTERFACE cxx_std_17)
+    endif()
+endif()
+
+set(_skywire_protozero_message
+    "skywire: the C++ runtime needs protozero (https://github.com/mapbox/protozero), which was not found. Set PROTOZERO_DIR to the directory holding its include/, or SKYWIRE_PROTOZERO_INCLUDE_DIR to the directory holding protozero/.")
+if(TARGET skywire::cpp_runtime)
+    set(skywire_cpp_FOUND TRUE)
+else()
+    set(skywire_cpp_FOUND FALSE)
+    if("cpp" IN_LIST skywire_FIND_COMPONENTS AND skywire_FIND_REQUIRED_cpp)
+        set(skywire_NOT_FOUND_MESSAGE "${_skywire_protozero_message}")
+    elseif(NOT skywire_FIND_COMPONENTS AND NOT skywire_FIND_QUIETLY)
+        message(STATUS "${_skywire_protozero_message} skywire::cpp_runtime is not available.")
+    endif()
+endif()
+unset(_skywire_protozero_message)
+
+include("${CMAKE_CURRENT_LIST_DIR}/skywireGenerate.cmake")
+
+check_required_components(skywire)

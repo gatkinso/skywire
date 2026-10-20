@@ -20,6 +20,8 @@ project(skywire VERSION 0.9.0)
 include(TestBigEndian)
 include (CTest)
 include(CheckCXXCompilerFlag)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 check_cxx_compiler_flag(-Wno-unused-value HAS_NO_UNUSED_VALUE)
 
@@ -122,3 +124,44 @@ endif()
 if(SKYWIRE_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+# Install wiregen, the runtimes and a CMake package, so another project can
+# find_package(skywire CONFIG) and use skywire::wiregen, skywire::c_runtime,
+# skywire::cpp_runtime and skywire_generate(). Nothing from the tests is
+# installed.
+set(SKYWIRE_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}/skywire)
+set(SKYWIRE_RUNTIME_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/skywire/runtime)
+set(SKYWIRE_LANG_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/skywire/lang)
+set(SKYWIRE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/skywire)
+
+install(FILES lang/c/cstream.h
+              lang/c/sw_endian.h
+              lang/cpp/stream.h
+              lang/cpp/streamable.h
+        DESTINATION ${SKYWIRE_INCLUDE_INSTALL_DIR})
+install(FILES lang/swift/SWStream.swift DESTINATION ${SKYWIRE_RUNTIME_INSTALL_DIR}/swift)
+
+install(EXPORT skywireTargets
+        NAMESPACE skywire::
+        DESTINATION ${SKYWIRE_CMAKE_INSTALL_DIR})
+configure_package_config_file(cmake/skywireConfig.cmake.in
+        ${PROJECT_BINARY_DIR}/skywireConfig.cmake
+        INSTALL_DESTINATION ${SKYWIRE_CMAKE_INSTALL_DIR}
+        PATH_VARS SKYWIRE_INCLUDE_INSTALL_DIR SKYWIRE_RUNTIME_INSTALL_DIR SKYWIRE_LANG_INSTALL_DIR)
+write_basic_package_version_file(${PROJECT_BINARY_DIR}/skywireConfigVersion.cmake
+        COMPATIBILITY SameMinorVersion)
+install(FILES ${PROJECT_BINARY_DIR}/skywireConfig.cmake
+              ${PROJECT_BINARY_DIR}/skywireConfigVersion.cmake
+              cmake/skywireGenerate.cmake
+        DESTINATION ${SKYWIRE_CMAKE_INSTALL_DIR})
+
+# skywire.pc, for builds without CMake. Its prefix is relative to the .pc
+# file, so it is right wherever the install goes (cmake --install --prefix).
+file(RELATIVE_PATH SKYWIRE_PC_PREFIX
+     /prefix/${CMAKE_INSTALL_LIBDIR}/pkgconfig /prefix)
+string(REGEX REPLACE "/$" "" SKYWIRE_PC_PREFIX "${SKYWIRE_PC_PREFIX}")
+configure_file(cmake/skywire.pc.in ${PROJECT_BINARY_DIR}/skywire.pc @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/skywire.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+install(FILES LICENSE README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
