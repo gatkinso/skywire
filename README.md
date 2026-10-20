@@ -162,6 +162,8 @@ corruption or loss. Its input file is
 written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
 and `scripts/README.md`.
 
+`skywire_example:<Language>` builds and runs the example programs (section 4.2).
+
 # [4.1] Benchmarks
 
 `bench/` times the generated code of every language on the ring message (135
@@ -193,6 +195,18 @@ reused buffer:
 The deserialize times for C, C++ and Swift include copying the input into the
 stream. Expect Swift to be slower without `-wmo` (whole-module optimization,
 the default for SwiftPM and Xcode release builds).
+
+# [4.2] Examples
+
+`examples/` has a small program for each language: C, C++, Swift, Go, Python,
+Java and Rust. Each one fills a message that holds a nested message, writes it
+to a file, reads it back and checks the copy is equal. A further C++ example,
+`examples/protobuf`, sends the message through a PZ-mode stream to protoc's C++
+code for the generated `.proto` and back. Both specs are in
+`examples/specs/`, and each language's directory has its own README with the
+wiregen and compiler commands. The examples are built and tested by ctest
+(`skywire_example:<Language>`); configure with `-DSKYWIRE_EXAMPLES=OFF` to
+leave them out. See `examples/README.md`.
 
 # [5.0] Deploying and running
 
@@ -583,7 +597,8 @@ The namespace becomes the protobuf package (`a::b` becomes `a.b`). A nested
 message (below) is an embedded message field of its own message type, imported
 from its own generated `.proto`; like any zero field, it is left out when all
 its members are zero, and a repeated one merges into the earlier one. PZ mode
-is C++ only.
+is C++ only. `examples/protobuf` (section 4.2) is a complete program that talks
+to protoc's generated C++ through a PZ stream.
 
 To generate the message in C, run wiregen with `--language c` and this file:
 
