@@ -13,12 +13,16 @@
 //   permissions and limitations under the License.
 //
 
+#include <algorithm>
 #include <filesystem>
+#include <initializer_list>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
@@ -44,6 +48,82 @@ bool generate_tests = false;
 bool generate_relay = false;
 bool file_mode = false;
 bool write_to_file = false;
+bool show_banner = false;
+
+// Joins the non-empty parts with ", ".
+std::string join_present(std::initializer_list<std::string> parts)
+{
+    std::string joined;
+    for (const auto& part : parts)
+    {
+        if (false == part.empty())
+        {
+            joined += (joined.empty() ? "" : ", ") + part;
+        }
+    }
+    return joined;
+}
+
+void print_banner()
+{
+    const skyloupe::build_info_t& info = skyloupe::build_info();
+
+    std::string title = std::string("wiregen ") + skyloupe::version();
+    if (*skyloupe::revision() != '\0')
+    {
+        title += std::string(" (") + skyloupe::revision() + ")";
+    }
+
+    std::string commit = info.commit;
+    if (false == commit.empty() && *info.commit_date != '\0')
+    {
+        commit += std::string(" (") + info.commit_date + ")";
+    }
+
+    // An empty line is drawn as a rule; a row whose value is empty is left out.
+    const std::vector<std::pair<std::string, std::string>> rows = {
+        { "", title },
+        { "", "skywire message code generator" },
+        { "", "" },
+        { "commit:    ", commit },
+        { "branch:    ", info.branch },
+        { "compiler:  ", info.compiler },
+        { "build:     ", join_present({ info.build_type, info.platform, info.options }) },
+        { "languages: ", language_names() },
+        { "", "" },
+        { "", "Copyright (C) 2017 Skyloupe, LLC. Apache License 2.0." },
+    };
+
+    std::vector<std::string> lines;
+    for (const auto& row : rows)
+    {
+        if (row.first.empty() || false == row.second.empty())
+        {
+            lines.push_back(row.first + row.second);
+        }
+    }
+
+    size_t width = 0;
+    for (const auto& line : lines)
+    {
+        width = std::max(width, line.size());
+    }
+
+    const std::string rule = "+" + std::string(width + 2, '-') + "+";
+    std::cout << rule << std::endl;
+    for (const auto& line : lines)
+    {
+        if (line.empty())
+        {
+            std::cout << rule << std::endl;
+        }
+        else
+        {
+            std::cout << "| " << line << std::string(width - line.size(), ' ') << " |" << std::endl;
+        }
+    }
+    std::cout << rule << std::endl;
+}
 
 void print_help()
 {
@@ -63,6 +143,8 @@ void print_help()
               << "  --write_to_file           write the generated files (otherwise print them)" << std::endl
               << "  --outdir directoryname    directory to write the files to (default: .)" << std::endl
               << "  --silent                  do not print the success or failure summary" << std::endl
+              << "  --banner                  print a banner with the version and revision first" << std::endl
+              << "                            (on its own, print it and exit)" << std::endl
               << "  --version                 print the version and exit" << std::endl
               << "  --help                    print this help and exit" << std::endl;
 }
@@ -79,6 +161,11 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
     {
         std::cout << "wiregen " << skyloupe::version() << std::endl;
         exit(0);
+    }
+
+    if (flag.compare("--banner") == 0)
+    {
+        show_banner = true;
     }
 
     if (flag.compare("--input_file") == 0)
@@ -207,7 +294,7 @@ const char* const value_options[] = {
 };
 
 const char* const flag_options[] = {
-    "--help", "--version", "--generate_tests", "--generate_relay", "--silent", "--write_to_file",
+    "--help", "--version", "--banner", "--generate_tests", "--generate_relay", "--silent", "--write_to_file",
 };
 
 bool process_cmd_line(int argc, const char* argv[])
@@ -374,6 +461,15 @@ int main(int argc, const char* argv[])
     {
         std::cout << "Invalid input parameters" << std::endl;
         return 1;
+    }
+
+    if (show_banner)
+    {
+        print_banner();
+        if (input_filename.empty() && input_str.empty())
+        {
+            return 0;
+        }
     }
 
     // --language picks the installed lang file; --lang_file or --langspec replaces it.
