@@ -124,6 +124,21 @@ add_test(NAME wiregen_cli:Version
 set_tests_properties(wiregen_cli:Version PROPERTIES
     PASS_REGULAR_EXPRESSION "^wiregen ${PROJECT_VERSION}\n$")
 
+# --banner on its own prints the banner and succeeds; with a spec it prints
+# the banner, then generates as usual.
+add_test(NAME wiregen_cli:Banner
+    COMMAND wiregen --banner)
+set_tests_properties(wiregen_cli:Banner PROPERTIES
+    PASS_REGULAR_EXPRESSION "^\\+-+\\+\n\\| wiregen ${PROJECT_VERSION}[ (]")
+add_test(NAME wiregen_cli:BannerBuildInfo
+    COMMAND wiregen --banner)
+set_tests_properties(wiregen_cli:BannerBuildInfo PROPERTIES
+    PASS_REGULAR_EXPRESSION "\\| compiler:  ${CMAKE_CXX_COMPILER_ID} [^\n]*\n\\| build:     [^\n]*${CMAKE_SYSTEM_NAME}")
+add_test(NAME wiregen_cli:BannerThenGenerate
+    COMMAND wiregen --banner --language c++ --namespace other --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:BannerThenGenerate PROPERTIES
+    PASS_REGULAR_EXPRESSION "\\| wiregen ${PROJECT_VERSION}.*namespace other")
+
 add_test(NAME wiregen_cli:Help
     COMMAND wiregen --help)
 set_tests_properties(wiregen_cli:Help PROPERTIES
