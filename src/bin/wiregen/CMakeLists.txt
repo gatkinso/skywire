@@ -29,40 +29,17 @@ set(DEPLOY_JSONS   c/lang.c.json
                    rust/lang.rust.json
                    swift/lang.swift.json)
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    set(DEBUG_JSONS    c.test.json
-                       cpp.test.json
-                       go.test.json
-                       proto3.test.json
-                       python3.test.json
-                       rust.test.json)
-endif(CMAKE_BUILD_TYPE MATCHES "Debug")
-
-#set(TEST_SCRIPTS   test_wiregen)
-
 add_executable(${TARGETNAME} ${_SOURCES})
 
 add_dependencies(${TARGETNAME} skywire specification cli)
 
 target_link_libraries(${TARGETNAME} skywire cli)
 
-if(MSVC)
-    set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/${TARGETNAME}.exe)
-    set(DST_NAME ${CMAKE_BINARY_DIR}/bin/${TARGETNAME}.exe)
-    set(SCRIPT_SUFFIX ".bat")
-endif(MSVC)
-
-if(UNIX)
-    set(TGT_NAME ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME})
-    set(DST_NAME ${CMAKE_BINARY_DIR}/bin/${TARGETNAME})
-    set(SCRIPT_SUFFIX ".sh")
-endif(UNIX)
-
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGETNAME}> ${CMAKE_BINARY_DIR}/bin/${TARGETNAME}${CMAKE_EXECUTABLE_SUFFIX})
 
-# wiregen --language looks for the lang files in its own directory, so they are
-# copied next to both built copies of wiregen and installed beside it.
+# wiregen --language looks for the lang files in its own directory first, so
+# they are copied next to both built copies of wiregen.
 get_property(MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(MULTI_CONFIG)
     set(LANG_DIRS ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG> ${CMAKE_BINARY_DIR}/bin)
@@ -85,26 +62,34 @@ foreach(LANG_FILE ${DEPLOY_JSONS})
             DEPENDS ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE}
             ${COMMANDS})
     list(APPEND LANG_COPIES ${COPIES})
-    set(DEPLOY_FILES ${DEPLOY_FILES} ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE})
+    list(APPEND INSTALL_LANG_FILES ${PROJECT_SOURCE_DIR}/lang/${LANG_FILE})
 endforeach(LANG_FILE)
 
 add_custom_target(wiregen_lang_files ALL DEPENDS ${LANG_COPIES})
 add_dependencies(${TARGETNAME} wiregen_lang_files)
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    foreach(_FILE ${DEBUG_JSONS})
-        add_custom_command(
-                TARGET ${TARGETNAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                        ${PROJECT_SOURCE_DIR}/cfg/${_FILE}
-                        ${CMAKE_CURRENT_BINARY_DIR}/${_FILE})
-        set(DEPLOY_FILES ${DEPLOY_FILES} ${PROJECT_SOURCE_DIR}/cfg/${_FILE})
-    endforeach(_FILE)
-endif(CMAKE_BUILD_TYPE MATCHES "Debug")
+# On Windows wiregen links protobuf and abseil as DLLs (vcpkg). Copy them next
+# to the build/bin copy too, so it runs like the one the build made.
+if(WIN32)
+    set(WIREGEN_DLLS $<TARGET_RUNTIME_DLLS:${TARGETNAME}>)
+    add_custom_command(TARGET ${TARGETNAME} POST_BUILD
+                       COMMAND "$<$<BOOL:${WIREGEN_DLLS}>:${CMAKE_COMMAND};-E;copy_if_different;${WIREGEN_DLLS};${CMAKE_BINARY_DIR}/bin>"
+                       COMMAND_EXPAND_LISTS)
+endif()
 
-foreach(_SCRIPT ${TEST_SCRIPTS})
-    set(DEPLOY_FILES ${DEPLOY_FILES} ${PROJECT_SOURCE_DIR}/scripts/${_SCRIPT}${SCRIPT_SUFFIX})
-endforeach(_SCRIPT ${TEST_SCRIPTS})
-
-install(TARGETS ${TARGETNAME} RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(FILES ${DEPLOY_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX})
+# wiregen goes in <prefix>/bin, with the DLLs it needs on Windows, and the lang
+# files in <prefix>/share/skywire/lang, where it looks when they aren't beside it.
+if(WIN32)
+    install(TARGETS ${TARGETNAME} EXPORT skywireTargets
+            RUNTIME_DEPENDENCY_SET wiregen_dlls
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(RUNTIME_DEPENDENCY_SET wiregen_dlls
+            PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
+            POST_EXCLUDE_REGEXES ".*[Ss]ystem32/.*\\.dll"
+            DIRECTORIES $<TARGET_RUNTIME_DLL_DIRS:${TARGETNAME}>
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+else()
+    install(TARGETS ${TARGETNAME} EXPORT skywireTargets
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+install(FILES ${INSTALL_LANG_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/skywire/lang)

@@ -33,9 +33,6 @@ set(WG_CPP_FILES
     BitsyMsb
 )
 
-set(WG_C_RUMTIME
-               ${PROJECT_SOURCE_DIR}/lang/c/cstream.c)
-
 set(WG_C_DIR "${PROJECT_BINARY_DIR}/generated_c_wiregen")
 set(WG_CPP_DIR "${PROJECT_BINARY_DIR}/generated_cpp_wiregen")
 
@@ -104,8 +101,6 @@ add_executable(${TARGETNAME}
                 ${GENERATED_H_FILES}
                 ${GENERATED_C_FILES}
                 ${GENERATED_CPP_FILES}
-                ${WG_C_RUMTIME}
-                ${WG_CPP_RUMTIME}
                 ${UNIT_TESTS})
 
 #add_custom_command(
