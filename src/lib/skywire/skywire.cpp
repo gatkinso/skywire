@@ -15,6 +15,7 @@
 
 #include "skywire.h"
 #include "processor.h"
+#include "skywire_version.h"
 
 namespace skyloupe
 {
@@ -69,6 +70,40 @@ const LanguageName language_table[] = {
 const char* version()
 {
     return SKYWIRE_VERSION;
+}
+
+int version_major()
+{
+    return SKYWIRE_VERSION_MAJOR;
+}
+
+int version_minor()
+{
+    return SKYWIRE_VERSION_MINOR;
+}
+
+int version_patch()
+{
+    return SKYWIRE_VERSION_PATCH;
+}
+
+const char* revision()
+{
+    return SKYWIRE_REVISION;
+}
+
+const build_info_t& build_info()
+{
+    static const build_info_t info = {
+        SKYWIRE_COMMIT,
+        SKYWIRE_COMMIT_DATE,
+        SKYWIRE_BRANCH,
+        SKYWIRE_COMPILER,
+        SKYWIRE_BUILD_TYPE,
+        SKYWIRE_PLATFORM,
+        SKYWIRE_BUILD_OPTIONS,
+    };
+    return info;
 }
 
 bool find_language(const std::string& name, std::string& language, std::string& lang_filename)

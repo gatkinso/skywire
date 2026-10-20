@@ -89,8 +89,35 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
 
 add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
 
-# wiregen --version and skyloupe::version() report the project version.
-target_compile_definitions(${TARGETNAME} PRIVATE SKYWIRE_VERSION="${PROJECT_VERSION}")
+# skywire_version.h holds the project version, the git revision and how
+# wiregen was built, for skyloupe::version() and skyloupe::build_info()
+# (wiregen --version, --banner). It is regenerated on every build, but only
+# rewritten when it changes.
+set(VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/generated/skywire_version.h)
+if(CMAKE_OSX_ARCHITECTURES)
+    list(JOIN CMAKE_OSX_ARCHITECTURES "+" BUILD_ARCH)
+else()
+    set(BUILD_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+set(BUILD_OPTIONS)
+if(SKYWIRE_SANITIZE)
+    list(APPEND BUILD_OPTIONS "sanitizers")
+endif()
+list(JOIN BUILD_OPTIONS ", " BUILD_OPTIONS)
+add_custom_target(skywire_version
+    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+                             -DOUTPUT=${VERSION_HEADER}
+                             -DVERSION=${PROJECT_VERSION}
+                             -DSKYWIRE_REVISION=${SKYWIRE_REVISION}
+                             "-DCOMPILER=${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}"
+                             -DBUILD_TYPE=$<CONFIG>
+                             "-DPLATFORM=${CMAKE_SYSTEM_NAME} ${BUILD_ARCH}"
+                             "-DOPTIONS=${BUILD_OPTIONS}"
+                             -P ${PROJECT_SOURCE_DIR}/cmake/skywireVersion.cmake
+    BYPRODUCTS ${VERSION_HEADER}
+    VERBATIM)
+add_dependencies(${TARGETNAME} skywire_version)
+target_include_directories(${TARGETNAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 set_target_properties(${TARGETNAME} PROPERTIES FOLDER "Static Libs")
 

@@ -58,6 +58,10 @@ option(SKYWIRE_BENCH "Build the generated-code benchmarks in bench/" OFF)
 # (skywire_example:<Lang>); see examples/README.md.
 option(SKYWIRE_EXAMPLES "Build and test the example programs in examples/" ON)
 
+# The revision wiregen --banner reports. Empty means git describe of the
+# source tree; set it when building from a tarball or for a package.
+set(SKYWIRE_REVISION "" CACHE STRING "Revision to report instead of git describe")
+
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)

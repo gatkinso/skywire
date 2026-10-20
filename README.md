@@ -377,6 +377,7 @@ Without `--write_to_file` the generated code is printed to standard output.
 | `--write_to_file` | Write the generated files. Without it they are printed to standard output. |
 | `--outdir <dir>` | The directory to write the files to (default: the current directory). |
 | `--silent` | Do not print the success or failure summary. |
+| `--banner` | Print a banner with wiregen's version and how it was built (commit, branch, compiler, build type, platform), then carry on. On its own, print it and exit. |
 | `--version` | Print wiregen's version and exit. |
 | `--help` | Print the options and exit. |
 
@@ -386,7 +387,15 @@ generates nothing. With no arguments wiregen prints its options. On failure the
 exit status is non-zero.
 
 The version is the `VERSION` in the top-level `CMakeLists.txt`; the library
-reports it as `skyloupe::version()`.
+reports it as `skyloupe::version()` (and `version_major()`, `version_minor()`,
+`version_patch()`). The revision `--banner` shows is `git describe --tags
+--always --dirty` of the source tree, taken at build time, so it follows
+commits without reconfiguring; the library reports it as `skyloupe::revision()`.
+When building outside a git checkout (a source tarball, a package) it is empty
+unless you give one with `-DSKYWIRE_REVISION=<revision>`. The rest of the
+banner — full commit hash and date, branch, compiler, build type, platform and
+whether sanitizers are on — is `skyloupe::build_info()`. There is no build
+timestamp, so rebuilding unchanged sources rebuilds nothing.
 
 # [7.0] Syntax Overview
 

@@ -35,6 +35,29 @@ namespace skyloupe
     // The accepted language names, for messages.
     std::string language_names();
 
-    // The skywire version, e.g. "0.9.0".
+    // The skywire version, e.g. "0.9.0", and its parts.
     const char* version();
+    int version_major();
+    int version_minor();
+    int version_patch();
+
+    // The git revision wiregen was built from (git describe --tags --always
+    // --dirty), e.g. "814750f-dirty"; empty if it was not built from a git
+    // checkout and no SKYWIRE_REVISION was given.
+    const char* revision();
+
+    // How wiregen was built. Any field may be empty: the git fields outside a
+    // git checkout, build_type for a single-config build without
+    // CMAKE_BUILD_TYPE, options when none are on.
+    struct build_info_t
+    {
+        const char* commit;        // full commit hash
+        const char* commit_date;   // e.g. "2026-10-20"
+        const char* branch;        // empty when detached
+        const char* compiler;      // e.g. "AppleClang 17.0.0"
+        const char* build_type;    // e.g. "Release"
+        const char* platform;      // e.g. "Darwin arm64"
+        const char* options;       // e.g. "sanitizers"
+    };
+    const build_info_t& build_info();
 }
