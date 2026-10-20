@@ -52,6 +52,10 @@ endif()
 # directory without sanitizers; see bench/README.md.
 option(SKYWIRE_BENCH "Build the generated-code benchmarks in bench/" OFF)
 
+# Build the example programs in examples/ and test them with ctest
+# (skywire_example:<Lang>); see examples/README.md.
+option(SKYWIRE_EXAMPLES "Build and test the example programs in examples/" ON)
+
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)
@@ -113,4 +117,8 @@ add_subdirectory(src)
 
 if(SKYWIRE_BENCH)
     add_subdirectory(bench)
+endif()
+
+if(SKYWIRE_EXAMPLES)
+    add_subdirectory(examples)
 endif()

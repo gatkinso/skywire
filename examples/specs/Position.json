@@ -1,0 +1,11 @@
+{
+   "stringValues": {
+      "classname": "Position",
+      "namespace": "telemetry"
+   },
+   "members": {
+      "1": { "type": "double", "name": "latitude",   "endian": 0 },
+      "2": { "type": "double", "name": "longitude",  "endian": 0 },
+      "3": { "type": "float",  "name": "altitude_m", "endian": 1 }
+   }
+}
