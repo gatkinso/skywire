@@ -4,6 +4,7 @@
 |---|---|
 | `make_ring_bin.py` | Writes `RingyMcRingface.bin`, the input file of the cross-language serial test. |
 | `test_wiregen.bat` | Windows: runs wiregen over the `cfg/*.test.json` specs. |
+| `check_ctest_skips.py` | CI: fails if ctest skipped a test (reads `ctest --output-junit`). |
 
 ## make_ring_bin.py
 
@@ -62,3 +63,15 @@ The values are written in two places on purpose. If they disagree, or the
 `.bin` is not regenerated, the serial test fails at its first step. The
 relay reports either `input is N bytes, size() is M` or the name of the
 member whose value differs.
+
+## check_ctest_skips.py
+
+The language round trips, the ring and the examples report Skipped when a
+toolchain is missing. CI's all-languages job installs every toolchain, so a
+skip there means its setup is broken; this script turns that into a failure.
+
+```
+ctest --test-dir build --output-junit ctest.xml
+python3 scripts/check_ctest_skips.py build/ctest.xml               # no skips allowed
+python3 scripts/check_ctest_skips.py build/ctest.xml --allow Swift # except tests matching the regex
+```

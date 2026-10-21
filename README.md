@@ -1,5 +1,7 @@
 # Skywire - Multilanguage Message Serialization Generator
 
+[![CI](https://github.com/gatkinso/skywire/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/gatkinso/skywire/actions/workflows/ci.yml)
+
                                         )
             _                          /
          _..\'.___.--._______.----.__.'/
@@ -109,6 +111,12 @@ Skywire is built and tested on:
 The tests that compile generated code in other languages need that language's
 toolchain, and are skipped without it (see 4.0).
 
+Every push to master and every pull request is built and tested by GitHub
+Actions (`.github/workflows/ci.yml`): Ubuntu 24.04 with GCC and every language
+toolchain (no test may be skipped), Ubuntu with Clang under AddressSanitizer
+and UndefinedBehaviorSanitizer, macOS 15 with Apple clang, and Windows with
+Visual Studio 2026.
+
 # [3.0] Build Instructions
 
 Skywire is heavily dependent on CMake.  No other build system is currently supported.
@@ -124,6 +132,15 @@ and at protozero with `PROTOZERO_DIR` (the directory holding its `include`):
           -DCMAKE_INSTALL_PREFIX=$HOME/skywire
     cmake --build build_dir
     cmake --install build_dir
+
+On Ubuntu (24.04 or newer) the distribution's packages are enough:
+
+    sudo apt install libprotobuf-dev protobuf-compiler libgtest-dev libgmock-dev libprotozero-dev
+    cmake -S skywire -B build_dir -DCMAKE_BUILD_TYPE=Release -DPROTOZERO_DIR=/usr
+
+On macOS, Homebrew's `protobuf`, `googletest` and `protozero` work the same
+way, with `-DCMAKE_PREFIX_PATH=$(brew --prefix)` and
+`-DPROTOZERO_DIR=$(brew --prefix protozero)`.
 
 `cmake --install build_dir --prefix <dir>` installs somewhere else without
 reconfiguring. Under the prefix:
