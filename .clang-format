@@ -1,0 +1,56 @@
+# Skywire C and C++ style. Matches the existing code; CI checks only the lines
+# a change touches (git clang-format), so the tree is never reformatted at once.
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++17
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 0
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  SplitEmptyFunction: true
+IndentExternBlock: NoIndent
+NamespaceIndentation: None
+FixNamespaceComments: false
+PointerAlignment: Left
+DerivePointerAlignment: true
+AccessModifierOffset: -4
+IndentCaseLabels: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+SortIncludes: Never
+IncludeBlocks: Preserve
+ReflowComments: false
+SpaceAfterCStyleCast: false
+Cpp11BracedListStyle: false
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: true
+AlignTrailingComments: false
+AlignConsecutiveAssignments: None
+AlignConsecutiveMacros: Consecutive
+IndentPPDirectives: BeforeHash
+PPIndentWidth: 4
+AllowShortEnumsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: No
+BreakStringLiterals: false
+AlignOperands: Align
+AlignAfterOpenBracket: DontAlign
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
