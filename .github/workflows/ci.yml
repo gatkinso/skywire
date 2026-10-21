@@ -1,0 +1,197 @@
+# Builds skywire and runs ctest on Linux, macOS and Windows.
+#
+# linux-all-languages installs every language toolchain and fails if ctest
+# skips anything, so a broken toolchain setup can't pass quietly. The other
+# jobs run whatever toolchains the runner image has and allow skips.
+#
+# Third-party actions are pinned by commit; the comment gives the release.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  APT_PACKAGES: >-
+    libprotobuf-dev protobuf-compiler
+    libgtest-dev libgmock-dev
+    libprotozero-dev
+    ninja-build pkg-config
+
+jobs:
+  linux-all-languages:
+    name: Linux (GCC, all languages)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Swift, Rust and Python come with the runner image.
+      - name: Check toolchains
+        run: |
+          rustup component add rustfmt clippy
+          swiftc --version
+          go version
+          javac -version
+          python3 --version
+          rustc --version
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DPROTOZERO_DIR=/usr
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        env:
+          SKYWIRE_RING_REQUIRE_ALL: '1'
+        run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
+      - name: No test skipped
+        if: success() || failure()
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml
+
+  linux-sanitize:
+    name: Linux (Clang, ASan + UBSan)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES clang
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSKYWIRE_SANITIZE=ON
+          -DPROTOZERO_DIR=/usr
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build -j4 --output-on-failure
+
+  macos:
+    name: macOS (Apple Clang)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: brew install protobuf googletest protozero ninja
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$(brew --prefix)"
+          -DPROTOZERO_DIR="$(brew --prefix protozero)"
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build -j4 --output-on-failure
+
+  windows:
+    name: Windows (MSVC, VS 2026)
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 60
+    env:
+      # vcpkg at the manifest's builtin-baseline, with its binary cache kept
+      # in the Actions cache so protobuf is built once, not on every run.
+      VCPKG_COMMIT: 9eec002df1cd109f8f104cd966a763daf9751489
+      VCPKG_ROOT: ${{ github.workspace }}\..\vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\..\vcpkg-cache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-${{ hashFiles('.github/vcpkg/vcpkg.json') }}
+          restore-keys: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-
+
+      - name: Set up vcpkg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          git init $env:VCPKG_ROOT
+          git -C $env:VCPKG_ROOT fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
+          git -C $env:VCPKG_ROOT checkout FETCH_HEAD
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Configure, build and test
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          cl 2>&1 | Select-Object -First 1
+
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE\.github\vcpkg"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ctest --test-dir build -j4 --output-on-failure
+          exit $LASTEXITCODE
+
+  format:
+    name: clang-format (changed lines)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install clang-format
+        run: pip install --user clang-format==19.1.7
+      - name: Check changed lines
+        env:
+          BASE: origin/${{ github.base_ref }}
+        run: |
+          out=$(git clang-format --diff "$(git merge-base "$BASE" HEAD)" -- '*.c' '*.cpp' '*.h')
+          if grep -q '^diff --git' <<<"$out"; then
+            printf '%s\n' "$out"
+            echo "::error::Changed lines are not clang-formatted. Run: git clang-format $BASE"
+            exit 1
+          fi
+          echo "$out"

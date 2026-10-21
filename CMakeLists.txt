@@ -101,7 +101,12 @@ if(MSVC)
 endif(MSVC)
 
 set(protobuf_MODULE_COMPATIBLE TRUE)
-find_package(Protobuf CONFIG REQUIRED)
+find_package(Protobuf CONFIG QUIET)
+if(NOT Protobuf_FOUND)
+    # Distribution packages (Debian, Ubuntu) ship protobuf without its CMake
+    # package; CMake's own FindProtobuf defines the same imported targets.
+    find_package(Protobuf REQUIRED)
+endif()
 include_directories(${Protobuf_INCLUDE_DIRS})
 
 enable_testing()

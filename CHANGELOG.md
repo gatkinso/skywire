@@ -32,6 +32,9 @@ The date is set when v0.9.0 is tagged.
 - `wiregen --banner` with version, revision and build information (#52).
 - Windows builds with Visual Studio and Ninja (#43).
 - `.clang-format`, `.editorconfig` and this changelog.
+- GitHub Actions CI: Linux (GCC with every language, and Clang with
+  sanitizers), macOS and Windows; pull requests also get a clang-format check
+  of the changed lines.
 
 ### Changed
 - Copyright is held by Geoffrey Atkinson; "All rights reserved" is gone, and
@@ -41,6 +44,8 @@ The date is set when v0.9.0 is tagged.
   `SWStream.swift`) carry a runtime exception: programs using them with
   generated code may be distributed under any terms. Generated code carries no
   license obligation (README 1.3).
+- Builds against distribution packages of protobuf (Ubuntu's ship no CMake
+  package): CMake falls back to its own FindProtobuf.
 
 ### Fixed
 - `int8_t` members serialized as 4 bytes in C++ (#37).
