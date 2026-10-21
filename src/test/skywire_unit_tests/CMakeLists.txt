@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 Skyloupe, LLC
+#  Copyright (C) 2017 Geoffrey Atkinson
 #
 #  Licensed under the Apache License, Version 2.0 (the "License").
 #  You may not use this file except in compliance with the License.
@@ -118,6 +118,16 @@ add_test(NAME wiregen_cli:Namespace
     COMMAND wiregen --language c++ --namespace other --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:Namespace PROPERTIES
     PASS_REGULAR_EXPRESSION "namespace other")
+
+# Generated code carries no license obligation (README "License of generated
+# code"), so nothing wiregen writes, tests and relays included, may name a
+# copyright holder or a license.
+foreach(LANG c cpp go java proto3 python3 rust swift)
+    add_test(NAME wiregen_cli:NoLicenseText_${LANG}
+        COMMAND wiregen --language ${LANG} --generate_tests --generate_relay --input_file ${CLI_SPEC})
+    set_tests_properties(wiregen_cli:NoLicenseText_${LANG} PROPERTIES
+        FAIL_REGULAR_EXPRESSION "Copyright|Licensed under|Apache|Skyloupe, LLC|Geoffrey Atkinson")
+endforeach()
 
 add_test(NAME wiregen_cli:Version
     COMMAND wiregen --version)
