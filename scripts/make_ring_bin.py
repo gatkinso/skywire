@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-#  Copyright (C) 2019 Skyloupe, LLC
+#  Copyright (C) 2019 Geoffrey Atkinson
 #
 #  Licensed under the Apache License, Version 2.0 (the "License").
 #  You may not use this file except in compliance with the License.

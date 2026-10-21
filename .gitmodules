@@ -1,4 +1,4 @@
 [submodule "3rd_party/qwikpirate"]
 	path = 3rd_party/qwikpirate
-	url = https://github.com/skyloupe/qwikpirate.git
+	url = https://github.com/gatkinso/qwikpirate.git
 

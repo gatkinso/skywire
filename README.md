@@ -10,7 +10,8 @@
 
 mrf
 
-Skywire (c) 2014-2018 Skyloupe, LLC.  All rights reserved.
+Copyright 2014-2026 Geoffrey Atkinson. Licensed under the Apache License 2.0
+(see LICENSE).
 
 # [1.0] Introduction
 
@@ -64,11 +65,11 @@ they come in very handy when the wiregen generator has been customized.
 
 At the time of this writing, the Skywire source code can be found at:
 
-https://github.com/skyloupe/skywire
+https://github.com/gatkinso/skywire
 
 Qwikpirate (command-line parsing) is a git submodule, so clone with
 
-    git clone --recursive https://github.com/skyloupe/skywire.git
+    git clone --recursive https://github.com/gatkinso/skywire.git
 
 or run `git submodule update --init` in an existing clone.
 
@@ -80,6 +81,17 @@ or run `git submodule update --init` in an existing clone.
 | protozero | The C++ runtime: every generated C++ message has protobuf (PZ) functions, so building skywire and building any program with generated C++ both need its headers |
 | Google Test | Building skywire (its tests), and building the C and C++ tests that `--generate_tests` writes |
 | Qwikpirate | wiregen's command line (bundled as a submodule) |
+
+## [1.3] License of generated code
+
+Skywire itself is licensed under the Apache License 2.0. The code wiregen
+generates is yours: use it under any license, with no notice or attribution
+required. Generated files carry no copyright or license header.
+
+The runtime files that generated code needs (`cstream.h`, `sw_endian.h`,
+`stream.h`, `streamable.h` and `SWStream.swift`) carry a runtime exception
+that grants the same freedom, so a program built with them can be distributed
+under terms of your choice.
 
 # [2.0] Build Requirements
 
@@ -862,7 +874,9 @@ In the U.S. visit: http://www.ngap.org/index.html
 
 Skywire is offered under the Apache 2.0 license.
 https://www.apache.org/licenses/LICENSE-2.0
-(c)2014-2020 Skyloupe, LLC.  All rights reserved.
+Copyright 2014-2026 Geoffrey Atkinson.
+
+Skywire began at Skyloupe, LLC.
 
 Skywire uses and bundles the following third party software packages:
 
@@ -873,4 +887,4 @@ Google Test - (Apache 2.0)
 https://github.com/google/googletest
 
 Qwikpirate - a command line parsing tool (LGPL)
-https://github.com/skyloupe/qwikpirate
+https://github.com/gatkinso/qwikpirate

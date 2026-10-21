@@ -1,5 +1,5 @@
 //
-//   Copyright (C) 2017 Skyloupe, LLC
+//   Copyright (C) 2017 Geoffrey Atkinson
 //
 //   Licensed under the Apache License, Version 2.0 (the "License").
 //   You may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ void print_banner()
         { "build:     ", join_present({ info.build_type, info.platform, info.options }) },
         { "languages: ", language_names() },
         { "", "" },
-        { "", "Copyright (C) 2017 Skyloupe, LLC. Apache License 2.0." },
+        { "", "Copyright (C) 2014-2026 Geoffrey Atkinson. Apache License 2.0." },
     };
 
     std::vector<std::string> lines;
