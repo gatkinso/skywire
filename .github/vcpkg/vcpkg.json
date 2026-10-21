@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "skywire-ci",
+  "version-string": "0",
+  "description": "Windows CI dependencies; local builds may use classic-mode vcpkg instead (README 3.1).",
+  "builtin-baseline": "9eec002df1cd109f8f104cd966a763daf9751489",
+  "dependencies": [
+    "gtest",
+    "protobuf",
+    "protozero"
+  ]
+}
