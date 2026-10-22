@@ -48,6 +48,10 @@ The date is set when v0.9.0 is tagged.
   package): CMake falls back to its own FindProtobuf.
 
 ### Fixed
+- On Windows checkouts that convert line endings, the Go example failed
+  gofmt; `.gitattributes` keeps Go and Rust sources LF.
+- The install test (`skywire_install:Consumer`) now works with vcpkg in
+  manifest mode, not only classic mode.
 - `int8_t` members serialized as 4 bytes in C++ (#37).
 - Endianness detection and C++ stream memory safety (#39).
 - PZ tests and protobuf reserved field numbers (#41).

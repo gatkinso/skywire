@@ -131,15 +131,20 @@ jobs:
     env:
       # vcpkg at the manifest's builtin-baseline, with its binary cache kept
       # in the Actions cache so protobuf is built once, not on every run.
+      # (Not VCPKG_ROOT: Enter-VsDevShell points that at Visual Studio's own
+      # vcpkg, so the step sets it back after entering the shell.)
       VCPKG_COMMIT: 9eec002df1cd109f8f104cd966a763daf9751489
-      VCPKG_ROOT: ${{ github.workspace }}\..\vcpkg
+      SKYWIRE_VCPKG: ${{ github.workspace }}\..\vcpkg
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\..\vcpkg-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Restore and save separately: a plain actions/cache saves only when the
+      # job succeeds, and a failing test would throw away a 40-minute build.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: vcpkg-cache
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-${{ hashFiles('.github/vcpkg/vcpkg.json') }}
@@ -149,10 +154,10 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
-          git init $env:VCPKG_ROOT
-          git -C $env:VCPKG_ROOT fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
-          git -C $env:VCPKG_ROOT checkout FETCH_HEAD
-          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat" -disableMetrics
+          git init $env:SKYWIRE_VCPKG
+          git -C $env:SKYWIRE_VCPKG fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
+          git -C $env:SKYWIRE_VCPKG checkout FETCH_HEAD
+          & "$env:SKYWIRE_VCPKG\bootstrap-vcpkg.bat" -disableMetrics
 
       - name: Configure, build and test
         shell: pwsh
@@ -160,11 +165,12 @@ jobs:
           $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
           Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
           Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          $env:VCPKG_ROOT = $env:SKYWIRE_VCPKG
           cl 2>&1 | Select-Object -First 1
 
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
-            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:SKYWIRE_VCPKG\scripts\buildsystems\vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows `
             "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE\.github\vcpkg"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -172,6 +178,12 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ctest --test-dir build -j4 --output-on-failure
           exit $LASTEXITCODE
+
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
 
   format:
     name: clang-format (changed lines)

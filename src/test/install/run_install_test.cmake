@@ -19,8 +19,8 @@
 #
 #  Required -D variables: BUILD_DIR, CONFIG, OUTDIR, CONSUMER_DIR, EXAMPLES_DIR,
 #                         GENERATOR
-#  Optional -D variables: PLATFORM, TOOLCHAIN_FILE, TRIPLET, PROTOZERO_DIR,
-#                         C_COMPILER, CXX_COMPILER
+#  Optional -D variables: PLATFORM, TOOLCHAIN_FILE, TRIPLET, VCPKG_INSTALLED_DIR,
+#                         PROTOZERO_DIR, C_COMPILER, CXX_COMPILER
 
 # Script mode starts with every policy at OLD; match the project's minimum.
 cmake_minimum_required(VERSION 3.28)
@@ -92,6 +92,11 @@ foreach(var TOOLCHAIN_FILE C_COMPILER CXX_COMPILER)
 endforeach()
 if(TRIPLET)
     list(APPEND args -DVCPKG_TARGET_TRIPLET=${TRIPLET})
+endif()
+# The consumer has no vcpkg.json, so point vcpkg at the packages the build
+# already has: its manifest's vcpkg_installed, or classic mode's installed/.
+if(VCPKG_INSTALLED_DIR)
+    list(APPEND args -DVCPKG_INSTALLED_DIR=${VCPKG_INSTALLED_DIR} -DVCPKG_MANIFEST_MODE=OFF)
 endif()
 if(PROTOZERO_DIR)
     list(APPEND args -DPROTOZERO_DIR=${PROTOZERO_DIR})
