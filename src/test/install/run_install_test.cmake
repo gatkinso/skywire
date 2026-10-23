@@ -19,8 +19,8 @@
 #
 #  Required -D variables: BUILD_DIR, CONFIG, OUTDIR, CONSUMER_DIR, EXAMPLES_DIR,
 #                         GENERATOR
-#  Optional -D variables: PLATFORM, TOOLCHAIN_FILE, TRIPLET, PROTOZERO_DIR,
-#                         C_COMPILER, CXX_COMPILER
+#  Optional -D variables: PLATFORM, TOOLCHAIN_FILE, TRIPLET, VCPKG_INSTALLED_DIR,
+#                         PROTOZERO_DIR, C_COMPILER, CXX_COMPILER
 
 # Script mode starts with every policy at OLD; match the project's minimum.
 cmake_minimum_required(VERSION 3.28)
@@ -93,6 +93,11 @@ endforeach()
 if(TRIPLET)
     list(APPEND args -DVCPKG_TARGET_TRIPLET=${TRIPLET})
 endif()
+# The consumer has no vcpkg.json, so point vcpkg at the packages the build
+# already has: its manifest's vcpkg_installed, or classic mode's installed/.
+if(VCPKG_INSTALLED_DIR)
+    list(APPEND args -DVCPKG_INSTALLED_DIR=${VCPKG_INSTALLED_DIR} -DVCPKG_MANIFEST_MODE=OFF)
+endif()
 if(PROTOZERO_DIR)
     list(APPEND args -DPROTOZERO_DIR=${PROTOZERO_DIR})
 endif()
@@ -102,9 +107,11 @@ set(ENV{PKG_CONFIG_PATH} ${pc_dir})
 run_checked("consumer configure" COMMAND ${CMAKE_COMMAND} ${args})
 run_checked("consumer build" COMMAND ${CMAKE_COMMAND} --build ${build} --config ${CONFIG})
 
-find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config pkgconf)
+# consumer_pc is built when the consumer's FindPkgConfig found pkg-config; ask
+# its cache rather than searching here, which can find one it didn't.
+load_cache(${build} READ_WITH_PREFIX consumer_ PKG_CONFIG_EXECUTABLE)
 set(programs c cpp)
-if(PKG_CONFIG_EXECUTABLE)
+if(consumer_PKG_CONFIG_EXECUTABLE)
     list(APPEND programs pc)
 endif()
 foreach(lang ${programs})

@@ -1,0 +1,7 @@
+# gofmt and rustfmt reject CRLF, so keep these LF even where Git converts
+# line endings on checkout (core.autocrlf=true, the Windows default).
+*.go    text eol=lf
+*.rs    text eol=lf
+
+*.bin   binary
+*.pb    binary

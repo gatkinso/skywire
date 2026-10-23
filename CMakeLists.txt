@@ -15,6 +15,12 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+# CMake 4.1+: normalize paths in file(GET_RUNTIME_DEPENDENCIES), which the
+# Windows install of wiregen's DLLs uses; without it every install warns.
+if(POLICY CMP0207)
+    cmake_policy(SET CMP0207 NEW)
+endif()
+
 project(skywire VERSION 0.9.0)
 
 include(TestBigEndian)
