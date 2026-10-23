@@ -114,8 +114,9 @@ toolchain, and are skipped without it (see 4.0).
 Every push to master and every pull request is built and tested by GitHub
 Actions (`.github/workflows/ci.yml`): Ubuntu 24.04 with GCC and every language
 toolchain (no test may be skipped), Ubuntu with Clang under AddressSanitizer
-and UndefinedBehaviorSanitizer, macOS 15 with Apple clang, and Windows with
-Visual Studio 2026.
+and UndefinedBehaviorSanitizer, and macOS 15 with Apple clang and Windows
+with Visual Studio 2026, both with every language toolchain (again, no test
+may be skipped).
 
 # [3.0] Build Instructions
 
