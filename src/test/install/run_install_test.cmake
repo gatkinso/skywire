@@ -107,9 +107,11 @@ set(ENV{PKG_CONFIG_PATH} ${pc_dir})
 run_checked("consumer configure" COMMAND ${CMAKE_COMMAND} ${args})
 run_checked("consumer build" COMMAND ${CMAKE_COMMAND} --build ${build} --config ${CONFIG})
 
-find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config pkgconf)
+# consumer_pc is built when the consumer's FindPkgConfig found pkg-config; ask
+# its cache rather than searching here, which can find one it didn't.
+load_cache(${build} READ_WITH_PREFIX consumer_ PKG_CONFIG_EXECUTABLE)
 set(programs c cpp)
-if(PKG_CONFIG_EXECUTABLE)
+if(consumer_PKG_CONFIG_EXECUTABLE)
     list(APPEND programs pc)
 endif()
 foreach(lang ${programs})

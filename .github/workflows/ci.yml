@@ -1,8 +1,8 @@
 # Builds skywire and runs ctest on Linux, macOS and Windows.
 #
-# linux-all-languages installs every language toolchain and fails if ctest
-# skips anything, so a broken toolchain setup can't pass quietly. The other
-# jobs run whatever toolchains the runner image has and allow skips.
+# linux-all-languages, macos and windows have every language toolchain and
+# fail if ctest skips anything, so a broken toolchain setup can't pass
+# quietly. linux-sanitize runs whatever the runner image has and allows skips.
 #
 # Third-party actions are pinned by commit; the comment gives the release.
 
@@ -113,6 +113,11 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: brew install protobuf googletest protozero ninja
+      # The image has Java, Python, Rust and Swift but not Go.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache: false
       - name: Configure
         run: >
           cmake -S . -B build -G Ninja
@@ -122,7 +127,12 @@ jobs:
       - name: Build
         run: cmake --build build
       - name: Test
-        run: ctest --test-dir build -j4 --output-on-failure
+        env:
+          SKYWIRE_RING_REQUIRE_ALL: '1'
+        run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
+      - name: No test skipped
+        if: success() || failure()
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml
 
   windows:
     name: Windows (MSVC, VS 2026)
@@ -131,15 +141,34 @@ jobs:
     env:
       # vcpkg at the manifest's builtin-baseline, with its binary cache kept
       # in the Actions cache so protobuf is built once, not on every run.
-      # (Not VCPKG_ROOT: Enter-VsDevShell points that at Visual Studio's own
-      # vcpkg, so the step sets it back after entering the shell.)
+      # Set up vcpkg puts SKYWIRE_VCPKG and VCPKG_DEFAULT_BINARY_CACHE in
+      # runner.temp. (Not VCPKG_ROOT: Enter-VsDevShell points that at Visual
+      # Studio's own vcpkg, so the build step sets it back after entering the
+      # shell.)
       VCPKG_COMMIT: 9eec002df1cd109f8f104cd966a763daf9751489
-      SKYWIRE_VCPKG: ${{ github.workspace }}\..\vcpkg
-      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\..\vcpkg-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+
+      # The image has Go, Java, Python and Rust but not Swift.
+      - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f # v0.5.1
+        with:
+          swift-version: swift-6.4.1-release
+          swift-build: 6.4.1-RELEASE
+
+      - name: Set up vcpkg
+        shell: pwsh
+        run: |
+          $vcpkg = "$env:RUNNER_TEMP\vcpkg"
+          $cache = "$env:RUNNER_TEMP\vcpkg-cache"
+          "SKYWIRE_VCPKG=$vcpkg" >> $env:GITHUB_ENV
+          "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force $cache | Out-Null
+          git init $vcpkg
+          git -C $vcpkg fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
+          git -C $vcpkg checkout FETCH_HEAD
+          & "$vcpkg\bootstrap-vcpkg.bat" -disableMetrics
 
       # Restore and save separately: a plain actions/cache saves only when the
       # job succeeds, and a failing test would throw away a 40-minute build.
@@ -150,15 +179,6 @@ jobs:
           key: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-${{ hashFiles('.github/vcpkg/vcpkg.json') }}
           restore-keys: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-
 
-      - name: Set up vcpkg
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
-          git init $env:SKYWIRE_VCPKG
-          git -C $env:SKYWIRE_VCPKG fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
-          git -C $env:SKYWIRE_VCPKG checkout FETCH_HEAD
-          & "$env:SKYWIRE_VCPKG\bootstrap-vcpkg.bat" -disableMetrics
-
       - name: Configure, build and test
         shell: pwsh
         run: |
@@ -167,6 +187,8 @@ jobs:
           Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
           $env:VCPKG_ROOT = $env:SKYWIRE_VCPKG
           cl 2>&1 | Select-Object -First 1
+          swiftc --version
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
@@ -176,8 +198,13 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cmake --build build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          ctest --test-dir build -j4 --output-on-failure
+          $env:SKYWIRE_RING_REQUIRE_ALL = '1'
+          ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
           exit $LASTEXITCODE
+
+      - name: No test skipped
+        if: success() || failure()
+        run: python scripts/check_ctest_skips.py build/ctest.xml
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
