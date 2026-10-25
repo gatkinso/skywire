@@ -1,0 +1,63 @@
+# Checks out vcpkg at the builtin-baseline of .github/vcpkg/vcpkg.json,
+# bootstraps it in runner.temp and restores its binary cache. It exports
+# SKYWIRE_VCPKG (the vcpkg root) and VCPKG_DEFAULT_BINARY_CACHE.
+#
+# SKYWIRE_VCPKG, not VCPKG_ROOT: on Windows, Enter-VsDevShell points
+# VCPKG_ROOT at Visual Studio's own vcpkg, so set it back after entering the
+# shell.
+#
+# The caller saves the cache at the end of the job, even when the job fails,
+# so a failing test doesn't throw away a long protobuf build:
+#
+#   - uses: actions/cache/save@<sha>
+#     if: always() && steps.vcpkg.outputs.cache-hit != 'true'
+#     with:
+#       path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+#       key: ${{ steps.vcpkg.outputs.cache-key }}
+
+name: Set up vcpkg
+description: Bootstrap the pinned vcpkg and restore its binary cache
+
+inputs:
+  cache-name:
+    description: Names this configuration's cache, e.g. the triplet
+    required: true
+
+outputs:
+  cache-hit:
+    description: "'true' when the cache key matched exactly"
+    value: ${{ steps.cache.outputs.cache-hit }}
+  cache-key:
+    description: The key to save the binary cache under
+    value: ${{ steps.cache.outputs.cache-primary-key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Bootstrap vcpkg
+      shell: pwsh
+      run: |
+        $manifest = Get-Content .github/vcpkg/vcpkg.json -Raw | ConvertFrom-Json
+        $commit = $manifest.'builtin-baseline'
+        $vcpkg = Join-Path $env:RUNNER_TEMP vcpkg
+        $cache = Join-Path $env:RUNNER_TEMP vcpkg-cache
+        "SKYWIRE_VCPKG=$vcpkg" >> $env:GITHUB_ENV
+        "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
+        New-Item -ItemType Directory -Force $cache | Out-Null
+        git init $vcpkg
+        git -C $vcpkg fetch --depth 1 https://github.com/microsoft/vcpkg.git $commit
+        git -C $vcpkg checkout FETCH_HEAD
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        if ($IsWindows) {
+          & (Join-Path $vcpkg bootstrap-vcpkg.bat) -disableMetrics
+        } else {
+          & (Join-Path $vcpkg bootstrap-vcpkg.sh) -disableMetrics
+        }
+        exit $LASTEXITCODE
+
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: cache
+      with:
+        path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+        key: vcpkg-${{ inputs.cache-name }}-${{ hashFiles('.github/vcpkg/**') }}
+        restore-keys: vcpkg-${{ inputs.cache-name }}-
