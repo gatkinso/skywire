@@ -73,7 +73,6 @@ spec and lang-file keywords.
 
 ## CI
 
-The `Fuzz` workflow (`.github/workflows/fuzz.yml`) runs every target for 60 s
-on pull requests that change the runtimes, the generators, the lang files or
-this directory. Run it by hand from the Actions tab for a longer run; it
-uploads the failing inputs.
+The `Fuzz` workflow (`.github/workflows/fuzz.yml`) runs only by hand, from the
+Actions tab or with `gh workflow run fuzz.yml -f seconds=600` (seconds per
+target); it uploads the failing inputs.

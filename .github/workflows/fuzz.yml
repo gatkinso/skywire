@@ -1,27 +1,16 @@
 # Fuzzes the generated decoders and wiregen's spec and lang-file handling
 # (src/test/fuzz/README.md) with libFuzzer, ASan and UBSan.
 #
-# Pull requests that change what the fuzzers cover run every target for 60 s.
-# For a longer run, start it by hand (Actions > Fuzz > Run workflow, or
+# Runs only by hand (Actions > Fuzz > Run workflow, or
 # gh workflow run fuzz.yml -f seconds=1800). Failing inputs are uploaded as
 # the fuzz-artifacts artifact.
 #
-# There is no schedule: while the repository is private, Actions minutes
-# cost money. Every build also replays the checked-in corpora in ctest.
+# Nothing triggers it automatically: while the repository is private, Actions
+# minutes cost money. Every build also replays the checked-in corpora in ctest.
 
 name: Fuzz
 
 on:
-  pull_request:
-    paths:
-      - CMakeLists.txt
-      - include/**
-      - lang/**
-      - src/lib/**
-      - src/test/fuzz/**
-      - src/test/generated_tests/ring/**
-      - scripts/run_fuzzers.py
-      - .github/workflows/fuzz.yml
   workflow_dispatch:
     inputs:
       seconds:
@@ -33,7 +22,6 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   fuzz:
@@ -65,7 +53,7 @@ jobs:
         run: cmake --build build --target fuzzers
       - name: Fuzz
         env:
-          SECONDS_PER_TARGET: ${{ inputs.seconds || '60' }}
+          SECONDS_PER_TARGET: ${{ inputs.seconds }}
         run: python3 scripts/run_fuzzers.py build --seconds "$SECONDS_PER_TARGET"
       - name: Upload failing inputs
         if: failure()
