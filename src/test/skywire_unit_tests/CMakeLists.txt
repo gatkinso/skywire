@@ -28,6 +28,7 @@ set(UNIT_TESTS
                 bitfields_unit_test.cpp
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
+                csharpgenerator_unit_test.cpp
                 cstream_unit_test.cpp
                 endian_unit_test.cpp
                 filewriter_unit_test.cpp
@@ -89,6 +90,11 @@ add_test(NAME wiregen_cli:LanguageRust
 set_tests_properties(wiregen_cli:LanguageRust PROPERTIES
     PASS_REGULAR_EXPRESSION "pub struct ClassyMcClassface")
 
+add_test(NAME wiregen_cli:LanguageCSharp
+    COMMAND wiregen --language "c#" --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:LanguageCSharp PROPERTIES
+    PASS_REGULAR_EXPRESSION "public sealed class ClassyMcClassface")
+
 add_test(NAME wiregen_cli:LangFile
     COMMAND wiregen --lang_file ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})
 add_test(NAME wiregen_cli:LangfileOldSpelling
@@ -122,7 +128,7 @@ set_tests_properties(wiregen_cli:Namespace PROPERTIES
 # Generated code carries no license obligation (README "License of generated
 # code"), so nothing wiregen writes, tests and relays included, may name a
 # copyright holder or a license.
-foreach(LANG c cpp go java proto3 python3 rust swift)
+foreach(LANG c cpp csharp go java proto3 python3 rust swift)
     add_test(NAME wiregen_cli:NoLicenseText_${LANG}
         COMMAND wiregen --language ${LANG} --generate_tests --generate_relay --input_file ${CLI_SPEC})
     set_tests_properties(wiregen_cli:NoLicenseText_${LANG} PROPERTIES

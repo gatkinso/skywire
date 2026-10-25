@@ -297,6 +297,16 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
             relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CppRelayGenerator(msg_spec_, lang_spec_));
         }
     }
+    else if (lang == csharp_str_)
+    {
+        // No relay for C# yet: --generate_relay writes nothing, as for proto3.
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CSharpGenerator(msg_spec_, lang_spec_));
+
+        if (true == generate_tests)
+        {
+            test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::CSharpTestGenerator(msg_spec_, lang_spec_));
+        }
+    }
     else if (lang == go_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::GoGenerator(msg_spec_, lang_spec_));

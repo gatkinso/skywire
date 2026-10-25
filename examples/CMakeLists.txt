@@ -114,9 +114,11 @@ add_test(NAME skywire_example:Protobuf
             -DPROTO_DIR=${pb_dir}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/run_example.cmake)
 
-foreach(lang c cpp swift go python java rust)
+foreach(lang c cpp swift go python java rust csharp)
     if(lang STREQUAL "c")
         set(name C)
+    elseif(lang STREQUAL "csharp")
+        set(name CSharp)
     elseif(lang STREQUAL "cpp")
         set(name C++)
     else()
@@ -144,5 +146,5 @@ foreach(lang c cpp swift go python java rust)
                 ${exe}
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/run_example.cmake)
     set_tests_properties(skywire_example:${name} PROPERTIES
-        SKIP_REGULAR_EXPRESSION "SWIFT_TOOLCHAIN_NOT_FOUND|GO_TOOLCHAIN_NOT_FOUND|PYTHON3_NOT_FOUND|JAVA_TOOLCHAIN_NOT_FOUND|RUST_TOOLCHAIN_NOT_FOUND")
+        SKIP_REGULAR_EXPRESSION "SWIFT_TOOLCHAIN_NOT_FOUND|GO_TOOLCHAIN_NOT_FOUND|PYTHON3_NOT_FOUND|JAVA_TOOLCHAIN_NOT_FOUND|RUST_TOOLCHAIN_NOT_FOUND|CSHARP_TOOLCHAIN_NOT_FOUND")
 endforeach()

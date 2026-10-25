@@ -14,7 +14,8 @@
 #  protobuf/telemetry.txtpb, the same message as text, and checks protoc gets
 #  Telemetry.pb too.
 #
-#  Required -D variables: LANG (c, cpp, protobuf, swift, go, python, java, rust),
+#  Required -D variables: LANG (c, cpp, protobuf, swift, go, python, java, rust,
+#                         csharp),
 #                         EXAMPLES_DIR, EXPECTED, OUTDIR
 #  For c, cpp, protobuf:  EXE
 #  For protobuf:          PROTOC, PROTO_DIR (where the .proto files are)
@@ -183,6 +184,28 @@ elseif(LANG STREQUAL "rust")
             WORKING_DIRECTORY ${OUTDIR})
     endif()
     set(run ${exe})
+
+elseif(LANG STREQUAL "csharp")
+    find_program(DOTNET_EXECUTABLE dotnet)
+    if(DOTNET_EXECUTABLE)
+        # Only the runtime, not an SDK, may be installed.
+        execute_process(COMMAND ${DOTNET_EXECUTABLE} --version
+            RESULT_VARIABLE dotnet_rc OUTPUT_VARIABLE dotnet_version ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
+    if(NOT DOTNET_EXECUTABLE OR NOT dotnet_rc EQUAL 0 OR NOT dotnet_version MATCHES "^[0-9]+\\.")
+        message("CSHARP_TOOLCHAIN_NOT_FOUND: no .NET SDK on PATH; skipping the C# example")
+        return()
+    endif()
+    set(ENV{DOTNET_CLI_TELEMETRY_OPTOUT} 1)
+    set(ENV{DOTNET_NOLOGO} 1)
+    set(ENV{DOTNET_SKIP_FIRST_TIME_EXPERIENCE} 1)
+    generate(csharp)
+    # The project builds every .cs file in its directory.
+    file(COPY ${src}/Program.cs ${src}/Example.csproj DESTINATION ${OUTDIR})
+    run_checked("dotnet build" COMMAND ${DOTNET_EXECUTABLE} build -c Release -o ${OUTDIR}/bin
+        WORKING_DIRECTORY ${OUTDIR})
+    set(run ${DOTNET_EXECUTABLE} ${OUTDIR}/bin/Example.dll)
 
 else()
     message(FATAL_ERROR "unknown LANG '${LANG}'")

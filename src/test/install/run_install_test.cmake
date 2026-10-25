@@ -49,6 +49,7 @@ foreach(file
         share/skywire/runtime/swift/SWStream.swift
         share/skywire/lang/lang.c.json
         share/skywire/lang/lang.cpp.json
+        share/skywire/lang/lang.csharp.json
         share/skywire/lang/lang.go.json
         share/skywire/lang/lang.java.json
         share/skywire/lang/lang.proto3.json

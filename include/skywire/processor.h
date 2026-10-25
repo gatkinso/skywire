@@ -53,6 +53,7 @@ private:
     std::string swift_str_ = "swift";
     std::string c_str_ = "c";
     std::string cpp_str_ = "c++";
+    std::string csharp_str_ = "csharp";
     std::string go_str_ = "go";
     std::string java_str_ = "java";
     std::string proto3_str_ = "proto3";

@@ -45,7 +45,8 @@ inline std::string read_file(const std::string& path)
 inline std::vector<std::string> read_lang_files()
 {
     std::vector<std::string> files;
-    for (const char* name : { "c/lang.c.json", "cpp/lang.cpp.json", "go/lang.go.json",
+    for (const char* name : { "c/lang.c.json", "cpp/lang.cpp.json",
+             "csharp/lang.csharp.json", "go/lang.go.json",
              "java/lang.java.json", "proto/lang.proto3.json",
              "python/lang.python3.json", "rust/lang.rust.json",
              "swift/lang.swift.json" })

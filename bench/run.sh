@@ -19,7 +19,7 @@
 #    bench/run.sh --build <build-dir> [lang ...]
 #    bench/run.sh --wiregen <path> [--c <bench_c>] [--cpp <bench_cpp>] [--workdir <dir>] [lang ...]
 #
-#  Languages: c cpp swift go python java rust (default: all). The C and C++
+#  Languages: c cpp swift go python java rust csharp (default: all). The C and C++
 #  benchmarks are built by CMake with -DSKYWIRE_BENCH=ON; the others are
 #  generated and compiled here. A language whose toolchain is missing is
 #  reported as skipped.
@@ -31,7 +31,7 @@ root=$(dirname "$here")
 ring=$root/src/test/generated_tests/ring
 input=$ring/RingyMcRingface.bin
 
-all_langs="c cpp swift go python java rust"
+all_langs="c cpp swift go python java rust csharp"
 wiregen="" bench_c="" bench_cpp="" workdir="" langs=""
 
 exe=""
@@ -172,10 +172,21 @@ bench_rust() {
     "$dir/bench_rust$exe" "$input"
 }
 
+bench_csharp() {
+    have dotnet && dotnet --version >/dev/null 2>&1 || { skip_reason="no .NET SDK on PATH"; return 3; }
+    local dir=$workdir/csharp
+    generate csharp || return 1
+    cp "$here/csharp/Bench.cs" "$here/csharp/Bench.csproj" "$dir/"
+    (cd "$dir" && DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 dotnet build -c Release -o bin >build.log 2>&1) ||
+        { cat "$dir/build.log"; return 1; }
+    dotnet "$dir/bin/Bench.dll" "$input"
+}
+
 display() {
     case "$1" in
         c) echo "C" ;; cpp) echo "C++" ;; swift) echo "Swift" ;; go) echo "Go" ;;
         python) echo "Python" ;; java) echo "Java" ;; rust) echo "Rust" ;;
+        csharp) echo "C#" ;;
     esac
 }
 
