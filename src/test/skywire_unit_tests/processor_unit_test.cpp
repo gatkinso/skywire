@@ -302,11 +302,22 @@ TEST(FindLanguage, NamesAndAliases)
     ASSERT_EQ(language, "c++");
     ASSERT_EQ(lang_filename, "lang.cpp.json");
 
+    for (const char* name : { "cs", "c#" })
+    {
+        ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
+        ASSERT_EQ(language, "csharp");
+        ASSERT_EQ(lang_filename, "lang.csharp.json");
+    }
+
+    ASSERT_TRUE(find_language("golang", language, lang_filename));
+    ASSERT_EQ(language, "go");
+    ASSERT_EQ(lang_filename, "lang.go.json");
+
     ASSERT_TRUE(find_language("python", language, lang_filename));
     ASSERT_EQ(language, "python3");
     ASSERT_EQ(lang_filename, "lang.python3.json");
 
-    for (const char* name : { "c", "go", "java", "proto3", "python3", "rust", "swift" })
+    for (const char* name : { "c", "csharp", "go", "java", "proto3", "python3", "rust", "swift" })
     {
         ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
         ASSERT_EQ(language, name);

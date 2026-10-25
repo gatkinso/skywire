@@ -201,6 +201,20 @@ add_test(NAME skywire_generated_tests:JavaRoundTrip
 set_tests_properties(skywire_generated_tests:JavaRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "JAVA_TOOLCHAIN_NOT_FOUND")
 
+# C# generated round-trip and wire-format test. The .NET SDK is detected when
+# the test runs (see csharp_roundtrip.cmake); without it the test reports
+# Skipped.
+add_test(NAME skywire_generated_tests:CSharpRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SharpyMcSharpface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/csharp/lang.csharp.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_csharp_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/csharp_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:CSharpRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "CSHARP_TOOLCHAIN_NOT_FOUND")
+
 # proto3 wire-format test: protoc (always built with skywire) must accept the
 # generated .proto and encode the generated test message to the bytes wiregen
 # expects, the same bytes the C++ PZ stream writes (see proto3_roundtrip.cmake).

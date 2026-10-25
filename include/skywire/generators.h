@@ -18,6 +18,8 @@
 #include "ctestgenerator.h"
 #include "cppgenerator.h"
 #include "cpptestgenerator.h"
+#include "csharpgenerator.h"
+#include "csharptestgenerator.h"
 #include "gogenerator.h"
 #include "gotestgenerator.h"
 #include "javagenerator.h"
