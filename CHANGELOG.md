@@ -5,10 +5,9 @@ All notable changes to skywire are recorded here. The format follows
 [Semantic Versioning](https://semver.org/). Before 1.0, a minor version may
 break compatibility; such changes are listed under **Changed** or **Removed**.
 
-## [0.9.0] - Unreleased
+## [0.9.0] - 2026-10-25
 
 The first versioned release, covering the work since the `modernize` merge.
-The date is set when v0.9.0 is tagged.
 
 ### Added
 - Generators for C, C++, Go, Java, Python 3, Rust and Swift, plus proto3
