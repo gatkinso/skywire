@@ -1,0 +1,76 @@
+# Fuzzes the generated decoders and wiregen's spec and lang-file handling
+# (src/test/fuzz/README.md) with libFuzzer, ASan and UBSan.
+#
+# Pull requests that change what the fuzzers cover run every target for 60 s.
+# For a longer run, start it by hand (Actions > Fuzz > Run workflow, or
+# gh workflow run fuzz.yml -f seconds=1800). Failing inputs are uploaded as
+# the fuzz-artifacts artifact.
+#
+# There is no schedule: while the repository is private, Actions minutes
+# cost money. Every build also replays the checked-in corpora in ctest.
+
+name: Fuzz
+
+on:
+  pull_request:
+    paths:
+      - CMakeLists.txt
+      - include/**
+      - lang/**
+      - src/lib/**
+      - src/test/fuzz/**
+      - src/test/generated_tests/ring/**
+      - scripts/run_fuzzers.py
+      - .github/workflows/fuzz.yml
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds per target
+        default: '600'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  fuzz:
+    name: libFuzzer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libprotobuf-dev protobuf-compiler libprotozero-dev \
+            ninja-build pkg-config clang
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DSKYWIRE_FUZZ=ON
+          -DBUILD_TESTING=OFF
+          -DSKYWIRE_EXAMPLES=OFF
+          -DPROTOZERO_DIR=/usr
+      - name: Build
+        run: cmake --build build --target fuzzers
+      - name: Fuzz
+        env:
+          SECONDS_PER_TARGET: ${{ inputs.seconds || '60' }}
+        run: python3 scripts/run_fuzzers.py build --seconds "$SECONDS_PER_TARGET"
+      - name: Upload failing inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-artifacts
+          path: build/fuzz/artifacts/
+          if-no-files-found: ignore

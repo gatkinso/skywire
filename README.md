@@ -167,7 +167,9 @@ Every pull request is built and tested by GitHub Actions
 toolchain (no test may be skipped), Ubuntu with Clang under AddressSanitizer
 and UndefinedBehaviorSanitizer, and macOS 15 with Apple clang and Windows
 with Visual Studio 2026, both with every language toolchain (again, no test
-may be skipped).
+may be skipped). Pull requests that change the runtimes, generators or lang
+files are also fuzzed with libFuzzer (`.github/workflows/fuzz.yml`); see
+[`src/test/fuzz`](src/test/fuzz/README.md).
 
 # [3.0] Build Instructions
 
@@ -222,6 +224,7 @@ Build options:
 | `SKYWIRE_EXAMPLES` | ON | Build and test the programs in `examples/` (see 4.2). |
 | `SKYWIRE_BENCH` | OFF | Build the benchmarks in `bench/` (see 4.1). |
 | `SKYWIRE_SANITIZE` | OFF | Build all C and C++ with AddressSanitizer and UndefinedBehaviorSanitizer (MSVC: AddressSanitizer only). Use a separate build directory. |
+| `SKYWIRE_FUZZ` | OFF | Build the fuzz targets in `src/test/fuzz` with libFuzzer, and everything with ASan and UBSan (Clang only; see [`src/test/fuzz`](src/test/fuzz/README.md)). Use a separate build directory. |
 
 ## [3.1] Windows
 

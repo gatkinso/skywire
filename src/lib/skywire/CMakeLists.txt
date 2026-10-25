@@ -103,6 +103,9 @@ set(BUILD_OPTIONS)
 if(SKYWIRE_SANITIZE)
     list(APPEND BUILD_OPTIONS "sanitizers")
 endif()
+if(SKYWIRE_FUZZ)
+    list(APPEND BUILD_OPTIONS "fuzzing")
+endif()
 list(JOIN BUILD_OPTIONS ", " BUILD_OPTIONS)
 add_custom_target(skywire_version
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR}

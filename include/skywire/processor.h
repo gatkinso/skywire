@@ -60,6 +60,7 @@ private:
     std::string rust_str_ = "rust";
 
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
+    bool generate(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     virtual void resolve_output_filenames();
     virtual void resolve_includes();
     virtual bool validate_spec(int& errorcode);
