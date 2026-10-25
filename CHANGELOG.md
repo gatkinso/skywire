@@ -19,8 +19,14 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 - Fuzz targets for the generated C and C++ decoders (SW and protobuf), a C
   versus C++ differential target, and wiregen's spec and lang file handling,
   with the `SKYWIRE_FUZZ` option for libFuzzer builds. Every build replays
-  their corpora in ctest, and pull requests that touch what they cover are
-  fuzzed in CI (`src/test/fuzz`, `scripts/run_fuzzers.py`).
+  their corpora in ctest, and the `Fuzz` workflow runs them by hand
+  (`src/test/fuzz`, `scripts/run_fuzzers.py`).
+
+### Changed
+- GitHub Actions run only when a release is cut: a `v*` tag runs CI alongside
+  the release build and publishes only if both pass. Pull requests and pushes
+  to master run nothing; CI and fuzzing can be started by hand on any branch.
+  The pull-request clang-format check is gone (run `git clang-format` locally).
 
 ### Fixed
 - wiregen aborted with an uncaught exception when a lang file had a value

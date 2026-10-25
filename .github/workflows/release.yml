@@ -6,10 +6,11 @@
 # wiregen links protobuf and abseil statically (vcpkg's static, release-only
 # triplets), and on Linux libstdc++ too, so it needs nothing installed.
 #
-# A v* tag builds, tests and publishes. Master builds and tests (without
-# publishing) only when the vcpkg setup changes, to save the vcpkg caches a
-# tag can restore; a pull request's caches can't be. To try a change to this
-# workflow or its scripts, run it by hand on the branch (workflow_dispatch):
+# A v* tag runs CI (ci.yml) alongside the build, and publishes only if both
+# pass. This is the only workflow that runs on its own; nothing runs for pull
+# requests or pushes to master. To try a change to this workflow or its
+# scripts, run it by hand on the branch (workflow_dispatch; nothing is
+# published without a tag):
 #
 #   gh workflow run release.yml --ref <branch>
 #
@@ -20,10 +21,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    branches: [master]
-    paths:
-      - .github/actions/setup-vcpkg/**
-      - .github/vcpkg/**
   workflow_dispatch:
 
 permissions:
@@ -31,9 +28,13 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
   version:
     name: Version
     runs-on: ubuntu-24.04
@@ -227,7 +228,7 @@ jobs:
   publish:
     name: Publish
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [version, smoke]
+    needs: [version, smoke, ci]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

@@ -8,25 +8,20 @@
 
 name: CI
 
-# Pull requests run CI; a squash merge puts the tested change on master, so
-# master runs it again only when the vcpkg setup changes. That run saves the
-# Windows vcpkg cache under master, the only branch whose caches every pull
-# request can restore. Run it by hand (workflow_dispatch) at any other time.
+# To keep Actions minutes down, CI runs only when a release is cut: the
+# Release workflow calls it (workflow_call) for each v* tag and holds back
+# publishing unless it passes. Pull requests and pushes run nothing; run it by
+# hand (Actions > CI > Run workflow, or gh workflow run ci.yml --ref <branch>)
+# to test a branch. Check formatting locally: git clang-format origin/master.
+#
+# No concurrency group: a called workflow's would be the caller's, and wait on
+# it forever.
 on:
-  push:
-    branches: [master]
-    paths:
-      - .github/actions/setup-vcpkg/**
-      - .github/vcpkg/**
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   APT_PACKAGES: >-
@@ -199,26 +194,3 @@ jobs:
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ steps.vcpkg.outputs.cache-key }}
-
-  format:
-    name: clang-format (changed lines)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Install clang-format
-        run: pip install --user clang-format==19.1.7
-      - name: Check changed lines
-        env:
-          BASE: origin/${{ github.base_ref }}
-        run: |
-          out=$(git clang-format --diff "$(git merge-base "$BASE" HEAD)" -- '*.c' '*.cpp' '*.h')
-          if grep -q '^diff --git' <<<"$out"; then
-            printf '%s\n' "$out"
-            echo "::error::Changed lines are not clang-formatted. Run: git clang-format $BASE"
-            exit 1
-          fi
-          echo "$out"
