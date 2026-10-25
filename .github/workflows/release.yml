@@ -1,0 +1,270 @@
+# Builds the release archives, tests each on a fresh runner, and publishes
+# them as a GitHub release when a v* tag is pushed.
+#
+# Each archive is a cmake --install prefix: bin/wiregen, include/skywire,
+# share/skywire (lang files, Swift runtime), the CMake package and skywire.pc.
+# wiregen links protobuf and abseil statically (vcpkg's static, release-only
+# triplets), and on Linux libstdc++ too, so it needs nothing installed.
+#
+# A v* tag builds, tests and publishes. Master builds and tests (without
+# publishing) only when the vcpkg setup changes, to save the vcpkg caches a
+# tag can restore; a pull request's caches can't be. To try a change to this
+# workflow or its scripts, run it by hand on the branch (workflow_dispatch):
+#
+#   gh workflow run release.yml --ref <branch>
+#
+# Third-party actions are pinned by commit; the comment gives the release.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+    branches: [master]
+    paths:
+      - .github/actions/setup-vcpkg/**
+      - .github/vcpkg/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      # The archive names' version: the tag without its v, or for an untagged
+      # build the project version and commit.
+      name: ${{ steps.version.outputs.name }}
+      # What wiregen --version prints: project(skywire VERSION).
+      project: ${{ steps.version.outputs.project }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check the tag and write the release notes
+        id: version
+        run: |
+          project=$(sed -nE 's/^project\(skywire VERSION ([0-9.]+)\)/\1/p' CMakeLists.txt)
+          echo "project=$project" >> "$GITHUB_OUTPUT"
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            python3 scripts/release_notes.py "$GITHUB_REF_NAME" > release-notes.md
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            [[ $GITHUB_REF_NAME == *-* ]] && pre=true || pre=false
+            echo "prerelease=$pre" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$project-dev.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Untagged build; nothing is published." > release-notes.md
+          fi
+          cat release-notes.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  build:
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
+    needs: version
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 for glibc 2.35, so the Linux builds run on most
+          # current distributions.
+          - os: linux
+            arch: x86_64
+            runner: ubuntu-22.04
+            triplet: x64-linux-release
+          - os: linux
+            arch: aarch64
+            runner: ubuntu-22.04-arm
+            triplet: arm64-linux-release
+          - os: macos
+            arch: arm64
+            runner: macos-15
+            triplet: arm64-osx-12-release
+          - os: windows
+            arch: x64
+            runner: windows-2025-vs2026
+            triplet: x64-windows-static-release
+    env:
+      ARCHIVE: skywire-${{ needs.version.outputs.name }}-${{ matrix.os }}-${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Install Ninja
+        if: matrix.os != 'windows'
+        run: |
+          if [[ $RUNNER_OS == Linux ]]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ninja-build
+            # vcpkg has no cmake or ninja of its own for arm64 Linux.
+            echo VCPKG_FORCE_SYSTEM_BINARIES=1 >> "$GITHUB_ENV"
+          else
+            brew install ninja
+          fi
+
+      - uses: ./.github/actions/setup-vcpkg
+        id: vcpkg
+        with:
+          cache-name: ${{ matrix.triplet }}
+
+      - name: Build and install (Linux, macOS)
+        if: matrix.os != 'windows'
+        run: |
+          case $RUNNER_OS in
+            Linux) platform=(-DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc") ;;
+            macOS) platform=(-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0) ;;
+          esac
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF \
+            -DSKYWIRE_EXAMPLES=OFF \
+            -DCMAKE_TOOLCHAIN_FILE="$SKYWIRE_VCPKG/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
+            -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} \
+            -DVCPKG_MANIFEST_DIR="$GITHUB_WORKSPACE/.github/vcpkg" \
+            -DVCPKG_OVERLAY_TRIPLETS="$GITHUB_WORKSPACE/.github/vcpkg/triplets" \
+            "${platform[@]}"
+          cmake --build build
+          cmake --install build --prefix "stage/$ARCHIVE" --strip
+          mkdir dist
+          tar -C stage -czf "dist/$ARCHIVE.tar.gz" "$ARCHIVE"
+
+      - name: Build and install (Windows)
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          $env:VCPKG_ROOT = $env:SKYWIRE_VCPKG
+
+          # The static triplet's libraries use the static C runtime (/MT).
+          cmake -S . -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTING=OFF `
+            -DSKYWIRE_EXAMPLES=OFF `
+            "-DCMAKE_TOOLCHAIN_FILE=$env:SKYWIRE_VCPKG\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} `
+            -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} `
+            "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE\.github\vcpkg" `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --install build --prefix "stage\$env:ARCHIVE"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory dist | Out-Null
+          Compress-Archive -Path "stage\$env:ARCHIVE" -DestinationPath "dist\$env:ARCHIVE.zip"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: archive-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.vcpkg.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg.outputs.cache-key }}
+
+  smoke:
+    name: Smoke test (${{ matrix.os }}-${{ matrix.arch }})
+    needs: [version, build]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Fresh runners, without the build's vcpkg packages. The Linux ones
+        # are the oldest glibc the archives claim to support.
+        include:
+          - {os: linux, arch: x86_64, runner: ubuntu-22.04}
+          - {os: linux, arch: aarch64, runner: ubuntu-22.04-arm}
+          - {os: macos, arch: arm64, runner: macos-15}
+          - {os: windows, arch: x64, runner: windows-2025-vs2026}
+    env:
+      ARCHIVE: skywire-${{ needs.version.outputs.name }}-${{ matrix.os }}-${{ matrix.arch }}
+      VERSION: ${{ needs.version.outputs.project }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: archive-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist
+
+      - name: Smoke test (Linux, macOS)
+        if: matrix.os != 'windows'
+        run: |
+          mkdir unpacked
+          tar -C unpacked -xzf "dist/$ARCHIVE.tar.gz"
+          python3 scripts/release_smoke_test.py "unpacked/$ARCHIVE" --version "$VERSION"
+
+      - name: Smoke test (Windows)
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          Expand-Archive "dist\$env:ARCHIVE.zip" -DestinationPath unpacked
+          python scripts/release_smoke_test.py "unpacked\$env:ARCHIVE" --version $env:VERSION
+          exit $LASTEXITCODE
+
+  publish:
+    name: Publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: archive-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-notes
+
+      - name: Checksums
+        working-directory: dist
+        run: |
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
+      # Attestations need a public repository (or GitHub Enterprise Cloud).
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        if: ${{ !github.event.repository.private }}
+        with:
+          subject-path: dist/skywire-*
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ needs.version.outputs.name }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          flags=()
+          [[ $PRERELEASE == true ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "skywire $NAME" --notes-file release-notes.md \
+            "${flags[@]}"

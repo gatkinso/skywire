@@ -35,6 +35,13 @@ The date is set when v0.9.0 is tagged.
 - GitHub Actions CI: Linux (GCC with every language, and Clang with
   sanitizers), and macOS and Windows (MSVC), each with every language; pull
   requests also get a clang-format check of the changed lines.
+- Release archives for Linux (x86_64, aarch64), macOS (arm64) and Windows
+  (x64), built by `.github/workflows/release.yml` from a `v*` tag, with a
+  wiregen that needs no protobuf or other libraries installed, `SHA256SUMS`,
+  and build provenance attestations. README sections on releases (1.4) and
+  versioning (1.5).
+- `-DBUILD_TESTING=OFF` builds wiregen without Google Test or protozero.
+- `CHANGELOG.md` is installed with the README and LICENSE.
 
 ### Changed
 - Copyright is held by Geoffrey Atkinson; "All rights reserved" is gone, and

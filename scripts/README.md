@@ -5,6 +5,8 @@
 | `make_ring_bin.py` | Writes `RingyMcRingface.bin`, the input file of the cross-language serial test. |
 | `test_wiregen.bat` | Windows: runs wiregen over the `cfg/*.test.json` specs. |
 | `check_ctest_skips.py` | CI: fails if ctest skipped a test (reads `ctest --output-junit`). |
+| `release_notes.py` | Release: checks a tag against the source and prints its CHANGELOG section. |
+| `release_smoke_test.py` | Release: checks an unpacked release archive works on a machine that didn't build it. |
 
 ## make_ring_bin.py
 
@@ -75,3 +77,43 @@ ctest --test-dir build --output-junit ctest.xml
 python3 scripts/check_ctest_skips.py build/ctest.xml               # no skips allowed
 python3 scripts/check_ctest_skips.py build/ctest.xml --allow Swift # except tests matching the regex
 ```
+
+## Making a release
+
+`.github/workflows/release.yml` builds the archives (README 1.4), tests each
+on a fresh runner and publishes a GitHub release when a `v*` tag is pushed.
+
+1. Set the version in `project(skywire VERSION x.y.z)` in `CMakeLists.txt`
+   and make sure `CHANGELOG.md` has a `## [x.y.z]` section.
+2. Optionally try a pre-release first: tag `vx.y.z-rc1` and push the tag. It
+   is published as a pre-release, with the same notes. Delete it when done
+   (`gh release delete vx.y.z-rc1 --cleanup-tag`).
+3. Date the CHANGELOG section, `## [x.y.z] - YYYY-MM-DD`, and merge that.
+4. Tag that commit `vx.y.z` and push the tag.
+
+The workflow refuses a tag whose version isn't the project version, and a
+release (not a pre-release) whose CHANGELOG section isn't dated.
+
+## release_notes.py
+
+```
+python3 scripts/release_notes.py v0.9.0       # the notes for 0.9.0
+python3 scripts/release_notes.py v0.9.0-rc1   # a pre-release of 0.9.0: the same notes
+```
+
+Prints the `## [0.9.0]` section of `CHANGELOG.md`, or fails if the tag isn't
+`v<major>.<minor>.<patch>[-<pre-release>]`, if `CMakeLists.txt` has a
+different project version, or, for a release, if the section isn't dated.
+
+## release_smoke_test.py
+
+```
+python3 scripts/release_smoke_test.py skywire-0.9.0-linux-x86_64 --version 0.9.0
+```
+
+Run on an unpacked archive. It checks that `wiregen --version` prints the
+version; that wiregen needs only system libraries (`ldd`, `otool -L` or
+`dumpbin /dependents`) and `bin/` holds nothing else; that it generates every
+language from the archive's lang files; and that the generated C, compiled
+against the archive's headers, writes `examples/Telemetry.bin`. It uses `$CC`
+or `cc`, or `cl` on Windows, from a Visual Studio developer shell.

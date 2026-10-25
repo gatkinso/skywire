@@ -8,9 +8,16 @@
 
 name: CI
 
+# Pull requests run CI; a squash merge puts the tested change on master, so
+# master runs it again only when the vcpkg setup changes. That run saves the
+# Windows vcpkg cache under master, the only branch whose caches every pull
+# request can restore. Run it by hand (workflow_dispatch) at any other time.
 on:
   push:
     branches: [master]
+    paths:
+      - .github/actions/setup-vcpkg/**
+      - .github/vcpkg/**
   pull_request:
   workflow_dispatch:
 
@@ -138,14 +145,6 @@ jobs:
     name: Windows (MSVC, VS 2026)
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
-    env:
-      # vcpkg at the manifest's builtin-baseline, with its binary cache kept
-      # in the Actions cache so protobuf is built once, not on every run.
-      # Set up vcpkg puts SKYWIRE_VCPKG and VCPKG_DEFAULT_BINARY_CACHE in
-      # runner.temp. (Not VCPKG_ROOT: Enter-VsDevShell points that at Visual
-      # Studio's own vcpkg, so the build step sets it back after entering the
-      # shell.)
-      VCPKG_COMMIT: 9eec002df1cd109f8f104cd966a763daf9751489
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -157,27 +156,10 @@ jobs:
           swift-version: swift-6.4.1-release
           swift-build: 6.4.1-RELEASE
 
-      - name: Set up vcpkg
-        shell: pwsh
-        run: |
-          $vcpkg = "$env:RUNNER_TEMP\vcpkg"
-          $cache = "$env:RUNNER_TEMP\vcpkg-cache"
-          "SKYWIRE_VCPKG=$vcpkg" >> $env:GITHUB_ENV
-          "VCPKG_DEFAULT_BINARY_CACHE=$cache" >> $env:GITHUB_ENV
-          New-Item -ItemType Directory -Force $cache | Out-Null
-          git init $vcpkg
-          git -C $vcpkg fetch --depth 1 https://github.com/microsoft/vcpkg.git $env:VCPKG_COMMIT
-          git -C $vcpkg checkout FETCH_HEAD
-          & "$vcpkg\bootstrap-vcpkg.bat" -disableMetrics
-
-      # Restore and save separately: a plain actions/cache saves only when the
-      # job succeeds, and a failing test would throw away a 40-minute build.
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: vcpkg-cache
+      - uses: ./.github/actions/setup-vcpkg
+        id: vcpkg
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-${{ hashFiles('.github/vcpkg/vcpkg.json') }}
-          restore-keys: vcpkg-windows-x64-${{ env.VCPKG_COMMIT }}-
+          cache-name: windows-x64
 
       - name: Configure, build and test
         shell: pwsh
@@ -194,7 +176,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             "-DCMAKE_TOOLCHAIN_FILE=$env:SKYWIRE_VCPKG\scripts\buildsystems\vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows `
-            "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE\.github\vcpkg"
+            "-DVCPKG_MANIFEST_DIR=$env:GITHUB_WORKSPACE\.github\vcpkg" `
+            -DVCPKG_MANIFEST_FEATURES=tests
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cmake --build build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -207,10 +190,10 @@ jobs:
         run: python scripts/check_ctest_skips.py build/ctest.xml
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        if: always() && steps.vcpkg.outputs.cache-hit != 'true'
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
+          key: ${{ steps.vcpkg.outputs.cache-key }}
 
   format:
     name: clang-format (changed lines)

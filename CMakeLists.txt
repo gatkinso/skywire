@@ -115,8 +115,11 @@ if(NOT Protobuf_FOUND)
 endif()
 include_directories(${Protobuf_INCLUDE_DIRS})
 
-enable_testing()
-find_package(GTest REQUIRED)
+# The tests need GoogleTest; a build with -DBUILD_TESTING=OFF (from CTest)
+# builds wiregen without it, as the release builds do.
+if(BUILD_TESTING)
+    find_package(GTest REQUIRED)
+endif()
 
 set(PROTOZERO_INC_DIR ${PROTOZERO_DIR}/include)
 
@@ -129,6 +132,8 @@ if(UNIX AND NOT APPLE)
     add_definitions(-DLINUX)
 endif(UNIX AND NOT APPLE)
 
+# qwikpirate's own tests follow BUILD_TESTING.
+set(BUILD_UNIT_TESTS ${BUILD_TESTING})
 add_subdirectory(3rd_party/qwikpirate)
 add_subdirectory(src)
 
@@ -179,4 +184,4 @@ configure_file(cmake/skywire.pc.in ${PROJECT_BINARY_DIR}/skywire.pc @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/skywire.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-install(FILES LICENSE README.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(FILES LICENSE README.md CHANGELOG.md DESTINATION ${CMAKE_INSTALL_DOCDIR})

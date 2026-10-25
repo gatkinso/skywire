@@ -80,8 +80,8 @@ or run `git submodule update --init` in an existing clone.
 | Package | Used for |
 |---|---|
 | Google Protocol Buffers | wiregen reads specifications through it; the proto3 tests run its `protoc` |
-| protozero | The C++ runtime: every generated C++ message has protobuf (PZ) functions, so building skywire and building any program with generated C++ both need its headers |
-| Google Test | Building skywire (its tests), and building the C and C++ tests that `--generate_tests` writes |
+| protozero | The C++ runtime: every generated C++ message has protobuf (PZ) functions, so any program with generated C++ needs its headers, as do skywire's tests and examples |
+| Google Test | Skywire's tests, and the C and C++ tests that `--generate_tests` writes |
 | Qwikpirate | wiregen's command line (bundled as a submodule) |
 
 ## [1.3] License of generated code
@@ -94,6 +94,57 @@ The runtime files that generated code needs (`cstream.h`, `sw_endian.h`,
 `stream.h`, `streamable.h` and `SWStream.swift`) carry a runtime exception
 that grants the same freedom, so a program built with them can be distributed
 under terms of your choice.
+
+## [1.4] Releases
+
+Each [release](https://github.com/gatkinso/skywire/releases) has a prebuilt
+archive per platform, so you can use wiregen without building skywire:
+
+| Archive | Runs on |
+|---|---|
+| `skywire-<version>-linux-x86_64.tar.gz` | Linux x86_64 with glibc 2.35 or newer (Ubuntu 22.04, Debian 12, RHEL 10 and later) |
+| `skywire-<version>-linux-aarch64.tar.gz` | The same, on arm64 |
+| `skywire-<version>-macos-arm64.tar.gz` | macOS 12 or newer on Apple silicon |
+| `skywire-<version>-windows-x64.zip` | Windows 10 or newer, x64 |
+
+wiregen in these archives needs nothing else installed: protobuf, abseil and
+(on Linux) the C++ runtime are linked in. Each archive is an install prefix,
+the same as `cmake --install` makes (see 3.2):
+
+| Path | Contents |
+|---|---|
+| `bin/` | `wiregen` |
+| `include/skywire/` | The C and C++ runtime headers |
+| `share/skywire/` | The lang files and the Swift runtime |
+| `lib/cmake/skywire/`, `lib/pkgconfig/` | The CMake package and `skywire.pc` |
+
+Unpack it anywhere and run `bin/wiregen`, or point `CMAKE_PREFIX_PATH` at it.
+`SHA256SUMS` lists each archive's checksum:
+
+    sha256sum --check --ignore-missing SHA256SUMS
+
+and each archive has a build provenance attestation, which shows it was built
+by this repository's release workflow from the tagged commit:
+
+    gh attestation verify skywire-<version>-linux-x86_64.tar.gz --repo gatkinso/skywire
+
+The macOS build is not notarized. If macOS refuses to run a wiregen downloaded
+with a browser, remove the quarantine attribute:
+`xattr -d com.apple.quarantine bin/wiregen`.
+
+## [1.5] Versioning
+
+Skywire follows [Semantic Versioning](https://semver.org/). The version covers:
+
+* the specification JSON format,
+* the lang file format,
+* the public API of the generated code and of the runtime files, and
+* the bytes a generated message writes (its wire format).
+
+A change that breaks any of these needs a new major version. Before 1.0, a
+minor version may break them too; `CHANGELOG.md` lists every such change under
+**Changed** or **Removed**. `wiregen --version` prints the version, and
+`wiregen --banner` the commit it was built from.
 
 # [2.0] Build Requirements
 
@@ -111,8 +162,8 @@ Skywire is built and tested on:
 The tests that compile generated code in other languages need that language's
 toolchain, and are skipped without it (see 4.0).
 
-Every push to master and every pull request is built and tested by GitHub
-Actions (`.github/workflows/ci.yml`): Ubuntu 24.04 with GCC and every language
+Every pull request is built and tested by GitHub Actions
+(`.github/workflows/ci.yml`): Ubuntu 24.04 with GCC and every language
 toolchain (no test may be skipped), Ubuntu with Clang under AddressSanitizer
 and UndefinedBehaviorSanitizer, and macOS 15 with Apple clang and Windows
 with Visual Studio 2026, both with every language toolchain (again, no test
@@ -142,6 +193,10 @@ On Ubuntu (24.04 or newer) the distribution's packages are enough:
 On macOS, Homebrew's `protobuf`, `googletest` and `protozero` work the same
 way, with `-DCMAKE_PREFIX_PATH=$(brew --prefix)` and
 `-DPROTOZERO_DIR=$(brew --prefix protozero)`.
+
+To build only wiregen and what it installs, configure with
+`-DBUILD_TESTING=OFF -DSKYWIRE_EXAMPLES=OFF`. Then protobuf is the only
+dependency: Google Test and protozero are needed for the tests and examples.
 
 `cmake --install build_dir --prefix <dir>` installs somewhere else without
 reconfiguring. Under the prefix:
