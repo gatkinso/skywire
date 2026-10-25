@@ -56,6 +56,37 @@ if(SKYWIRE_SANITIZE)
     message(STATUS "Sanitizers enabled")
 endif()
 
+# Build the targets in src/test/fuzz as libFuzzer fuzzers, with every C and
+# C++ target instrumented for coverage, AddressSanitizer and
+# UndefinedBehaviorSanitizer. Needs a Clang that ships libFuzzer (on macOS,
+# Homebrew's llvm, not Apple's). Without it, the same targets build as plain
+# programs that replay their corpora in ctest. See src/test/fuzz/README.md.
+option(SKYWIRE_FUZZ "Build the fuzz targets with libFuzzer (Clang only)" OFF)
+
+if(SKYWIRE_FUZZ)
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_LINK_OPTIONS -fsanitize=fuzzer)
+    check_cxx_source_compiles(
+        "#include <cstddef>
+         #include <cstdint>
+         extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t*, size_t) { return 0; }"
+        SKYWIRE_HAVE_LIBFUZZER)
+    unset(CMAKE_REQUIRED_LINK_OPTIONS)
+    if(NOT SKYWIRE_HAVE_LIBFUZZER)
+        message(FATAL_ERROR "SKYWIRE_FUZZ needs a Clang with libFuzzer (-fsanitize=fuzzer). "
+                            "On macOS use Homebrew's: -DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang "
+                            "-DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++")
+    endif()
+    set(SKYWIRE_FUZZ_FLAGS
+        -fsanitize=fuzzer-no-link,address,undefined
+        -fno-sanitize-recover=all
+        -fno-omit-frame-pointer
+    )
+    add_compile_options(${SKYWIRE_FUZZ_FLAGS})
+    add_link_options(${SKYWIRE_FUZZ_FLAGS})
+    message(STATUS "Fuzzing enabled")
+endif()
+
 # Build the benchmarks in bench/ (not part of ctest). Use a Release build
 # directory without sanitizers; see bench/README.md.
 option(SKYWIRE_BENCH "Build the generated-code benchmarks in bench/" OFF)

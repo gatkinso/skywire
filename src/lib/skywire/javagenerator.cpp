@@ -65,10 +65,12 @@ std::string JavaGenerator::java_endian(unsigned int endian_flag)
 }
 
 // True for unsigned members held in a wider Java type than goes on the wire.
+// Only byte, short and int go on the wire widened; a lang file mapping any
+// other type differently does not make it widened.
 bool JavaGenerator::is_widened(const std::string& type)
 {
     const wire_t wire = java_wire(type);
-    return wire.bits != 0 && java_type(type) != wire.type;
+    return wire.bits != 0 && wire.bits <= 32 && wire.type != "float" && java_type(type) != wire.type;
 }
 
 std::string JavaGenerator::subst(std::string template_str, const member_desc_t& member)

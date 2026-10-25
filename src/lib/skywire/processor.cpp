@@ -15,6 +15,7 @@
 
 #include <filesystem>
 #include <algorithm>
+#include <exception>
 #include <regex>
 #include <set>
 #include "bitfields.h"
@@ -191,6 +192,24 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
 }
 
 bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay)
+{
+    // The generators index lang file values and compile some as regular
+    // expressions, so a lang file can make them throw. Report it as a bad
+    // lang file rather than let wiregen abort.
+    try
+    {
+        return generate(output_str_map, errorcode, generate_tests, generate_relay);
+    }
+    catch (const std::exception& e)
+    {
+        errorcode |= SW_LANG_INVALID;
+        std::cerr << "Invalid lang file: generating failed: " << e.what() << std::endl;
+        output_str_map.clear();
+        return false;
+    }
+}
+
+bool Processor::generate(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay)
 {
     bool success = false;
 

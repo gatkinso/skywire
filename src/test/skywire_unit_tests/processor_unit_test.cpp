@@ -258,6 +258,21 @@ TEST_F(ProcessorValidationTest, RejectsLangFileWithoutLanguage)
     ASSERT_TRUE(output_str_map.empty());
 }
 
+// Generators compile some lang file values as regular expressions; a bad one
+// is reported as an invalid lang file, not an uncaught exception (found by
+// fuzz_lang).
+TEST_F(ProcessorValidationTest, RejectsLangFileGeneratorsCannotUse)
+{
+    std::string lang = lang_str;
+    const std::string member = R"("member_substr":"__MEMBERNAME__)";
+    lang.replace(lang.find(member), member.size(), R"("member_substr":"__MEMBER(NAME__)");
+
+    Processor p;
+    ASSERT_FALSE(p.process_string(make_spec(good_members), lang, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_NE(errorcode & SW_LANG_INVALID, 0u);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
 TEST_F(ProcessorValidationTest, AcceptsLangFileForExpectedLanguage)
 {
     Processor p;

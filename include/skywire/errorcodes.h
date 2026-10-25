@@ -15,6 +15,8 @@
 
 #pragma once
 
+// The values are aligned by hand.
+// clang-format off
 const unsigned int SW_SUCCESS                   = 0x00000000;
 const unsigned int SW_ERROR                     = 0x00000001;
 const unsigned int SW_UNKNOWNLANG               = 0x00000002;
@@ -25,6 +27,9 @@ const unsigned int SW_STRINGREADERROR           = 0x00000006;
 const unsigned int SW_FILEWRITEERROR            = 0x00000007;
 const unsigned int SW_SPEC_INVALID              = 0x04000000;
 const unsigned int SW_LANG_UNSUPPORTED_TYPE     = 0x08000000;
+// The lang file could not be used: a generator failed on one of its values
+// (a missing template, a bad pattern).
+const unsigned int SW_LANG_INVALID              = 0x10000000;
 
 const unsigned int SW_LANG_C                    = 0x01000000;
 const unsigned int SW_LANG_CPP                  = 0x02000000;
@@ -60,3 +65,4 @@ const unsigned int SW_LANG_IMP_CONS      = 0x00000001;
 const unsigned int SW_LANG_IMP_PRINT     = 0x00000002;
 const unsigned int SW_LANG_RUNTIME       = 0x00000003;
 const unsigned int SW_LANG_STRUCTBLOCK   = 0x00000004;
+// clang-format on

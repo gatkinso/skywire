@@ -7,6 +7,7 @@
 | `check_ctest_skips.py` | CI: fails if ctest skipped a test (reads `ctest --output-junit`). |
 | `release_notes.py` | Release: checks a tag against the source and prints its CHANGELOG section. |
 | `release_smoke_test.py` | Release: checks an unpacked release archive works on a machine that didn't build it. |
+| `run_fuzzers.py` | Runs the libFuzzer targets in a `-DSKYWIRE_FUZZ=ON` build for a while each. |
 
 ## make_ring_bin.py
 
@@ -117,3 +118,19 @@ version; that wiregen needs only system libraries (`ldd`, `otool -L` or
 language from the archive's lang files; and that the generated C, compiled
 against the archive's headers, writes `examples/Telemetry.bin`. It uses `$CC`
 or `cc`, or `cl` on Windows, from a Visual Studio developer shell.
+
+## run_fuzzers.py
+
+```
+cmake --build build-fuzz --target fuzzers
+python3 scripts/run_fuzzers.py build-fuzz                       # every target, 60 s each
+python3 scripts/run_fuzzers.py build-fuzz --seconds 1800 fuzz_spec
+```
+
+Runs each fuzz target (`src/test/fuzz`) from its seeds, as listed in
+`build-fuzz/fuzz/<target>.fuzz`, plus the corpus it kept from earlier runs
+in `build-fuzz/fuzz/work/<target>`. Targets run in parallel, one per CPU
+(`--jobs`). It prints the runs, speed and coverage of each, and for a target
+that crashes, times out, runs out of memory or fails a check, the error, the
+failing input (in `build-fuzz/fuzz/artifacts/<target>/`) and how to reproduce
+it; then it exits 1. The `Fuzz` workflow runs it in CI.

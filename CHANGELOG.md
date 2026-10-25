@@ -5,6 +5,21 @@ All notable changes to skywire are recorded here. The format follows
 [Semantic Versioning](https://semver.org/). Before 1.0, a minor version may
 break compatibility; such changes are listed under **Changed** or **Removed**.
 
+## [Unreleased]
+
+### Added
+- Fuzz targets for the generated C and C++ decoders (SW and protobuf), a C
+  versus C++ differential target, and wiregen's spec and lang file handling,
+  with the `SKYWIRE_FUZZ` option for libFuzzer builds. Every build replays
+  their corpora in ctest, and pull requests that touch what they cover are
+  fuzzed in CI (`src/test/fuzz`, `scripts/run_fuzzers.py`).
+
+### Fixed
+- wiregen aborted with an uncaught exception when a lang file had a value
+  the generators could not use, such as a malformed pattern or a Java type
+  mapped to something unexpected. It now reports an invalid lang file
+  (`SW_LANG_INVALID`). Found by fuzzing.
+
 ## [0.9.0] - 2026-10-25
 
 The first versioned release, covering the work since the `modernize` merge.
@@ -67,4 +82,5 @@ The first versioned release, covering the work since the `modernize` merge.
 - The unused `lang_file` field in specifications (#42).
 - The obsolete `c++11` lang file (#48).
 
+[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.9.0...HEAD
 [0.9.0]: https://github.com/gatkinso/skywire/releases/tag/v0.9.0
