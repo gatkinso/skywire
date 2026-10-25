@@ -14,6 +14,7 @@ language, plus one that talks to protobuf. All of them use the same message,
 | Python | [python/main.py](python/main.py) | `serialize`, `deserialize`, `==` |
 | Java | [java/Main.java](java/Main.java) | Messages in a package, unsigned values in wider types |
 | Rust | [rust/main.rs](rust/main.rs) | Message modules, `from_bytes` returning `io::Result` |
+| C# | [csharp/Program.cs](csharp/Program.cs) | Properties, a nested message's properties, `Equals` |
 
 Each directory has a README with the exact wiregen and compiler commands (run
 from the repository root, writing into `out/`) and what the build needs:
@@ -108,6 +109,7 @@ Each example's README explains its build. In short:
 | Python | generated dir on the import path | nothing (standard library) | `lang/python/lang.python3.json` |
 | Java | `-cp` the class output dir | nothing (JDK only) | `lang/java/lang.java.json` |
 | Rust | none (`mod` next to the modules) | nothing (`std` only) | `lang/rust/lang.rust.json` |
+| C# | none (`Example.csproj` next to the generated files) | nothing (base class library only) | `lang/csharp/lang.csharp.json` |
 
 The build copies every lang file next to `wiregen`, and `--language <name>`
 reads it from there; `--lang_file <path>` uses another copy instead. The lang
@@ -125,13 +127,13 @@ generates and builds the others when their test runs.
 
 | Test | Passes when |
 |---|---|
-| `skywire_example:C`, `:C++`, `:Swift`, `:Go`, `:Python`, `:Java`, `:Rust` | The program succeeds and the file it wrote is `Telemetry.bin`, byte for byte. |
+| `skywire_example:C`, `:C++`, `:Swift`, `:Go`, `:Python`, `:Java`, `:Rust`, `:CSharp` | The program succeeds and the file it wrote is `Telemetry.bin`, byte for byte. |
 | `skywire_example:Protobuf` | protoc encodes `telemetry.txtpb` to `Telemetry.pb`, and the program succeeds and writes `Telemetry.pb`. |
 
 Like the round-trip tests, a test whose toolchain is missing reports Skipped.
-The Go, Java and Rust builds must also be clean: gofmt and `go vet`;
+The Go, Java, Rust and C# builds must also be clean: gofmt and `go vet`;
 `javac -Xlint:all -Werror`; `rustc -D warnings`, plus rustfmt and clippy when
-they are installed.
+they are installed; C# with warnings as errors.
 
 ## Files
 

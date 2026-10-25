@@ -8,6 +8,14 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 ## [Unreleased]
 
 ### Added
+- A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
+  class per message, for .NET Framework 4.6.2+, Unity and .NET, with
+  generated tests and the `skywire_generated_tests:CSharpRoundTrip` ctest
+  (.NET SDK), an example (`examples/csharp`, `skywire_example:CSharp`) and a
+  benchmark (`bench/csharp`). On .NET Core 2.1+ and .NET Standard 2.1+ it
+  uses `Span<T>` and `BinaryPrimitives` (`SKYWIRE_PORTABLE` turns that off).
+  No relay yet.
+- `--language golang`, an alias for `go`.
 - Fuzz targets for the generated C and C++ decoders (SW and protobuf), a C
   versus C++ differential target, and wiregen's spec and lang file handling,
   with the `SKYWIRE_FUZZ` option for libFuzzer builds. Every build replays

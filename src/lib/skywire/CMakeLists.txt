@@ -31,6 +31,8 @@ set(_GENERATORS
              ctestgenerator.cpp
              cppgenerator.cpp
              cpptestgenerator.cpp
+             csharpgenerator.cpp
+             csharptestgenerator.cpp
              gogenerator.cpp
              gotestgenerator.cpp
              file_writer.cpp
@@ -58,6 +60,8 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/ctestgenerator.h
              ${TARGET_INC_DIR}/cppgenerator.h
              ${TARGET_INC_DIR}/cpptestgenerator.h
+             ${TARGET_INC_DIR}/csharpgenerator.h
+             ${TARGET_INC_DIR}/csharptestgenerator.h
              ${TARGET_INC_DIR}/gogenerator.h
              ${TARGET_INC_DIR}/gotestgenerator.h
              ${TARGET_INC_DIR}/javagenerator.h
