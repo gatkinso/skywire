@@ -6,9 +6,12 @@
 # wiregen links protobuf and abseil statically (vcpkg's static, release-only
 # triplets), and on Linux libstdc++ too, so it needs nothing installed.
 #
-# Pull requests and master run the build and smoke test when this workflow,
-# its scripts or the vcpkg setup change; only a tag publishes. A tag also
-# needs master's vcpkg cache, which a PR's cache can't provide.
+# A v* tag builds, tests and publishes. Master builds and tests (without
+# publishing) only when the vcpkg setup changes, to save the vcpkg caches a
+# tag can restore; a pull request's caches can't be. To try a change to this
+# workflow or its scripts, run it by hand on the branch (workflow_dispatch):
+#
+#   gh workflow run release.yml --ref <branch>
 #
 # Third-party actions are pinned by commit; the comment gives the release.
 
@@ -19,16 +22,8 @@ on:
     tags: ['v*']
     branches: [master]
     paths:
-      - .github/workflows/release.yml
       - .github/actions/setup-vcpkg/**
       - .github/vcpkg/**
-      - scripts/release_*.py
-  pull_request:
-    paths:
-      - .github/workflows/release.yml
-      - .github/actions/setup-vcpkg/**
-      - .github/vcpkg/**
-      - scripts/release_*.py
   workflow_dispatch:
 
 permissions:

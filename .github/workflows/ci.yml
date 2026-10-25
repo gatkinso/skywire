@@ -8,9 +8,16 @@
 
 name: CI
 
+# Pull requests run CI; a squash merge puts the tested change on master, so
+# master runs it again only when the vcpkg setup changes. That run saves the
+# Windows vcpkg cache under master, the only branch whose caches every pull
+# request can restore. Run it by hand (workflow_dispatch) at any other time.
 on:
   push:
     branches: [master]
+    paths:
+      - .github/actions/setup-vcpkg/**
+      - .github/vcpkg/**
   pull_request:
   workflow_dispatch:
 
