@@ -56,6 +56,21 @@ if(SKYWIRE_SANITIZE)
     message(STATUS "Sanitizers enabled")
 endif()
 
+# Build every C and C++ target with gcov instrumentation (GCC or Clang), so
+# ctest leaves .gcda files for scripts/coverage.py to report on. Use a
+# separate Debug build directory, e.g.
+# cmake -DSKYWIRE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug.
+option(SKYWIRE_COVERAGE "Build with gcov coverage instrumentation (GCC or Clang)" OFF)
+
+if(SKYWIRE_COVERAGE)
+    if(MSVC)
+        message(FATAL_ERROR "SKYWIRE_COVERAGE needs GCC or Clang")
+    endif()
+    add_compile_options(--coverage -O0)
+    add_link_options(--coverage)
+    message(STATUS "Coverage enabled")
+endif()
+
 # Build the targets in src/test/fuzz as libFuzzer fuzzers, with every C and
 # C++ target instrumented for coverage, AddressSanitizer and
 # UndefinedBehaviorSanitizer. Needs a Clang that ships libFuzzer (on macOS,

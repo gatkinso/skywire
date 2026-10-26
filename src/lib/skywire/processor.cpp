@@ -101,7 +101,7 @@ bool Processor::process_string(const std::string& input_msg_str, const std::stri
     if (input_msg_str.empty())
     {
         errorcode |= SW_BLANKINPUTSTRING;
-        std::cerr << "Blank input lang string" << std::endl;
+        std::cerr << "Blank input msg string" << std::endl;
         return success;
     }
 
@@ -157,16 +157,8 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
         return success;
     }
 
-    spec_dir_ = std::filesystem::path(msgpathname).parent_path().string();
-    if (spec_dir_.empty())
+    if (false == read_msg_file(msgpathname, errorcode))
     {
-        spec_dir_ = ".";
-    }
-
-    if (false == msg_spec_.read_file(msgpathname))
-    {
-        errorcode |= SW_FILEREADERROR;
-        std::cerr << "Error reading msg file: " << msgpathname << std::endl;
         return success;
     }
 
@@ -177,7 +169,63 @@ bool Processor::process_file(const std::string& msgpathname, const std::string& 
         return success;
     }
 
-    success = process(output_str_map, errorcode, generate_tests, generate_relay);
+    return process_and_write(output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
+}
+
+bool Processor::process_file_langstr(const std::string& msgpathname, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
+{
+    errorcode = SW_SUCCESS;
+    bool success = false;
+
+    if (msgpathname.empty())
+    {
+        errorcode |= SW_BLANKINPUTFILENAME;
+        std::cerr << "Blank input file name" << std::endl;
+        return success;
+    }
+
+    if (input_lang_str.empty())
+    {
+        errorcode |= SW_BLANKINPUTSTRING;
+        std::cerr << "Blank input lang string" << std::endl;
+        return success;
+    }
+
+    if (false == read_msg_file(msgpathname, errorcode))
+    {
+        return success;
+    }
+
+    if (false == lang_spec_.read_string(input_lang_str))
+    {
+        errorcode |= SW_STRINGREADERROR;
+        std::cerr << "Error reading lang string: " << input_lang_str << std::endl;
+        return success;
+    }
+
+    return process_and_write(output_str_map, outputdir, errorcode, generate_tests, write_to_file, generate_relay);
+}
+
+bool Processor::read_msg_file(const std::string& msgpathname, int& errorcode)
+{
+    spec_dir_ = std::filesystem::path(msgpathname).parent_path().string();
+    if (spec_dir_.empty())
+    {
+        spec_dir_ = ".";
+    }
+
+    if (false == msg_spec_.read_file(msgpathname))
+    {
+        errorcode |= SW_FILEREADERROR;
+        std::cerr << "Error reading msg file: " << msgpathname << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool Processor::process_and_write(results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay)
+{
+    bool success = process(output_str_map, errorcode, generate_tests, generate_relay);
     if (false == success)
     {
         return success;

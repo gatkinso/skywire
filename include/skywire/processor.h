@@ -34,6 +34,8 @@ public:
 
     virtual bool process_string(const std::string& input_msg_str, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
     virtual bool process_file(const std::string& msgpathname, const std::string& langpathname, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
+    // As process_file, with the lang file's contents given as a string.
+    virtual bool process_file_langstr(const std::string& msgpathname, const std::string& input_lang_str, results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false);
     // The target language is the one the lang file names; when set, it must be this one.
     void set_language(const std::string& language) { expected_language_ = language; }
     // When set, replaces the specification's namespace.
@@ -60,6 +62,8 @@ private:
     std::string py3_str_ = "python3";
     std::string rust_str_ = "rust";
 
+    bool read_msg_file(const std::string& msgpathname, int& errorcode);
+    bool process_and_write(results_t& output_str_map, const std::string& outputdir, int& errorcode, bool generate_tests, bool write_to_file, bool generate_relay);
     virtual bool process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     bool generate(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay);
     virtual void resolve_output_filenames();

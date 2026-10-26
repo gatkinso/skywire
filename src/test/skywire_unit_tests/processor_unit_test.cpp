@@ -191,6 +191,26 @@ TEST_F(ProcessorUnitTest, ProcessFile_BlankLangFilenamne)
     ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
 }
 
+TEST_F(ProcessorUnitTest, ProcessFileLangstr_BlankMsgFilename)
+{
+    Processor p;
+
+    bool ret = p.process_file_langstr(msgpathname, lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+    ASSERT_FALSE(ret);
+    ASSERT_EQ(errorcode, SW_BLANKINPUTFILENAME);
+}
+
+TEST_F(ProcessorUnitTest, ProcessFileLangstr_BlankLang)
+{
+    Processor p;
+
+    msgpathname = "not blank";
+
+    bool ret = p.process_file_langstr(msgpathname, input_lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file);
+    ASSERT_FALSE(ret);
+    ASSERT_EQ(errorcode, SW_BLANKINPUTSTRING);
+}
+
 // A minimal c++ message spec; each validation test swaps in one bad piece.
 static std::string make_spec(const std::string& members,
                              const std::string& extra_values = "",
@@ -288,6 +308,14 @@ TEST_F(ProcessorValidationTest, RejectsLangFileForAnotherLanguage)
     ASSERT_FALSE(p.process_string(make_spec(good_members), lang_str, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
     ASSERT_EQ(errorcode, SW_UNKNOWNLANG);
     ASSERT_TRUE(output_str_map.empty());
+}
+
+// version() is "major.minor.patch", the same numbers as its parts.
+TEST(Version, PartsMatchString)
+{
+    const std::string parts = std::to_string(version_major()) + "." + std::to_string(version_minor()) + "." +
+                              std::to_string(version_patch());
+    ASSERT_EQ(std::string(version()), parts);
 }
 
 TEST(FindLanguage, NamesAndAliases)
@@ -826,4 +854,89 @@ TEST_F(ProcessorNestedRelayTest, MessageCannotContainItself)
     write_spec("Inner", R"({"1":{"type":"Outer","name":"out"}})");
     ASSERT_FALSE(run("Outer"));
     ASSERT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// Two members of the same nested type load its spec once; the relay checks
+// both and defines make_expected_Inner() once.
+TEST_F(ProcessorNestedRelayTest, NestedTypeUsedTwice)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"a"},"2":{"type":"Inner","name":"b"}})");
+    write_spec("Inner", R"({"1":{"type":"int32_t","name":"x"}})");
+
+    ASSERT_TRUE(run("Outer"));
+    const std::string& relay = output_str_map["relay"];
+    const std::string make = "testspace::Inner make_expected_Inner()";
+    ASSERT_NE(relay.find(make), std::string::npos);
+    EXPECT_EQ(relay.find(make, relay.find(make) + 1), std::string::npos);
+    EXPECT_NE(relay.find("check_member(\"a.x\""), std::string::npos);
+    EXPECT_NE(relay.find("check_member(\"b.x\""), std::string::npos);
+}
+
+TEST_F(ProcessorNestedRelayTest, UnreadableSpecFile)
+{
+    ASSERT_FALSE(run("Missing", false));
+    ASSERT_EQ(errorcode, SW_FILEREADERROR);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+TEST_F(ProcessorNestedRelayTest, UnreadableLangFile)
+{
+    write_spec("Outer", R"({"1":{"type":"uint8_t","name":"a"}})");
+
+    Processor p;
+    ASSERT_FALSE(p.process_file((dir / "Outer.json").string(), (dir / "no_such_lang.json").string(),
+        output_str_map, dir.string(), errorcode, false, false));
+    ASSERT_EQ(errorcode, SW_FILEREADERROR);
+    ASSERT_TRUE(output_str_map.empty());
+}
+
+// With the lang file given as a string, a spec file still finds its nested
+// specs beside it, and a bad lang string is a string read error.
+TEST_F(ProcessorNestedRelayTest, FileWithLangString)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"in"}})");
+    write_spec("Inner", R"({"1":{"type":"int32_t","name":"x"}})");
+
+    std::ifstream lang_file(std::string(SKYWIRE_LANG_DIR) + "/cpp/lang.cpp.json");
+    std::stringstream lang;
+    lang << lang_file.rdbuf();
+
+    Processor p;
+    ASSERT_TRUE(p.process_file_langstr((dir / "Outer.json").string(), lang.str(),
+        output_str_map, dir.string(), errorcode, false, false, true));
+    EXPECT_NE(output_str_map["relay"].find("check_member(\"in.x\""), std::string::npos);
+
+    output_str_map.clear();
+    Processor bad;
+    ASSERT_FALSE(bad.process_file_langstr((dir / "Outer.json").string(), "not json",
+        output_str_map, dir.string(), errorcode, false, false));
+    ASSERT_EQ(errorcode, SW_STRINGREADERROR);
+}
+
+// A spec named without a directory finds its nested specs in the current one.
+TEST_F(ProcessorNestedRelayTest, SpecInCurrentDirectory)
+{
+    write_spec("Outer", R"({"1":{"type":"Inner","name":"in"}})");
+    write_spec("Inner", R"({"1":{"type":"int32_t","name":"x"}})");
+
+    const std::filesystem::path cwd = std::filesystem::current_path();
+    std::filesystem::current_path(dir);
+    Processor p;
+    const bool ok = p.process_file("Outer.json", std::string(SKYWIRE_LANG_DIR) + "/cpp/lang.cpp.json",
+        output_str_map, dir.string(), errorcode, false, false, true);
+    std::filesystem::current_path(cwd);
+
+    ASSERT_TRUE(ok);
+    EXPECT_NE(output_str_map["relay"].find("check_member(\"in.x\""), std::string::npos);
+}
+
+// write_to_file into a directory that doesn't exist reports the write error.
+TEST_F(ProcessorNestedRelayTest, UnwritableOutputDirectory)
+{
+    write_spec("Outer", R"({"1":{"type":"uint8_t","name":"a"}})");
+
+    Processor p;
+    ASSERT_FALSE(p.process_file((dir / "Outer.json").string(), std::string(SKYWIRE_LANG_DIR) + "/cpp/lang.cpp.json",
+        output_str_map, (dir / "no_such_dir").string(), errorcode, false, true));
+    ASSERT_NE(errorcode & SW_FILEWRITEERROR, 0u);
 }

@@ -110,6 +110,9 @@ endif()
 if(SKYWIRE_FUZZ)
     list(APPEND BUILD_OPTIONS "fuzzing")
 endif()
+if(SKYWIRE_COVERAGE)
+    list(APPEND BUILD_OPTIONS "coverage")
+endif()
 list(JOIN BUILD_OPTIONS ", " BUILD_OPTIONS)
 add_custom_target(skywire_version
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${PROJECT_SOURCE_DIR}

@@ -186,3 +186,40 @@ add_test(NAME wiregen_cli:FlagValue
     COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
 set_tests_properties(wiregen_cli:FlagValue PROPERTIES
     PASS_REGULAR_EXPRESSION "--silent takes no value")
+
+# String mode: the spec (--input_str) and optionally the lang file
+# (--langspec) come on the command line instead of from files.
+# --langspec also works with --input_file.
+foreach(MODE language langspec file_langspec)
+    add_test(NAME wiregen_cli:InputStr_${MODE}
+        COMMAND ${CMAKE_COMMAND} -DWIREGEN=$<TARGET_FILE:wiregen> -DSPEC=${CLI_SPEC}
+                -DLANGFILE=${PROJECT_SOURCE_DIR}/lang/c/lang.c.json -DMODE=${MODE}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/cli_string_mode.cmake)
+endforeach()
+add_test(NAME wiregen_cli:InputStrThenFile
+    COMMAND wiregen --language c++ --input_str x --input_file ${CLI_SPEC})
+add_test(NAME wiregen_cli:InputFileThenStr
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --input_str x)
+set_tests_properties(wiregen_cli:InputStrThenFile wiregen_cli:InputFileThenStr PROPERTIES
+    PASS_REGULAR_EXPRESSION "Cannot mix file and string input modes")
+add_test(NAME wiregen_cli:NoInput
+    COMMAND wiregen --language c++)
+set_tests_properties(wiregen_cli:NoInput PROPERTIES
+    PASS_REGULAR_EXPRESSION "Give a specification with --input_file or --input_str")
+add_test(NAME wiregen_cli:InputStrUnreadableLangFile
+    COMMAND wiregen --lang_file ${CMAKE_CURRENT_BINARY_DIR}/no_such_lang.json --input_str x)
+set_tests_properties(wiregen_cli:InputStrUnreadableLangFile PROPERTIES
+    PASS_REGULAR_EXPRESSION "Cannot read lang file: [^\n]*no_such_lang.json")
+
+# --silent drops the summary line, not the generated code.
+add_test(NAME wiregen_cli:Silent
+    COMMAND wiregen --language c++ --silent --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:Silent PROPERTIES
+    PASS_REGULAR_EXPRESSION "class ClassyMcClassface"
+    FAIL_REGULAR_EXPRESSION "Successful process")
+
+# Output into a directory that doesn't exist fails with SW_FILEWRITEERROR.
+add_test(NAME wiregen_cli:UnwritableOutdir
+    COMMAND wiregen --language c++ --write_to_file --outdir ${CMAKE_CURRENT_BINARY_DIR}/no_such_dir --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:UnwritableOutdir PROPERTIES
+    PASS_REGULAR_EXPRESSION "Cannot open [^\n]*no_such_dir")

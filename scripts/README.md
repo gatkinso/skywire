@@ -8,6 +8,7 @@
 | `release_notes.py` | Release: checks a tag against the source and prints its CHANGELOG section. |
 | `release_smoke_test.py` | Release: checks an unpacked release archive works on a machine that didn't build it. |
 | `run_fuzzers.py` | Runs the libFuzzer targets in a `-DSKYWIRE_FUZZ=ON` build for a while each. |
+| `coverage.py` | Reports line and branch coverage of a `-DSKYWIRE_COVERAGE=ON` build after ctest. |
 
 ## make_ring_bin.py
 
@@ -134,3 +135,26 @@ in `build-fuzz/fuzz/work/<target>`. Targets run in parallel, one per CPU
 that crashes, times out, runs out of memory or fails a check, the error, the
 failing input (in `build-fuzz/fuzz/artifacts/<target>/`) and how to reproduce
 it; then it exits 1. The `Fuzz` workflow runs it in CI.
+
+## coverage.py
+
+```
+cmake -S . -B build-cov -DCMAKE_BUILD_TYPE=Debug -DSKYWIRE_COVERAGE=ON
+cmake --build build-cov && ctest --test-dir build-cov -j8
+python3 scripts/coverage.py build-cov                              # summary table
+python3 scripts/coverage.py build-cov --html cov/index.html --xml cov/coverage.xml
+python3 scripts/coverage.py build-cov --reset                      # zero the counters
+```
+
+Runs [gcovr](https://gcovr.com) over the build's counters (`.gcda` files) and
+prints each file's line coverage with the lines never run, then the line,
+function and branch totals. It counts `src/lib`, `src/bin`, `include`,
+`lang/c` and `lang/cpp`, the code wiregen and the C/C++ runtimes are built
+from, and leaves out tests, examples, benchmarks, `3rd_party` and generated
+code. `--html` writes a page per file, `--xml` Cobertura XML for a coverage
+service. It picks `gcov` for a GCC build and `llvm-cov gcov` for Clang
+(through `xcrun` for Apple Clang). Branch totals differ between the two; CI
+reports with GCC.
+
+Counters add up over runs, including the wiregen runs during the build. To
+measure one run on its own, `--reset`, then rebuild from clean and run ctest.
