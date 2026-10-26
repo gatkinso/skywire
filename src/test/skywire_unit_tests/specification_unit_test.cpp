@@ -18,6 +18,7 @@
 #include "google/protobuf/reflection.h"
 #include <google/protobuf/util/json_util.h>
 #include "google/protobuf/util/message_differencer.h"
+#include <filesystem>
 #include <string>
 #pragma warning(disable:4800)
     #include "specification.pb.h"
@@ -328,6 +329,64 @@ TEST_F(SpecificationUnitTest, clear_key_member)
     rc = spec.get_value_member(100, type, name, endian);
 
     ASSERT_FALSE(rc);
+}
+
+TEST_F(SpecificationUnitTest, write_file_RoundTrip)
+{
+    skyloupe::Specification in, out;
+    ASSERT_TRUE(in.read_file("specification_unit_test.json"));
+
+    const std::string pathname =
+        (std::filesystem::temp_directory_path() / "skywire_specification_write_file.json").string();
+    ASSERT_TRUE(in.write_file(pathname));
+    ASSERT_TRUE(out.read_file(pathname));
+    std::filesystem::remove(pathname);
+
+    ASSERT_TRUE(google::protobuf::util::MessageDifferencer::Equivalent(in.get_proto(), out.get_proto()));
+}
+
+TEST_F(SpecificationUnitTest, write_file_NoSuchDirectory)
+{
+    skyloupe::Specification spec;
+    ASSERT_TRUE(spec.read_file("specification_unit_test.json"));
+
+    ASSERT_FALSE(spec.write_file((std::filesystem::temp_directory_path() / "skywire_no_such_dir" / "spec.json").string()));
+}
+
+TEST_F(SpecificationUnitTest, read_string_Empty)
+{
+    skyloupe::Specification spec;
+
+    ASSERT_FALSE(spec.read_string(""));
+}
+
+TEST_F(SpecificationUnitTest, set_value_string_NewKey)
+{
+    skyloupe::Specification spec;
+    ASSERT_TRUE(spec.read_file("specification_unit_test.json"));
+    ASSERT_EQ(spec.get_value_string("newkey", "NOT FOUND"), "NOT FOUND");
+
+    ASSERT_TRUE(spec.set_value_string("newkey", "newvalue"));
+
+    ASSERT_EQ(spec.get_value_string("newkey", "NOT FOUND"), "newvalue");
+}
+
+TEST_F(SpecificationUnitTest, set_value_member_Replaces)
+{
+    skyloupe::Specification spec;
+    ASSERT_TRUE(spec.read_file("specification_unit_test.json"));
+    ASSERT_TRUE(spec.set_value_member(100, "float", "m_myfloat", SW_BIG_ENDIAN_FLAG));
+
+    ASSERT_TRUE(spec.set_value_member(100, "int16_t", "m_myint", SW_LITTLE_ENDIAN_FLAG));
+
+    std::string type;
+    std::string name;
+    uint32_t endian;
+    ASSERT_TRUE(spec.get_value_member(100, type, name, endian));
+    ASSERT_EQ(type, "int16_t");
+    ASSERT_EQ(name, "m_myint");
+    ASSERT_EQ(endian, SW_LITTLE_ENDIAN_FLAG);
+    ASSERT_FALSE(spec.clear_key_member(999));
 }
 
 //TEST_F(SpecificationUnitTest, GetString)

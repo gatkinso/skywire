@@ -472,6 +472,12 @@ int main(int argc, const char* argv[])
         }
     }
 
+    if (input_filename.empty() && input_str.empty())
+    {
+        std::cout << "Give a specification with --input_file or --input_str" << std::endl;
+        return 1;
+    }
+
     // --language picks the installed lang file; --lang_file or --langspec replaces it.
     std::string lang_name;
     if (false == language.empty())
@@ -489,13 +495,17 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (lang_file.empty() && (file_mode || langspec.empty()))
+    if (lang_file.empty() && langspec.empty())
     {
-        std::cout << "Choose a language with --language (" << language_names() << ") or give a --lang_file" << std::endl;
+        std::cout << "Choose a language with --language (" << language_names() << ") or give a --lang_file or --langspec" << std::endl;
         return 1;
     }
 
-    if (true == file_mode)
+    if (true == file_mode && false == langspec.empty())
+    {
+        success = process_file_langstr(input_filename, output_str_map, output_directory, langspec, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space);
+    }
+    else if (true == file_mode)
     {
         success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space);
     } 
@@ -518,16 +528,18 @@ int main(int argc, const char* argv[])
         }
     }
 
+    // String mode has no file name; the spec's JSON could be long, so name the option.
+    const std::string input_name = file_mode ? input_filename : std::string("--input_str");
     if (success == true)
     {
         if(!silent) 
-            std::cout << "Successful process: " << input_filename << std::endl;
+            std::cout << "Successful process: " << input_name << std::endl;
     }
     else
     {
         if (!silent)
         {
-            std::cout << "Failure processing: " << input_filename << std::endl;
+            std::cout << "Failure processing: " << input_name << std::endl;
             std::cout << "Error number: " << errorcode << std::endl;
         }
     }

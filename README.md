@@ -226,6 +226,7 @@ Build options:
 | `SKYWIRE_BENCH` | OFF | Build the benchmarks in `bench/` (see 4.1). |
 | `SKYWIRE_SANITIZE` | OFF | Build all C and C++ with AddressSanitizer and UndefinedBehaviorSanitizer (MSVC: AddressSanitizer only). Use a separate build directory. |
 | `SKYWIRE_FUZZ` | OFF | Build the fuzz targets in `src/test/fuzz` with libFuzzer, and everything with ASan and UBSan (Clang only; see [`src/test/fuzz`](src/test/fuzz/README.md)). Use a separate build directory. |
+| `SKYWIRE_COVERAGE` | OFF | Build all C and C++ with gcov coverage counters, for `scripts/coverage.py` (GCC or Clang; see 4.0). Use a separate Debug build directory. |
 
 ## [3.1] Windows
 
@@ -386,6 +387,20 @@ was installed, and builds and runs the C and C++ examples from a separate
 project that uses the install (section 3.2), with the CMake package and with
 `skywire.pc`. It also checks that a project requiring the `cpp` component
 without protozero fails with a clear message.
+
+To see what the tests cover, build with `SKYWIRE_COVERAGE` in its own
+directory, run ctest, then report with `scripts/coverage.py` (needs
+[gcovr](https://gcovr.com)):
+
+    cmake -S skywire -B build-cov -DCMAKE_BUILD_TYPE=Debug -DSKYWIRE_COVERAGE=ON <your usual options>
+    cmake --build build-cov && ctest --test-dir build-cov -j8
+    python3 skywire/scripts/coverage.py build-cov --html build-cov/coverage/index.html
+
+It counts wiregen (`src/lib`, `src/bin`, `include`) and the C and C++
+runtimes (`lang/c`, `lang/cpp`); tests, examples and generated code are left
+out. Run it on a build with every language toolchain, since the round trips
+are what exercise each generator. CI's coverage job does this with GCC and
+uploads the report.
 
 To submit results to a CDash dashboard (`ctest -D Experimental`), put your
 own `CTestConfig.cmake` in the source directory. It is not part of the
