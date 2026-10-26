@@ -282,16 +282,6 @@ std::vector<std::string> Generator::with_user_headers(std::vector<std::string> i
     return includes;
 }
 
-void Generator::cr()
-{
-    ss_ << std::endl;
-}
-
-void Generator::insert_char(const char c)
-{
-    ss_ << c;
-}
-
 bool Generator::insert_indents(unsigned int indents)
 {
     std::string indent_str = lang_spec_.get_value_string("indent_str");
@@ -342,74 +332,6 @@ bool Generator::gen_one_line_subst(const std::string& template_key, const std::s
     template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
 
     ss_ << template_str;
-
-    return true;
-}
-
-bool Generator::inorder_members(int& errorcode, unsigned int indents)
-{
-    if (msg_spec_.get_proto().members_size() == 0)
-    {
-        errorcode |= SW_LANG_NOMEMBERS;
-        return false;
-    }
-
-    for (auto& member : ordered_members_)
-    {
-        insert_indents(indents);
-        ss_ << std::get<member_type>(member.second) << " " << std::get<member_name>(member.second) << ";" << std::endl;
-    }
-
-    return true;
-}
-
-bool Generator::inorder_member_names(int& errorcode, unsigned int indents)
-{
-    if (msg_spec_.get_proto().members_size() == 0)
-    {
-        errorcode |= SW_LANG_NOMEMBERS;
-        return false;
-    }
-
-    for (auto& member : ordered_members_)
-    {
-        insert_indents(indents);
-        ss_ << std::get<member_name>(member.second) << std::endl;
-    }
-
-    return true;
-}
-
-bool Generator::inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents, bool prepend_classname)
-{
-    std::string type_substr = lang_spec_.get_value_string("type_substr");
-    std::string member_substr = lang_spec_.get_value_string("member_substr");
-    std::string class_substr("");
-    if (prepend_classname == true)
-    {
-        class_substr = lang_spec_.get_value_string("classname_substr");
-    }
-
-    if (msg_spec_.get_proto().members_size() == 0)
-    {
-        errorcode |= SW_LANG_NOMEMBERS;
-        return false;
-    }
-
-    for (auto& member : ordered_members_)
-    {
-        std::string template_str = lang_spec_.get_value_string(funct_str);
-        insert_indents(indents);
-        if (prepend_classname == true)
-        {
-            template_str = 
-                std::regex_replace(template_str, std::regex(class_substr), msg_spec_.get_value_string("classname"));
-        }
-        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-
-        ss_ << template_str;
-    }
 
     return true;
 }

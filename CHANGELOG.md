@@ -21,6 +21,11 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   with the `SKYWIRE_FUZZ` option for libFuzzer builds. Every build replays
   their corpora in ctest, and the `Fuzz` workflow runs them by hand
   (`src/test/fuzz`, `scripts/run_fuzzers.py`).
+- Test coverage reports: the `SKYWIRE_COVERAGE` option builds with gcov
+  counters and `scripts/coverage.py` reports on wiregen and the C/C++
+  runtimes; CI's coverage job uploads the report. New tests for wiregen's
+  string input mode (`--input_str`, `--langspec`), `--silent`, unreadable
+  and unwritable files, and specification file writing.
 
 ### Changed
 - GitHub Actions run only when a release is cut: a `v*` tag runs CI alongside
@@ -33,6 +38,13 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   the generators could not use, such as a malformed pattern or a Java type
   mapped to something unexpected. It now reports an invalid lang file
   (`SW_LANG_INVALID`). Found by fuzzing.
+- wiregen ignored `--langspec` with `--input_file` and asked for a language.
+  `--langspec` now works with either input mode; the library adds
+  `process_file_langstr` (and `Processor::process_file_langstr`) for it.
+- In string mode wiregen's summary named no input ("Successful process: ");
+  it now says `--input_str`. With neither `--input_file` nor `--input_str`
+  wiregen says so instead of failing on a blank spec, and a blank message
+  string is no longer reported as a blank lang string.
 
 ## [0.9.0] - 2026-10-25
 

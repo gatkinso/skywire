@@ -63,16 +63,11 @@ protected:
     int errorcode_ = 0;
     std::map< uint32_t, member_desc_t> ordered_members_;
 
-    void cr();
-    void insert_char(const char c);
     bool insert_indents(unsigned int indents = 0);
     bool gen_one_line(const std::string& key, unsigned int indents = 0);
     bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
     // Writes each line of text, indented.
     void gen_lines(std::string text, unsigned int indents);
-    bool inorder_members(int& errorcode, unsigned int indents = 0);
-    bool inorder_functions(const std::string& funct_str, int& errorcode, unsigned int indents = 0, bool prepend_classname = false);
-    bool inorder_member_names(int& errorcode, unsigned int indents = 0);
     // The distinct nested message types this message uses, sorted.
     std::set<std::string> user_types();
     // C and C++ includes: the given ones, then each nested type's generated

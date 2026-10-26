@@ -3,6 +3,7 @@
 # linux-all-languages, macos and windows have every language toolchain and
 # fail if ctest skips anything, so a broken toolchain setup can't pass
 # quietly. linux-sanitize runs whatever the runner image has and allows skips.
+# coverage reports test coverage (scripts/coverage.py) and never fails on it.
 #
 # Third-party actions are pinned by commit; the comment gives the release.
 
@@ -105,6 +106,56 @@ jobs:
         run: cmake --build build
       - name: Test
         run: ctest --test-dir build -j4 --output-on-failure
+
+  # Line and branch coverage of wiregen and the C/C++ runtimes, from a GCC
+  # Debug build with every language toolchain (the round trips run each
+  # generator). Report only: the HTML and Cobertura XML are uploaded as the
+  # "coverage" artifact and the totals go in the job summary.
+  coverage:
+    name: Linux (GCC, coverage)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES gcovr
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check toolchains
+        run: rustup component add rustfmt clippy
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSKYWIRE_COVERAGE=ON
+          -DPROTOZERO_DIR=/usr
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build -j4 --output-on-failure
+      - name: Report
+        # A reporting problem must not hold back a release.
+        continue-on-error: true
+        run: |
+          mkdir -p coverage
+          python3 scripts/coverage.py build --html coverage/index.html --xml coverage/coverage.xml | tee coverage/summary.txt
+          { echo '```'; tail -n 3 coverage/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: success() || failure()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
 
   macos:
     name: macOS (Apple Clang)
