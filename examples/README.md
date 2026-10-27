@@ -15,6 +15,7 @@ language, plus one that talks to protobuf. All of them use the same message,
 | Java | [java/Main.java](java/Main.java) | Messages in a package, unsigned values in wider types |
 | Rust | [rust/main.rs](rust/main.rs) | Message modules, `from_bytes` returning `io::Result` |
 | C# | [csharp/Program.cs](csharp/Program.cs) | Properties, a nested message's properties, `Equals` |
+| JavaScript | [javascript/main.js](javascript/main.js) | Accessors, a `BigInt` member, `fromBytes`, `equals` |
 
 Each directory has a README with the exact wiregen and compiler commands (run
 from the repository root, writing into `out/`) and what the build needs:

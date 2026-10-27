@@ -19,7 +19,7 @@
 #    bench/run.sh --build <build-dir> [lang ...]
 #    bench/run.sh --wiregen <path> [--c <bench_c>] [--cpp <bench_cpp>] [--workdir <dir>] [lang ...]
 #
-#  Languages: c cpp swift go python java rust csharp (default: all). The C and C++
+#  Languages: c cpp swift go python java rust csharp javascript (default: all). The C and C++
 #  benchmarks are built by CMake with -DSKYWIRE_BENCH=ON; the others are
 #  generated and compiled here. A language whose toolchain is missing is
 #  reported as skipped.
@@ -31,7 +31,7 @@ root=$(dirname "$here")
 ring=$root/src/test/generated_tests/ring
 input=$ring/RingyMcRingface.bin
 
-all_langs="c cpp swift go python java rust csharp"
+all_langs="c cpp swift go python java rust csharp javascript"
 wiregen="" bench_c="" bench_cpp="" workdir="" langs=""
 
 exe=""
@@ -182,11 +182,22 @@ bench_csharp() {
     dotnet "$dir/bin/Bench.dll" "$input"
 }
 
+bench_javascript() {
+    have node && node -e 'process.exit(+process.versions.node.split(".")[0] < 18 ? 1 : 0)' >/dev/null 2>&1 ||
+        { skip_reason="no Node.js 18 or later on PATH"; return 3; }
+    local dir=$workdir/javascript
+    generate javascript || return 1
+    cp "$here/javascript/bench.js" "$dir/"
+    # Node 18 and 20 need this to treat the .js files as ES modules.
+    printf '{ "type": "module" }\n' > "$dir/package.json"
+    node "$dir/bench.js" "$input"
+}
+
 display() {
     case "$1" in
         c) echo "C" ;; cpp) echo "C++" ;; swift) echo "Swift" ;; go) echo "Go" ;;
         python) echo "Python" ;; java) echo "Java" ;; rust) echo "Rust" ;;
-        csharp) echo "C#" ;;
+        csharp) echo "C#" ;; javascript) echo "JavaScript" ;;
     esac
 }
 

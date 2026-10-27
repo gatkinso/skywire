@@ -23,7 +23,7 @@
 #
 #  Environment:
 #    SKYWIRE_RING_SEED=<n>          repeat the order (and flipped byte) of an earlier run
-#    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python rust)
+#    SKYWIRE_RING_ORDER=cpp,c,...   run exactly this order (languages: c cpp swift go java python rust javascript)
 #    SKYWIRE_RING_REQUIRE_ALL=1     fail, instead of skipping, a language whose toolchain is missing
 #
 #  Required -D variables: WIREGEN, INPUT, SPEC, INNER_SPEC, LANG_DIR, WORKDIR,
@@ -35,7 +35,7 @@
 # IN_LIST and the other newer features behave the same on every CMake version.
 cmake_minimum_required(VERSION 3.28)
 
-set(all_langs cpp c java swift go python rust)
+set(all_langs cpp c java swift go python rust javascript)
 
 set(display_cpp "C++")
 set(display_c "C")
@@ -44,6 +44,7 @@ set(display_swift "Swift")
 set(display_go "Go")
 set(display_python "Python")
 set(display_rust "Rust")
+set(display_javascript "JavaScript")
 
 set(available "")
 
@@ -213,6 +214,25 @@ elseif(RUSTC_EXECUTABLE)
     skip_lang(rust "${rustc_version} is older than rustc 1.58")
 else()
     skip_lang(rust "rustc not on PATH or in ~/.cargo/bin")
+endif()
+
+# JavaScript: Node 18 or later. The package.json makes Node 18 and 20 treat
+# the generated .js files as ES modules.
+find_program(NODE_EXECUTABLE node)
+if(NODE_EXECUTABLE)
+    execute_process(COMMAND ${NODE_EXECUTABLE} -p "process.versions.node"
+        RESULT_VARIABLE node_rc OUTPUT_VARIABLE node_version ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+if(NODE_EXECUTABLE AND node_rc EQUAL 0 AND node_version VERSION_GREATER_EQUAL 18)
+    generate(javascript)
+    file(WRITE ${WORKDIR}/javascript/package.json "{ \"type\": \"module\" }\n")
+    set(relay_javascript ${NODE_EXECUTABLE} ${WORKDIR}/javascript/RingyMcRingfaceRelay.js)
+    list(APPEND available javascript)
+elseif(NODE_EXECUTABLE)
+    skip_lang(javascript "node ${node_version} is older than 18")
+else()
+    skip_lang(javascript "node not on PATH")
 endif()
 
 # --- Choose the order --------------------------------------------------------

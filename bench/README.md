@@ -19,8 +19,8 @@ cmake --build build-bench --target bench
 ```
 
 The `bench` target builds wiregen and the C and C++ benchmarks, then runs
-`run.sh`, which generates, compiles and runs the Swift, Go, Python, Java, Rust
-and C# benchmarks and prints one table:
+`run.sh`, which generates, compiles and runs the Swift, Go, Python, Java, Rust,
+C# and JavaScript benchmarks and prints one table:
 
 ```
 | Language | Serialize | Deserialize | Notes |
@@ -39,13 +39,13 @@ bench/run.sh --build build-bench                 # every language
 bench/run.sh --build build-bench swift python    # only these
 ```
 
-The languages are `c cpp swift go python java rust csharp`. A language whose
+The languages are `c cpp swift go python java rust csharp javascript`. A language whose
 toolchain is missing is listed as skipped. A full run takes about a minute.
 
 ## What is timed
 
 Times are nanoseconds per message, the best of several rounds of many
-iterations each (Java and C# run extra rounds to warm up the JIT). Expect ±10%
+iterations each (Java, C# and JavaScript run extra rounds to warm up the JIT). Expect ±10%
 between runs; compare numbers from the same machine.
 
 | Language | Serialize | Deserialize |
@@ -58,6 +58,7 @@ between runs; compare numbers from the same machine.
 | Java | `serialize(ByteBuffer)` into a reused buffer | `deserialize(byte[])` |
 | Rust | `serialize_into` a reused `Vec` | `deserialize(&bin)` |
 | C# | `Serialize(buf, ref offset)` into a reused `byte[]` | `Deserialize(bin)` |
+| JavaScript | `serializeInto` a reused `DataView` | `deserializeFrom(bin)`, a `Uint8Array` |
 
 Notes give the other forms:
 
@@ -71,10 +72,12 @@ Notes give the other forms:
 - **Rust:** `serialize()` to a new `Vec`.
 - **C#:** `Serialize()` to a new `byte[]`, `GetHashCode()`, and the .NET
   version.
+- **JavaScript:** `serialize()` to a new `Uint8Array`, and the Node version.
 
 The C and C++ benchmarks use the build's compiler flags; the others are built
 with `swiftc -O -wmo` (whole-module, as SwiftPM and Xcode release builds do), `rustc -O`, `go build` and `javac` defaults, and C# with `dotnet build -c Release`
-for the framework the installed SDK ships with.
+for the framework the installed SDK ships with. JavaScript runs under `node`
+on `PATH` with its defaults.
 
 ## Windows
 
@@ -98,7 +101,7 @@ directory directly, with the path of `RingyMcRingface.bin` as their argument.
 | `CMakeLists.txt` | generates the C and C++ ring code and builds `bench_c` and `bench_cpp`; adds the `bench` target |
 | `run.sh` | generates and builds the other languages, runs everything, prints the table |
 | `bench_c.c`, `bench_cpp.cpp` | C and C++ benchmarks |
-| `swift/main.swift`, `go/bench.go`, `python/bench.py`, `java/Bench.java`, `rust/main.rs`, `csharp/Bench.cs` and `csharp/Bench.csproj` | the other languages, copied next to their generated code in the work directory (`<build>/bench/run`) |
+| `swift/main.swift`, `go/bench.go`, `python/bench.py`, `java/Bench.java`, `rust/main.rs`, `csharp/Bench.cs`, `csharp/Bench.csproj` and `javascript/bench.js` | the other languages, copied next to their generated code in the work directory (`<build>/bench/run`) |
 
 Each benchmark prints `RESULT serialize <ns>`, `RESULT deserialize <ns>` and
 any `NOTE <text>` lines; `run.sh` collects them into the table.

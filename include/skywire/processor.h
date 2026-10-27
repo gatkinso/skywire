@@ -58,6 +58,7 @@ private:
     std::string csharp_str_ = "csharp";
     std::string go_str_ = "go";
     std::string java_str_ = "java";
+    std::string javascript_str_ = "javascript";
     std::string proto3_str_ = "proto3";
     std::string py3_str_ = "python3";
     std::string rust_str_ = "rust";

@@ -65,20 +65,22 @@ struct LanguageName
 
 // clang-format off
 const LanguageName language_table[] = {
-    { "c",       "c",       "lang.c.json" },
-    { "c++",     "c++",     "lang.cpp.json" },
-    { "cpp",     "c++",     "lang.cpp.json" },
-    { "csharp",  "csharp",  "lang.csharp.json" },
-    { "cs",      "csharp",  "lang.csharp.json" },
-    { "c#",      "csharp",  "lang.csharp.json" },
-    { "go",      "go",      "lang.go.json" },
-    { "golang",  "go",      "lang.go.json" },
-    { "java",    "java",    "lang.java.json" },
-    { "proto3",  "proto3",  "lang.proto3.json" },
-    { "python3", "python3", "lang.python3.json" },
-    { "python",  "python3", "lang.python3.json" },
-    { "rust",    "rust",    "lang.rust.json" },
-    { "swift",   "swift",   "lang.swift.json" },
+    { "c",          "c",          "lang.c.json" },
+    { "c++",        "c++",        "lang.cpp.json" },
+    { "cpp",        "c++",        "lang.cpp.json" },
+    { "csharp",     "csharp",     "lang.csharp.json" },
+    { "cs",         "csharp",     "lang.csharp.json" },
+    { "c#",         "csharp",     "lang.csharp.json" },
+    { "go",         "go",         "lang.go.json" },
+    { "golang",     "go",         "lang.go.json" },
+    { "java",       "java",       "lang.java.json" },
+    { "javascript", "javascript", "lang.javascript.json" },
+    { "js",         "javascript", "lang.javascript.json" },
+    { "proto3",     "proto3",     "lang.proto3.json" },
+    { "python3",    "python3",    "lang.python3.json" },
+    { "python",     "python3",    "lang.python3.json" },
+    { "rust",       "rust",       "lang.rust.json" },
+    { "swift",      "swift",      "lang.swift.json" },
 };
 // clang-format on
 }

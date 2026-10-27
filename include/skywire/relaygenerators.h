@@ -20,6 +20,7 @@
 #include "cpptestgenerator.h"
 #include "gotestgenerator.h"
 #include "javatestgenerator.h"
+#include "javascripttestgenerator.h"
 #include "py3testgenerator.h"
 #include "rusttestgenerator.h"
 #include "swifttestgenerator.h"
@@ -68,6 +69,13 @@ class JavaRelayGenerator : public JavaTestGenerator
 {
 public:
     JavaRelayGenerator(Specification& mspec, Specification& lspec) : JavaTestGenerator(mspec, lspec) {}
+    bool generate(int& errorcode) override;
+};
+
+class JavaScriptRelayGenerator : public JavaScriptTestGenerator
+{
+public:
+    JavaScriptRelayGenerator(Specification& mspec, Specification& lspec) : JavaScriptTestGenerator(mspec, lspec) {}
     bool generate(int& errorcode) override;
 };
 

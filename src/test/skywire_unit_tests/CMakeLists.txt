@@ -29,6 +29,7 @@ set(UNIT_TESTS
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 csharpgenerator_unit_test.cpp
+                javascriptgenerator_unit_test.cpp
                 cstream_unit_test.cpp
                 endian_unit_test.cpp
                 filewriter_unit_test.cpp
@@ -95,6 +96,12 @@ add_test(NAME wiregen_cli:LanguageCSharp
 set_tests_properties(wiregen_cli:LanguageCSharp PROPERTIES
     PASS_REGULAR_EXPRESSION "public sealed class ClassyMcClassface")
 
+# JavaScript writes the module and its TypeScript declarations.
+add_test(NAME wiregen_cli:LanguageJavaScript
+    COMMAND wiregen --language js --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:LanguageJavaScript PROPERTIES
+    PASS_REGULAR_EXPRESSION "export class ClassyMcClassface")
+
 add_test(NAME wiregen_cli:LangFile
     COMMAND wiregen --lang_file ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json --input_file ${CLI_SPEC})
 add_test(NAME wiregen_cli:LangfileOldSpelling
@@ -128,7 +135,7 @@ set_tests_properties(wiregen_cli:Namespace PROPERTIES
 # Generated code carries no license obligation (README "License of generated
 # code"), so nothing wiregen writes, tests and relays included, may name a
 # copyright holder or a license.
-foreach(LANG c cpp csharp go java proto3 python3 rust swift)
+foreach(LANG c cpp csharp go java javascript proto3 python3 rust swift)
     add_test(NAME wiregen_cli:NoLicenseText_${LANG}
         COMMAND wiregen --language ${LANG} --generate_tests --generate_relay --input_file ${CLI_SPEC})
     set_tests_properties(wiregen_cli:NoLicenseText_${LANG} PROPERTIES

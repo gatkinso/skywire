@@ -215,6 +215,38 @@ add_test(NAME skywire_generated_tests:CSharpRoundTrip
 set_tests_properties(skywire_generated_tests:CSharpRoundTrip PROPERTIES
     SKIP_REGULAR_EXPRESSION "CSHARP_TOOLCHAIN_NOT_FOUND")
 
+# JavaScript generated round-trip and wire-format test. Node.js 18 or later is
+# detected when the test runs (see js_roundtrip.cmake); without it the test
+# reports Skipped.
+set(_JS_SPECS ${CMAKE_CURRENT_SOURCE_DIR}/JazzyMcJsface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json)
+
+add_test(NAME skywire_generated_tests:JavaScriptRoundTrip
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPECS=${_JS_SPECS}
+            -DEXTRA_TESTS=${CMAKE_CURRENT_SOURCE_DIR}/nan_payload.test.js
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/javascript/lang.javascript.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_javascript_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/js_roundtrip.cmake)
+
+set_tests_properties(skywire_generated_tests:JavaScriptRoundTrip PROPERTIES
+    SKIP_REGULAR_EXPRESSION "JAVASCRIPT_NOT_FOUND")
+
+# The generated TypeScript declarations type-check against code that uses
+# every member and method. TypeScript 5.1 or later (tsc on PATH) is detected
+# when the test runs (see js_types.cmake); without it the test reports
+# Skipped.
+add_test(NAME skywire_generated_tests:JavaScriptTypes
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSPECS=${_JS_SPECS}
+            -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/javascript/lang.javascript.json
+            -DOUTDIR=${PROJECT_BINARY_DIR}/generated_typescript_wiregen
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/js_types.cmake)
+
+set_tests_properties(skywire_generated_tests:JavaScriptTypes PROPERTIES
+    SKIP_REGULAR_EXPRESSION "TYPESCRIPT_NOT_FOUND")
+
 # proto3 wire-format test: protoc (always built with skywire) must accept the
 # generated .proto and encode the generated test message to the bytes wiregen
 # expects, the same bytes the C++ PZ stream writes (see proto3_roundtrip.cmake).
