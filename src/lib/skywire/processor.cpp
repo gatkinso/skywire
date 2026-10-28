@@ -383,6 +383,20 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
             relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaRelayGenerator(msg_spec_, lang_spec_));
         }
     }
+    else if (lang == javascript_str_)
+    {
+        genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaScriptGenerator(msg_spec_, lang_spec_));
+
+        if (true == generate_tests)
+        {
+            test_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaScriptTestGenerator(msg_spec_, lang_spec_));
+        }
+
+        if (true == generate_relay)
+        {
+            relay_genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::JavaScriptRelayGenerator(msg_spec_, lang_spec_));
+        }
+    }
     else if (lang == proto3_str_)
     {
         genny = std::unique_ptr<skyloupe::Generator>(new skyloupe::Proto3Generator(msg_spec_, lang_spec_));

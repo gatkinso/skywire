@@ -15,6 +15,16 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   benchmark (`bench/csharp`). On .NET Core 2.1+ and .NET Standard 2.1+ it
   uses `Span<T>` and `BinaryPrimitives` (`SKYWIRE_PORTABLE` turns that off).
   No relay yet.
+- A JavaScript generator: `--language javascript` (or `js`) writes an ES2020
+  module per message, with TypeScript declarations (`.d.ts`), for Node 18+,
+  browsers, Deno, Bun and bundlers: `Uint8Array`, `DataView` and `BigInt`
+  (for the 64-bit integers) only, with no Node APIs and no runtime package.
+  Generated `node:test` tests and the
+  `skywire_generated_tests:JavaScriptRoundTrip` ctest (Node 18+),
+  `skywire_generated_tests:JavaScriptTypes`, which type-checks the
+  declarations (tsc 5.1+), a relay in the ring test, an example
+  (`examples/javascript`, `skywire_example:JavaScript`) and a benchmark
+  (`bench/javascript`).
 - `--language golang`, an alias for `go`.
 - Fuzz targets for the generated C and C++ decoders (SW and protobuf), a C
   versus C++ differential target, and wiregen's spec and lang file handling,

@@ -20,7 +20,7 @@ Copyright 2014-2026 Geoffrey Atkinson. Licensed under the Apache License 2.0
 Welcome to Skywire!
 
 In this repository you will find a simple yet surprisingly versatile message 
-serialization generator for C, C++, C#, Go, Java, Python, Rust and Swift.
+serialization generator for C, C++, C#, Go, Java, JavaScript, Python, Rust and Swift.
 
 Based on Google Protocol Buffer technology, Skywire takes protocol buffers to 
 a place it fears to tread:  namely, the ability to define a wire protocol.
@@ -41,6 +41,7 @@ wiregen generates messages in
 * C#
 * Go
 * Java
+* JavaScript (ES modules, with TypeScript declarations)
 * Python 3
 * Rust
 * Swift
@@ -214,8 +215,8 @@ reconfiguring. Under the prefix:
 | `lib/pkgconfig/` | `skywire.pc`, for builds without CMake (see 3.2) |
 | `share/doc/skywire/` | `README.md` and `LICENSE` |
 
-Nothing from the tests is installed. The generated C#, Go, Java, Python and
-Rust code needs no runtime. The build also leaves a ready-to-run `wiregen`, with its
+Nothing from the tests is installed. The generated C#, Go, Java, JavaScript,
+Python and Rust code needs no runtime. The build also leaves a ready-to-run `wiregen`, with its
 lang files beside it, in `build_dir/bin`.
 
 Build options:
@@ -323,8 +324,8 @@ Code generated with `--generate_tests` needs Google Test, for C and C++ only;
 the tests for the other languages use their standard library. The C and C++
 test files include `<gtest/gtest.h>` and `<gmock/gmock.h>` and have no
 `main()`, so link them with `GTest::gtest_main` and `GTest::gmock` (from
-`find_package(GTest)`). Swift, Go, Python, Java, Rust and C# tests need only
-their own toolchain.
+`find_package(GTest)`). Swift, Go, Python, Java, Rust, C# and JavaScript tests
+need only their own toolchain (for JavaScript, Node's built-in `node:test`).
 
 `src/test/install/consumer` is a small project of this kind; ctest builds it
 against a scratch install (`skywire_install:Consumer`), once through the CMake
@@ -351,7 +352,8 @@ Every test name starts with its group:
 | `wiregen_cli:*` | wiregen's command line: options, languages, lang files, errors |
 | `qwikpirate_test:*` | The qwikpirate command-line parser (Google Test) |
 | `skywire_generated_tests:*` | Generated C and C++, compiled into the build with their generated Google Test tests, plus bitfield, nested-message and PZ (protobuf) decoding checks |
-| `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust and C# code, each with its generated unit tests |
+| `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust, C# and JavaScript code, each with its generated unit tests |
+| `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
 | `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
 | `skywire_ring:Serial` | One message through every language in turn |
 | `skywire_example:*` | The example programs (section 4.2); only with `SKYWIRE_EXAMPLES` |
@@ -360,8 +362,10 @@ Every test name starts with its group:
 The `skywire_generated_tests:*RoundTrip` tests generate each language's code
 with its unit tests, then compile and run them. They need that language's
 toolchain (swiftc; go 1.21 or newer; python3; a JDK; rustc 1.58 or newer; the
-.NET SDK) and
+.NET SDK; Node.js 18 or newer) and
 report Skipped without it, as do the matching `skywire_example` tests.
+`JavaScriptTypes` needs `tsc` 5.1 or newer on `PATH` (`npm install -g
+typescript`); it never downloads one.
 `RustRoundTrip` also finds a rustup install in
 `~/.cargo/bin` when it isn't on `PATH`, builds with plain `rustc` (no Cargo),
 and fails on any compiler warning, on output that isn't rustfmt-clean (when
@@ -369,9 +373,13 @@ rustfmt is installed), and on clippy warnings (when clippy is installed).
 `CSharpRoundTrip` builds every generated class and test into one program at C#
 7.3, with warnings as errors and overflow checking on, and runs it twice: with
 the `Span<T>` fast path, and with `SKYWIRE_PORTABLE` defined.
+`JavaScriptRoundTrip` checks every generated file with `node --check` and runs
+the tests with `node --test`; `JavaScriptTypes` type-checks, with `--strict`,
+code that reads and writes every member and calls every method through the
+generated `.d.ts` files, and expects an error from each wrongly typed use.
 
 `skywire_ring:Serial` passes one serialized message through the generated code
-of every language (C, C++, Swift, Go, Java, Python and Rust), in a random order each
+of every language (C, C++, Swift, Go, Java, Python, Rust and JavaScript), in a random order each
 run, ending back in the language it started in. Each step checks the message for
 corruption or loss. A language without its toolchain is left out of the ring
 (set `SKYWIRE_RING_REQUIRE_ALL=1` to fail instead), and the test reports
@@ -416,12 +424,12 @@ Build them in a Release directory without sanitizers:
 	cmake -S skywire -B build-bench -DCMAKE_BUILD_TYPE=Release -DSKYWIRE_BENCH=ON <your usual options>
 	cmake --build build-bench --target bench
 
-or, after a build, `bench/run.sh --build build-bench [c cpp swift go python java rust csharp]`.
+or, after a build, `bench/run.sh --build build-bench [c cpp swift go python java rust csharp javascript]`.
 `bench/README.md` says exactly what each number times and how to run them on
 Windows.
 
 Nanoseconds per message on an Apple M1 Pro (October 2026; Apple clang, Swift
-6.4 with `-wmo`, Go 1.21, Python 3.14, JDK 19, Rust 1.99, .NET 10), serializing into a
+6.4 with `-wmo`, Go 1.21, Python 3.14, JDK 19, Rust 1.99, .NET 10, Node 26), serializing into a
 reused buffer:
 
 | Language | Serialize | Deserialize | Notes |
@@ -433,6 +441,7 @@ reused buffer:
 | C# | 20 | 20 | `Serialize()` to a new `byte[]`: 28 |
 | Java | 30 | 31 | `serialize()` to a new `byte[]`: 35 |
 | Swift | 34 | 43 | |
+| JavaScript | 53 | 121 | `serialize()` to a new `Uint8Array`: 255 |
 | Python | 1096 | 852 | 368 / 446 for a message in one byte order |
 
 The deserialize times for C, C++ and Swift include copying the input into the
@@ -442,7 +451,7 @@ the default for SwiftPM and Xcode release builds).
 # [4.2] Examples
 
 `examples/` has a small program for each language: C, C++, Swift, Go, Python,
-Java, Rust and C#. Each one fills a message that holds a nested message, writes it
+Java, Rust, C# and JavaScript. Each one fills a message that holds a nested message, writes it
 to a file, reads it back and checks the copy is equal. A further C++ example,
 `examples/protobuf`, sends the message through a PZ-mode stream to protoc's C++
 code for the generated `.proto` and back. Both specs are in
@@ -457,7 +466,7 @@ leave them out. See `examples/README.md`.
 
 The message specification does not say which language to generate; the command
 line does. `--language` takes one of `c`, `c++` (or `cpp`), `csharp` (or `cs`,
-`c#`), `go` (or `golang`), `java`,
+`c#`), `go` (or `golang`), `java`, `javascript` (or `js`),
 `proto3`, `python3` (or `python`), `rust` and `swift`, and uses that language's lang
 file from wiregen's own directory or, in an install, from `share/skywire/lang`. `--lang_file <path>` uses a
 different lang file instead (for example a customized copy); on its own it also
@@ -478,7 +487,7 @@ Without `--write_to_file` the generated code is printed to standard output.
 |---|---|
 | `--input_file <file>` | The message specification to read. |
 | `--input_str <json>` | The message specification, given on the command line instead. |
-| `--language <name>` | The language to generate, using its installed lang file (see 5.0): `c`, `c++` (or `cpp`), `csharp` (or `cs`, `c#`), `go` (or `golang`), `java`, `proto3`, `python3` (or `python`), `rust`, `swift`. |
+| `--language <name>` | The language to generate, using its installed lang file (see 5.0): `c`, `c++` (or `cpp`), `csharp` (or `cs`, `c#`), `go` (or `golang`), `java`, `javascript` (or `js`), `proto3`, `python3` (or `python`), `rust`, `swift`. |
 | `--lang_file <file>` | A lang file to use instead of the installed one (`--langfile` is the old spelling). |
 | `--langspec <json>` | Lang file contents, given on the command line instead. |
 | `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
@@ -744,6 +753,7 @@ warns about it. Use the setters, or keep values in range:
 | C++ | No: the members are `private`. |
 | Java | No: the fields are `private`. |
 | C# | No: the fields are `private`, and the properties' setters mask. |
+| JavaScript | Yes, through the backing properties (`msg._version = 20`); the accessors (`msg.version = 20`) mask. |
 | Rust | No: the fields are private to the message's module. |
 
 In protobuf (PZ) mode a bitfield is an ordinary field under its own tag, of its
@@ -767,7 +777,8 @@ namespace (package, module).
 Generate `Inner` from its own specification, into the same place. The generated
 code imports it where the language needs that: `#include "Inner.h"` in C and
 C++, `from Inner import Inner` in Python, `import "Inner.proto";` in proto3,
-`use super::inner::Inner;` in Rust; C#, Go, Java and Swift need nothing. The
+`use super::inner::Inner;` in Rust, `import { Inner } from "./Inner.js";` in
+JavaScript; C#, Go, Java and Swift need nothing. The
 specification does not need to list it in `includes`.
 
 On the wire a nested message is its own serialization, inline, in tag order
@@ -781,8 +792,8 @@ In C, C++, Swift, Go and Rust the generated code handles a whole message at
 once: it claims `size()` bytes from the stream (or slice), then stores each
 member at its offset in the requested byte order, with no per-member calls into
 the runtime; reading is the same in reverse. Python packs and unpacks one
-`struct` per byte order, Java uses `ByteBuffer`, and C# writes each member
-into a `byte[]` at an offset. The functions that work in
+`struct` per byte order, Java uses `ByteBuffer`, C# writes each member
+into a `byte[]` at an offset, and JavaScript through a `DataView` at an offset. The functions that work in
 place are public, so a message can also be written into, or read from, memory
 you manage:
 
@@ -796,12 +807,13 @@ you manage:
 | Python | `serialize()`, `deserialize(buffer)` | | `X.SIZE` |
 | Java | `serialize()`, `serialize(ByteBuffer)`, `deserialize(...)` | | |
 | C# | `Serialize()`, `Deserialize(byte[])` | `Serialize(byte[], ref int offset)`, `Deserialize(byte[], ref int offset)` | `Size()` |
+| JavaScript | `serialize()`, `deserialize(bytes)`, `fromBytes(bytes)` | `serializeInto(buf, offset)`, `deserializeFrom(buf, offset)` | `X.SIZE` |
 
 The C, C++ and Swift in-place functions don't check bounds: give them at least
 `size()` bytes. They return (C, C++) or advance `p` to (Swift) the end of what
 they wrote or read. Go's `Put` and Rust's `write_to` panic on a slice shorter
-than the message, and C#'s throw `ArgumentException` if fewer than `Size()`
-bytes remain. A nested message is written and read in place by the same
+than the message, C#'s throw `ArgumentException` if fewer than `Size()`
+bytes remain, and JavaScript's throw `RangeError`. A nested message is written and read in place by the same
 functions.
 
 Notes:
@@ -922,6 +934,67 @@ specification's `includes` become `using` lines.
 languages. C# has no relay yet, so it is not in the ring test.
 PZ mode is not available in C#.
 
+#### JavaScript
+
+`--language javascript` (or `js`) writes each message as an ES module, `X.js`,
+exporting `class X`, and its TypeScript declarations, `X.d.ts`. The module is
+ES2020 and uses only `Uint8Array`, `DataView`, `BigInt` and `TextEncoder`, with
+no Node APIs and no runtime package, so it runs unchanged in Node 18 and
+later, current browsers, Deno and Bun, and through any bundler. TypeScript
+5.1 or later picks up the declarations; nothing needs compiling.
+
+```js
+import { NestyMcNestface } from "./NestyMcNestface.js";
+
+const msg = new NestyMcNestface();
+msg.a_myuint8_1 = 7;
+msg.b_first2.a_myint16_1 = -3; // a nested message's accessors
+msg.c_myint64_3 = -9000000000n; // 64-bit integers are BigInts
+
+const wire = msg.serialize(); // a Uint8Array of NestyMcNestface.SIZE bytes
+const back = NestyMcNestface.fromBytes(wire);
+console.log(back.equals(msg)); // true
+```
+
+| Member | Notes |
+|---|---|
+| `X.SIZE`, `size()` | The wire size; `SIZE` is read-only. |
+| `serialize()` | A new `Uint8Array` of `SIZE` bytes. |
+| `serializeInto(buf, offset = 0)` | Writes into a `DataView`, any typed array (a Node `Buffer` too) or an `ArrayBuffer`, at `offset`, and returns the offset after the message, as nested messages do. |
+| `deserialize(bytes)`, `deserializeFrom(buf, offset = 0)`, `X.fromBytes(bytes)` | Read from the start of `bytes`, or at `offset` (returning the offset after the message); extra bytes are ignored. With fewer than `SIZE` bytes left, these and `serializeInto` throw `RangeError` and change nothing. |
+| `x` | A getter and setter per member. Setters wrap to the member's type as typed arrays and C do (`int16_t` 40000 becomes -25536); a bitfield's keeps only the field's bits; a nested message's takes only that class. |
+| `x`, `xText` | A string. The getter returns a copy of the `N` bytes as a `Uint8Array`; the setter takes a string (encoded as UTF-8) or bytes, truncated or zero-padded to `N`. `xText` decodes the bytes up to the first NUL as UTF-8. |
+| `equals(other)`, `toString()`, `toJSON()` | `float` and `double` members compare with `Object.is`, so NaN equals itself and -0 differs from 0. `toJSON()` gives 64-bit integers as decimal strings and strings as arrays of bytes, so `JSON.stringify` works. |
+
+`uint64_t` and `int64_t` are `bigint`; their setters also take an integral
+`number`. Every other integer type and both floating-point types are
+`number`; a `float` member holds its value rounded to single precision
+(`Math.fround`), so it reads back exactly as it was sent. Member names may be
+JavaScript reserved words (`msg.class`). wiregen rejects a member whose name
+would collide with something the class defines (`size`, `serialize`,
+`serializeInto`, `deserialize`, `deserializeFrom`, `fromBytes`, `equals`,
+`toJSON`, `toString`, `constructor`, `SIZE`, `then`, `valueOf`, `__proto__`,
+...) or with another member's backing property or text getter (`a`'s is
+`_a`, string `s`'s is `sText`), and a class or nested type named after a
+reserved word or a global the module uses (`Object`, `DataView`, ...). The
+specification's `namespace` is not used; its `includes` become side-effect
+imports (`import "./polyfill.js";`).
+
+The `.js` names suit browsers, bundlers, Deno, TypeScript and Node 22 and
+later, which detect ES module syntax. Node 18 and 20 need `"type": "module"`
+in the nearest `package.json`. Inside a `"type": "commonjs"` package, set the
+lang file's `outputimplfilename` to `{classname}.mjs` and
+`outputheaderfilename` to `{classname}.d.mts`; nested messages are imported
+by the same pattern.
+
+NaN payloads: the ECMAScript specification leaves the bits of a NaN read or
+written through a `DataView` up to the engine. V8 (Node, Chrome) keeps a quiet
+NaN's payload, which `src/test/generated_tests/nan_payload.test.js` checks,
+but a signaling `float` NaN comes back quiet, so a JavaScript relay can change
+those bytes. `examples/javascript` is a complete program, `bench/` times
+JavaScript like the other languages, and its relay is in the ring test. PZ
+mode is not available in JavaScript.
+
 #### Protobuf (PZ) mode
 
 A generated C++ message can also travel as protobuf, so it can talk directly to
@@ -982,6 +1055,7 @@ message's `classname` and `{classname_snake}` for it in snake_case
 | proto3   |                 | `{classname}.proto` | `{classname}Test.txtpb` |                        |
 | python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
 | csharp   |                 | `{classname}.cs`    | `{classname}Test.cs`    |                        |
+| javascript | `{classname}.d.ts` | `{classname}.js` | `{classname}.test.js` | `{classname}Relay.js` |
 | rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
@@ -1016,8 +1090,8 @@ message's header or module is imported without it (see Nested messages).
 | c++      | `"streamable.h"`, `<stdint.h>` |
 | swift    | `Foundation` |
 
-The C#, Go, Java and Python generators add the imports (C# `using` lines) their
-code uses themselves.
+The C#, Go, Java, JavaScript and Python generators add the imports (C# `using`
+lines) their code uses themselves.
 The Rust generator needs no imports beyond `use super::<module>::<Type>;` for
 each nested message, which it adds itself, and ignores a specification's
 `includes`.

@@ -38,6 +38,8 @@ set(_GENERATORS
              file_writer.cpp
              javagenerator.cpp
              javatestgenerator.cpp
+             javascriptgenerator.cpp
+             javascripttestgenerator.cpp
              proto3generator.cpp
              proto3testgenerator.cpp
              py3generator.cpp
@@ -49,6 +51,7 @@ set(_GENERATORS
              cpprelaygenerator.cpp
              gorelaygenerator.cpp
              javarelaygenerator.cpp
+             javascriptrelaygenerator.cpp
              py3relaygenerator.cpp
              rustrelaygenerator.cpp
              swiftrelaygenerator.cpp
@@ -66,6 +69,8 @@ set(_GENERATORS
              ${TARGET_INC_DIR}/gotestgenerator.h
              ${TARGET_INC_DIR}/javagenerator.h
              ${TARGET_INC_DIR}/javatestgenerator.h
+             ${TARGET_INC_DIR}/javascriptgenerator.h
+             ${TARGET_INC_DIR}/javascripttestgenerator.h
              ${TARGET_INC_DIR}/naming.h
              ${TARGET_INC_DIR}/proto3generator.h
              ${TARGET_INC_DIR}/proto3testgenerator.h
