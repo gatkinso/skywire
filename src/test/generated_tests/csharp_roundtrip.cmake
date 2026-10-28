@@ -27,7 +27,7 @@ if(DOTNET_EXECUTABLE)
         OUTPUT_VARIABLE dotnet_version ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     if(NOT dotnet_rc EQUAL 0 OR NOT dotnet_version MATCHES "^[0-9]+\\.")
-        unset(DOTNET_EXECUTABLE)
+        set(DOTNET_EXECUTABLE "")
     endif()
 endif()
 

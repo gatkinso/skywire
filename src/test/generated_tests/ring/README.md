@@ -5,7 +5,7 @@ generated code in turn, in a random order each run, and back to the language
 it started in:
 
 ```
-RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Rust -> hop7.bin -> C++ -> hop8.bin
+RingyMcRingface.bin -> C++ -> hop1.bin -> Go -> hop2.bin -> ... -> Rust -> hop8.bin -> C++ -> hop9.bin
 ```
 
 ```
@@ -44,11 +44,12 @@ byte extra. This proves the checks can fail.
 | Environment | Effect |
 |---|---|
 | `SKYWIRE_RING_SEED=<n>` | Repeat an earlier run's order and inverted byte. Each run prints its seed. |
-| `SKYWIRE_RING_ORDER=cpp,c,java,swift,go,python,rust` | Run exactly this order. |
+| `SKYWIRE_RING_ORDER=cpp,c,java,swift,go,python,rust,javascript` | Run exactly this order. |
 | `SKYWIRE_RING_REQUIRE_ALL=1` | Fail, instead of skipping, a language whose toolchain is missing. |
 
 The C and C++ relays build with the project. The Swift, Go, Java and Rust
-relays are compiled when the test runs. A missing toolchain prints
+relays are compiled when the test runs, and the Python and JavaScript ones run
+under `python3` and `node` (18 or newer). A missing toolchain prints
 `RING_LANG_SKIPPED`, and fewer than two languages reports the test as Skipped.
 The Rust relay is a crate root that declares the two message modules; it is
 built with plain `rustc` (1.58 or newer, also found in `~/.cargo/bin`), and

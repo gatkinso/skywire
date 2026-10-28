@@ -15,7 +15,7 @@
 #  Telemetry.pb too.
 #
 #  Required -D variables: LANG (c, cpp, protobuf, swift, go, python, java, rust,
-#                         csharp),
+#                         csharp, javascript),
 #                         EXAMPLES_DIR, EXPECTED, OUTDIR
 #  For c, cpp, protobuf:  EXE
 #  For protobuf:          PROTOC, PROTO_DIR (where the .proto files are)
@@ -206,6 +206,24 @@ elseif(LANG STREQUAL "csharp")
     run_checked("dotnet build" COMMAND ${DOTNET_EXECUTABLE} build -c Release -o ${OUTDIR}/bin
         WORKING_DIRECTORY ${OUTDIR})
     set(run ${DOTNET_EXECUTABLE} ${OUTDIR}/bin/Example.dll)
+
+elseif(LANG STREQUAL "javascript")
+    find_program(NODE_EXECUTABLE node)
+    if(NODE_EXECUTABLE)
+        execute_process(COMMAND ${NODE_EXECUTABLE} -p "process.versions.node"
+            RESULT_VARIABLE node_rc OUTPUT_VARIABLE node_version ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
+    if(NOT NODE_EXECUTABLE OR NOT node_rc EQUAL 0 OR node_version VERSION_LESS 18)
+        message("JAVASCRIPT_NOT_FOUND: no Node.js 18 or later on PATH; skipping the JavaScript example")
+        return()
+    endif()
+    generate(javascript)
+    # Next to the generated modules, so it imports them; package.json makes
+    # Node 18 and 20 treat the .js files as ES modules.
+    file(COPY ${src}/main.js DESTINATION ${OUTDIR})
+    file(WRITE ${OUTDIR}/package.json "{ \"type\": \"module\" }\n")
+    set(run ${NODE_EXECUTABLE} ${OUTDIR}/main.js)
 
 else()
     message(FATAL_ERROR "unknown LANG '${LANG}'")

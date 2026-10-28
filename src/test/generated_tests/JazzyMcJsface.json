@@ -1,0 +1,31 @@
+{
+   "stringValues": {
+      "classname": "JazzyMcJsface",
+      "namespace": "testspace"
+   },
+   "members": {
+      "1":  { "type": "float",         "name": "a_float_le",   "endian": 1 },
+      "2":  { "type": "double",        "name": "b_double_be",  "endian": 0 },
+      "3":  { "type": "char",          "name": "c_char" },
+      "4":  { "type": "unsigned char", "name": "d_uchar" },
+      "5":  { "type": "uint8_t",       "name": "e_uint8" },
+      "6":  { "type": "int8_t",        "name": "f_int8" },
+      "7":  { "type": "uint16_t",      "name": "g_uint16_ne",  "endian": 2 },
+      "8":  { "type": "int16_t",       "name": "h_int16_be",   "endian": 0 },
+      "9":  { "type": "uint32_t",      "name": "i_uint32_le",  "endian": 1 },
+      "10": { "type": "int32_t",       "name": "j_int32_ne",   "endian": 2 },
+      "11": { "type": "uint64_t",      "name": "k_uint64_be",  "endian": 0 },
+      "12": { "type": "int64_t",       "name": "l_int64_ne",   "endian": 2 },
+      "13": { "type": "string",        "name": "m_string",     "length": 5 },
+      "14": { "type": "string",        "name": "n_byte",       "length": 1 },
+      "15": { "type": "int64_t",       "name": "o_i64_40",     "bits": 40, "endian": 0 },
+      "16": { "type": "int64_t",       "name": "p_i64_24",     "bits": 24, "endian": 0 },
+      "17": { "type": "uint32_t",      "name": "q_u32_32",     "bits": 32, "endian": 1 },
+      "18": { "type": "int32_t",       "name": "r_i32_31",     "bits": 31, "endian": 2 },
+      "19": { "type": "int32_t",       "name": "s_i32_1",      "bits": 1,  "endian": 2 },
+      "20": { "type": "uint64_t",      "name": "t_u64_64",     "bits": 64, "endian": 1 },
+      "21": { "type": "double",        "name": "class",        "endian": 2 },
+      "22": { "type": "uint8_t",       "name": "delete" },
+      "23": { "type": "string",        "name": "default",      "length": 3 }
+   }
+}

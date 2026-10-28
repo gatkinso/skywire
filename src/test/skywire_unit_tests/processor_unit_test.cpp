@@ -341,11 +341,15 @@ TEST(FindLanguage, NamesAndAliases)
     ASSERT_EQ(language, "go");
     ASSERT_EQ(lang_filename, "lang.go.json");
 
+    ASSERT_TRUE(find_language("js", language, lang_filename));
+    ASSERT_EQ(language, "javascript");
+    ASSERT_EQ(lang_filename, "lang.javascript.json");
+
     ASSERT_TRUE(find_language("python", language, lang_filename));
     ASSERT_EQ(language, "python3");
     ASSERT_EQ(lang_filename, "lang.python3.json");
 
-    for (const char* name : { "c", "csharp", "go", "java", "proto3", "python3", "rust", "swift" })
+    for (const char* name : { "c", "csharp", "go", "java", "javascript", "proto3", "python3", "rust", "swift" })
     {
         ASSERT_TRUE(find_language(name, language, lang_filename)) << name;
         ASSERT_EQ(language, name);

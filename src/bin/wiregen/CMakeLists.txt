@@ -25,6 +25,7 @@ set(DEPLOY_JSONS   c/lang.c.json
                    csharp/lang.csharp.json
                    go/lang.go.json
                    java/lang.java.json
+                   javascript/lang.javascript.json
                    proto/lang.proto3.json
                    python/lang.python3.json
                    rust/lang.rust.json

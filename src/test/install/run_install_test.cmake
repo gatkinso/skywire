@@ -52,6 +52,7 @@ foreach(file
         share/skywire/lang/lang.csharp.json
         share/skywire/lang/lang.go.json
         share/skywire/lang/lang.java.json
+        share/skywire/lang/lang.javascript.json
         share/skywire/lang/lang.proto3.json
         share/skywire/lang/lang.python3.json
         share/skywire/lang/lang.rust.json

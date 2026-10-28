@@ -30,6 +30,9 @@ env:
     libgtest-dev libgmock-dev
     libprotozero-dev
     ninja-build pkg-config
+  # The JavaScriptTypes test checks the generated .d.ts files with this tsc;
+  # keep it the same as on the dev hosts.
+  TYPESCRIPT_VERSION: '5.9.3'
 
 jobs:
   linux-all-languages:
@@ -55,16 +58,19 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # Swift, Rust, Python and .NET come with the runner image.
+      # Swift, Rust, Python, .NET and Node come with the runner image.
       - name: Check toolchains
         run: |
           rustup component add rustfmt clippy
+          npm install -g "typescript@$TYPESCRIPT_VERSION"
           swiftc --version
           go version
           javac -version
           python3 --version
           rustc --version
           dotnet --version
+          node --version
+          tsc --version
 
       - name: Configure
         run: >
@@ -132,7 +138,9 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Check toolchains
-        run: rustup component add rustfmt clippy
+        run: |
+          rustup component add rustfmt clippy
+          node --version
       - name: Configure
         run: >
           cmake -S . -B build -G Ninja
@@ -167,13 +175,17 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: brew install protobuf googletest protozero ninja
-      # The image has Java, Python, Rust, Swift and .NET but not Go.
+      # The image has Java, Python, Rust, Swift, .NET and Node but not Go.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
           cache: false
       - name: Check toolchains
-        run: dotnet --version
+        run: |
+          npm install -g "typescript@$TYPESCRIPT_VERSION"
+          dotnet --version
+          node --version
+          tsc --version
       - name: Configure
         run: >
           cmake -S . -B build -G Ninja
@@ -199,7 +211,7 @@ jobs:
         with:
           submodules: recursive
 
-      # The image has Go, Java, Python, Rust and .NET but not Swift.
+      # The image has Go, Java, Python, Rust, .NET and Node but not Swift.
       - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f # v0.5.1
         with:
           swift-version: swift-6.4.1-release
@@ -221,6 +233,12 @@ jobs:
           swiftc --version
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           dotnet --version
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm install -g "typescript@$env:TYPESCRIPT_VERSION"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node --version
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          tsc --version
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           cmake -S . -B build -G Ninja `
