@@ -15,7 +15,6 @@
 
 #include <cctype>
 #include <map>
-#include <regex>
 #include <set>
 #include <string>
 #include "javagenerator.h"
@@ -98,15 +97,15 @@ std::string JavaGenerator::subst(std::string template_str, const member_desc_t& 
         mask = masks.at(wire.bits);
     }
 
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("classname_substr")), classname_);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), jtype);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("endian_substr")), java_endian(std::get<member_endianness>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("accessor_substr")), wire.accessor);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("cast_substr")), cast);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("widen_substr")), widen);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("mask_substr")), mask);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("classname_substr"), classname_);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), jtype);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("endian_substr"), java_endian(std::get<member_endianness>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("accessor_substr"), wire.accessor);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("cast_substr"), cast);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("widen_substr"), widen);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("mask_substr"), mask);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
 
     return template_str;
 }
@@ -196,7 +195,7 @@ bool JavaGenerator::imp_imports(int& errorcode)
 
     for (auto& import : imports)
     {
-        ss_ << std::regex_replace(import_str, std::regex(include_substr), import);
+        ss_ << replace_all(import_str, include_substr, import);
     }
 
     ss_ << lang_spec_.get_value_string("block_separator_str");
@@ -392,7 +391,7 @@ std::string JavaGenerator::imp_hashcode()
         else
         {
             template_str = lang_spec_.get_value_string("hashcode_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("box_substr")), boxes.at(java_type(type)));
+            template_str = replace_all(template_str, lang_spec_.get_value_string("box_substr"), boxes.at(java_type(type)));
         }
 
         body += subst(template_str, member.second);
@@ -460,8 +459,8 @@ std::string JavaGenerator::block(const std::string block_id, const std::string& 
     std::string classname_substr = lang_spec_.get_value_string("classname_substr");
     std::string body_token_str = lang_spec_.get_value_string("body_token");
 
-    block_str = std::regex_replace(block_str, std::regex(classname_substr), classname_);
-    block_str = std::regex_replace(block_str, std::regex(body_token_str), body);
+    block_str = replace_all(block_str, classname_substr, classname_);
+    block_str = replace_all(block_str, body_token_str, body);
 
     return block_str;
 }

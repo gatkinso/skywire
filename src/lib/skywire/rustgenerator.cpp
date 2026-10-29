@@ -144,9 +144,10 @@ unsigned int RustGenerator::rust_bits(const std::string& type)
         return 0;
     }
 
+    static const std::regex trailing_digits("([0-9]+)$");
     std::smatch match;
     std::string mapped = rust_type(type);
-    if (std::regex_search(mapped, match, std::regex("([0-9]+)$")))
+    if (std::regex_search(mapped, match, trailing_digits))
     {
         return static_cast<unsigned int>(std::stoul(match[1]));
     }
@@ -175,19 +176,19 @@ std::string RustGenerator::subst(std::string template_str, const member_desc_t& 
     unsigned int bits = rust_bits(type);
     unsigned int wire_size = is_string_type(type) ? std::get<member_length>(member) : bits / 8;
 
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("structname_substr")), classname_);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("plain_member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), identifier(std::get<member_name>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), rust_type(type));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("endian_substr")), rust_endian(std::get<member_endianness>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("size_substr")), std::to_string(wire_size));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("structname_substr"), classname_);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("plain_member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), identifier(std::get<member_name>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), rust_type(type));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("endian_substr"), rust_endian(std::get<member_endianness>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("size_substr"), std::to_string(wire_size));
     // A bitfield setter shifts the field's bits to the top and back, which
     // masks unsigned values and sign-extends signed ones.
     if (is_bitfield(member))
     {
-        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("unused_bits_substr")),
-                                          std::to_string(bits - std::get<member_bits>(member)));
+        template_str = replace_all(template_str, lang_spec_.get_value_string("unused_bits_substr"),
+            std::to_string(bits - std::get<member_bits>(member)));
     }
 
     return template_str;
@@ -338,7 +339,7 @@ bool RustGenerator::imp_lints(int& errorcode)
         joined += (joined.empty() ? "" : ", ") + lint;
     }
 
-    ss_ << std::regex_replace(lang_spec_.get_value_string("allow_str"), std::regex(lang_spec_.get_value_string("lints_substr")), joined);
+    ss_ << replace_all(lang_spec_.get_value_string("allow_str"), lang_spec_.get_value_string("lints_substr"), joined);
     ss_ << lang_spec_.get_value_string("block_separator_str");
 
     return true;
@@ -352,8 +353,8 @@ bool RustGenerator::imp_uses(int& errorcode)
     for (auto& type : user_types())
     {
         std::string line = lang_spec_.get_value_string("use_str");
-        line = std::regex_replace(line, std::regex(lang_spec_.get_value_string("module_substr")), module_name(type));
-        line = std::regex_replace(line, std::regex(lang_spec_.get_value_string("type_substr")), type);
+        line = replace_all(line, lang_spec_.get_value_string("module_substr"), module_name(type));
+        line = replace_all(line, lang_spec_.get_value_string("type_substr"), type);
         uses.push_back(line);
     }
 
@@ -386,8 +387,8 @@ bool RustGenerator::imp_struct(int& errorcode)
     }
 
     std::string block = lang_spec_.get_value_string("struct_block");
-    block = std::regex_replace(block, std::regex(lang_spec_.get_value_string("derives_substr")),
-                               lang_spec_.get_value_string(derive_default ? "derives_str" : "derives_no_default_str"));
+    block = replace_all(block, lang_spec_.get_value_string("derives_substr"),
+        lang_spec_.get_value_string(derive_default ? "derives_str" : "derives_no_default_str"));
 
     std::string body;
     for (auto& member : ordered_members_)
@@ -398,8 +399,8 @@ bool RustGenerator::imp_struct(int& errorcode)
         body += subst(lang_spec_.get_value_string(key), member.second);
     }
 
-    block = std::regex_replace(block, std::regex(lang_spec_.get_value_string("structname_substr")), classname_);
-    block = std::regex_replace(block, std::regex(lang_spec_.get_value_string("body_token")), body);
+    block = replace_all(block, lang_spec_.get_value_string("structname_substr"), classname_);
+    block = replace_all(block, lang_spec_.get_value_string("body_token"), body);
     ss_ << block << lang_spec_.get_value_string("block_separator_str");
 
     return true;
@@ -451,12 +452,12 @@ bool RustGenerator::imp_impl(int& errorcode)
         const std::string body_token = lang_spec_.get_value_string("body_token");
 
         auto with_body = [&](const std::string& key, const std::string& body) {
-            return std::regex_replace(lang_spec_.get_value_string(key), std::regex(body_token), body);
+            return replace_all(lang_spec_.get_value_string(key), body_token, body);
         };
 
         std::vector<std::string> items;
-        items.push_back(std::regex_replace(lang_spec_.get_value_string("size_const_str"),
-                                           std::regex(lang_spec_.get_value_string("size_substr")), size_expression()));
+        items.push_back(replace_all(lang_spec_.get_value_string("size_const_str"),
+            lang_spec_.get_value_string("size_substr"), size_expression()));
         items.push_back(lang_spec_.get_value_string("size_fcn_str"));
         items.push_back(lang_spec_.get_value_string("serialize_fcn_str"));
         items.push_back(lang_spec_.get_value_string("serialize_into_fcn_str"));
@@ -648,8 +649,8 @@ bool RustGenerator::do_block(const std::string block_id, std::function<std::stri
 
     std::string new_body_str = builder();
 
-    block_str = std::regex_replace(block_str, std::regex(structname_substr), classname_);
-    block_str = std::regex_replace(block_str, std::regex(body_token_str), new_body_str);
+    block_str = replace_all(block_str, structname_substr, classname_);
+    block_str = replace_all(block_str, body_token_str, new_body_str);
 
     ss_ << block_str << lang_spec_.get_value_string("block_separator_str");
 

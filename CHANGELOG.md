@@ -26,6 +26,9 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   (`examples/javascript`, `skywire_example:JavaScript`) and a benchmark
   (`bench/javascript`).
 - `--language golang`, an alias for `go`.
+- `bench/wiregen_scale.py`, which times wiregen itself on large (100 to 4000
+  members) and deeply nested (up to 64 levels) synthetic messages in every
+  language.
 - Fuzz targets for the generated C and C++ decoders (SW and protobuf), a C
   versus C++ differential target, and wiregen's spec and lang file handling,
   with the `SKYWIRE_FUZZ` option for libFuzzer builds. Every build replays
@@ -42,6 +45,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   the release build and publishes only if both pass. Pull requests and pushes
   to master run nothing; CI and fuzzing can be started by hand on any branch.
   The pull-request clang-format check is gone (run `git clang-format` locally).
+- Lang file tokens (the `*_substr` and `*_token` values) are literal text,
+  no longer regular expressions. A custom lang file that relied on regex
+  syntax in a token must spell the token out. wiregen no longer compiles a
+  regex for every substitution: the fuzz targets run about 2.2 times faster
+  and wiregen itself uses about 30% less CPU, with the generated code
+  unchanged byte for byte.
 
 ### Fixed
 - wiregen aborted with an uncaught exception when a lang file had a value

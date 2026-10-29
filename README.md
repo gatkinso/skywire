@@ -448,6 +448,11 @@ The deserialize times for C, C++ and Swift include copying the input into the
 stream. Expect Swift to be slower without `-wmo` (whole-module optimization,
 the default for SwiftPM and Xcode release builds).
 
+wiregen's own time grows linearly with message size: on the M1 Pro a
+4000-member message, with its tests and relay, generates in 0.03 to 0.5 s
+depending on the language (a few times that on older or virtual machines).
+`bench/wiregen_scale.py` measures it on your machine (see `bench/README.md`).
+
 # [4.2] Examples
 
 `examples/` has a small program for each language: C, C++, Swift, Go, Python,
@@ -1037,6 +1042,11 @@ to protoc's generated C++ through a PZ stream.
 # [7.1] Lang(uage) Files
 
 Customization of generated code can be performed in the lang.xxx.json files.
+
+A lang file's templates mark where generated text goes with tokens such as
+`__MEMBERNAME__`; the `*_substr` and `*_token` values name them. wiregen
+replaces every occurrence of a token as literal text, not as a regular
+expression, so a token may contain any characters but must not be empty.
 
 Each lang file names the language it is for in its `"language"` value, which
 selects the generator. wiregen ignores (with a warning) a `"language"` value in a

@@ -14,7 +14,6 @@
 //
 
 #include <iostream>
-#include <regex>
 #include <string>
 #include "proto3generator.h"
 #include "sw_endian.h"
@@ -73,10 +72,10 @@ std::string Proto3Generator::skywire_comment(uint32_t tag, const member_desc_t& 
 
 std::string Proto3Generator::subst(std::string template_str, uint32_t tag, const member_desc_t& member)
 {
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), proto_type(std::get<member_type>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("tag_substr")), std::to_string(tag));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("comment_substr")), skywire_comment(tag, member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), proto_type(std::get<member_type>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("tag_substr"), std::to_string(tag));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("comment_substr"), skywire_comment(tag, member));
 
     return template_str;
 }
@@ -153,10 +152,10 @@ bool Proto3Generator::imp_package(int& errorcode)
         return true;
     }
 
-    name_space = std::regex_replace(name_space, std::regex("::"), ".");
+    name_space = replace_all(name_space, "::", ".");
 
     std::string package_str = lang_spec_.get_value_string("package_str");
-    ss_ << std::regex_replace(package_str, std::regex(lang_spec_.get_value_string("namespace_substr")), name_space);
+    ss_ << replace_all(package_str, lang_spec_.get_value_string("namespace_substr"), name_space);
     ss_ << lang_spec_.get_value_string("block_separator_str");
 
     return true;
@@ -174,7 +173,7 @@ bool Proto3Generator::imp_imports(int& errorcode)
     for (auto& type : types)
     {
         std::string import_str = lang_spec_.get_value_string("import_str");
-        ss_ << std::regex_replace(import_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
+        ss_ << replace_all(import_str, lang_spec_.get_value_string("type_substr"), type);
     }
     ss_ << lang_spec_.get_value_string("block_separator_str");
 
@@ -191,8 +190,8 @@ bool Proto3Generator::imp_message(int& errorcode)
     }
 
     std::string block_str = lang_spec_.get_value_string("message_block");
-    block_str = std::regex_replace(block_str, std::regex(lang_spec_.get_value_string("structname_substr")), classname_);
-    block_str = std::regex_replace(block_str, std::regex(lang_spec_.get_value_string("body_token")), body);
+    block_str = replace_all(block_str, lang_spec_.get_value_string("structname_substr"), classname_);
+    block_str = replace_all(block_str, lang_spec_.get_value_string("body_token"), body);
 
     ss_ << block_str;
 

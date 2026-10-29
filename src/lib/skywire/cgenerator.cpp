@@ -13,7 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#include <regex>
 #include "cgenerator.h"
 #include "sw_endian.h"
 
@@ -111,7 +110,7 @@ bool CGenerator::hdr_includes(int& errorcode) {
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
 
-        template_str = std::regex_replace(template_str, std::regex(target_str), item);
+        template_str = replace_all(template_str, target_str, item);
 
         ss_ << template_str;
     }
@@ -146,8 +145,8 @@ bool CGenerator::hdr_members(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             std::string template_str = lang_spec_.get_value_string("member_string_decl_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
             ss_ << template_str << std::endl;
         }
         else
@@ -230,9 +229,9 @@ bool CGenerator::hdr_get_functions(int& errorcode)
         insert_indents(1);
         std::string key = is_string_type(std::get<member_type>(member.second)) ? "get_string_str" : "get_str";
         std::string template_str = lang_spec_.get_value_string(key);
-        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
-        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, classname_substr, msg_spec_.get_value_string("classname"));
+        template_str = replace_all(template_str, type_substr, std::get<member_type>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -257,9 +256,9 @@ bool CGenerator::hdr_set_functions(int& errorcode)
         insert_indents(1);
         std::string key = is_string_type(std::get<member_type>(member.second)) ? "set_string_str" : "set_str";
         std::string template_str = lang_spec_.get_value_string(key);
-        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
-        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, classname_substr, msg_spec_.get_value_string("classname"));
+        template_str = replace_all(template_str, type_substr, std::get<member_type>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -350,7 +349,7 @@ bool CGenerator::imp_stream_function(const std::string& direction, int& errorcod
     {
         return false;
     }
-    gen_lines(std::regex_replace(lang_spec_.get_value_string(direction + "_body_str"), std::regex(classname_substr), classname), 1);
+    gen_lines(replace_all(lang_spec_.get_value_string(direction + "_body_str"), classname_substr, classname), 1);
     gen_one_line("endfunction_str");
 
     if (false == gen_one_line_subst(direction + "_sw_impl_str", "classname", "classname_substr", 0))
@@ -372,10 +371,10 @@ bool CGenerator::imp_stream_function(const std::string& direction, int& errorcod
         // A nested message is handled by its own function, with its own members' byte orders.
         const std::string key = std::string(writing ? "write" : "read") + (is_user_type(type) ? "_user_template_str" : "_native_template_str");
         std::string template_str = lang_spec_.get_value_string(key);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(type_substr), type);
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+        template_str = replace_all(template_str, type_substr, type);
         const unsigned int endian = is_string_type(type) ? SW_NATIVE_ENDIAN_FLAG : std::get<member_endianness>(member.second);
-        template_str = std::regex_replace(template_str, std::regex(endian_substr), endian_flag(endian));
+        template_str = replace_all(template_str, endian_substr, endian_flag(endian));
 
         insert_indents(1);
         ss_ << template_str << std::endl;
@@ -461,19 +460,19 @@ bool CGenerator::imp_equals_function(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("equal_check_string_template_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_user_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("equal_check_user_template_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member.second));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+            template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), std::get<member_type>(member.second));
         }
         else
         {
             template_str = lang_spec_.get_value_string("equal_check_template_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         }
 
         ss_ << template_str;
@@ -543,9 +542,9 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         bool isstr = is_string_type(std::get<member_type>(member.second));
 
         std::string template_str = lang_spec_.get_value_string(isstr ? str_fcn_key : fcn_key);
-        template_str = std::regex_replace(template_str, std::regex(classname_substr), msg_spec_.get_value_string("classname"));
-        template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, classname_substr, msg_spec_.get_value_string("classname"));
+        template_str = replace_all(template_str, type_substr, std::get<member_type>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
 
         ss_ << template_str;
         ss_ << " {" << std::endl;
@@ -556,9 +555,9 @@ bool CGenerator::getset_functions(const std::string& fcn_key, const std::string&
         // A bitfield setter keeps only the field's bits, sign-extending signed ones.
         if (ass_key == "set_assignment_str" && is_bitfield(member.second))
             ass_str = "structure->__MEMBERNAME__ = " + bitfields::c_fit(std::get<member_type>(member.second), std::get<member_bits>(member.second), "*value");
-        ass_str = std::regex_replace(ass_str, std::regex(member_substr), std::get<member_name>(member.second));
+        ass_str = replace_all(ass_str, member_substr, std::get<member_name>(member.second));
         if (isstr)
-            ass_str = std::regex_replace(ass_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            ass_str = replace_all(ass_str, length_substr, std::to_string(std::get<member_length>(member.second)));
 
         insert_indents(1);
         ss_ << ass_str << ";" << std::endl;

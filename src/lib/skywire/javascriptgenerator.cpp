@@ -59,19 +59,6 @@ bool spec_error(int& errorcode, const std::string& what)
     return false;
 }
 
-std::string replace_all(std::string text, const std::string& token, const std::string& with)
-{
-    if (token.empty())
-    {
-        return text;
-    }
-    for (auto pos = text.find(token); pos != std::string::npos; pos = text.find(token, pos + with.size()))
-    {
-        text.replace(pos, token.size(), with);
-    }
-    return text;
-}
-
 }
 
 std::string JavaScriptGenerator::view_type(const std::string& type)
