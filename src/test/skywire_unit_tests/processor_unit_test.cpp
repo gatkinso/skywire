@@ -278,19 +278,26 @@ TEST_F(ProcessorValidationTest, RejectsLangFileWithoutLanguage)
     ASSERT_TRUE(output_str_map.empty());
 }
 
-// Generators compile some lang file values as regular expressions; a bad one
-// is reported as an invalid lang file, not an uncaught exception (found by
-// fuzz_lang).
-TEST_F(ProcessorValidationTest, RejectsLangFileGeneratorsCannotUse)
+// Lang file patterns are literal text: regex syntax in one is just
+// characters to find, and generates the same code.
+TEST_F(ProcessorValidationTest, LangPatternsAreLiteralText)
 {
+    ASSERT_TRUE(run(make_spec(good_members)));
+    const results_t plain = output_str_map;
+
     std::string lang = lang_str;
-    const std::string member = R"("member_substr":"__MEMBERNAME__)";
-    lang.replace(lang.find(member), member.size(), R"("member_substr":"__MEMBER(NAME__)");
+    const std::string token = "__MEMBERNAME__";
+    const std::string literal = "__MEMBER(NAME$&__";
+    for (auto pos = lang.find(token); pos != std::string::npos; pos = lang.find(token, pos + literal.size()))
+    {
+        lang.replace(pos, token.size(), literal);
+    }
 
     Processor p;
-    ASSERT_FALSE(p.process_string(make_spec(good_members), lang, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
-    ASSERT_NE(errorcode & SW_LANG_INVALID, 0u);
-    ASSERT_TRUE(output_str_map.empty());
+    output_str_map.clear();
+    ASSERT_TRUE(p.process_string(make_spec(good_members), lang, output_str_map, outputdir, errorcode, generate_tests, write_to_file));
+    ASSERT_EQ(errorcode, SW_SUCCESS);
+    ASSERT_EQ(output_str_map, plain);
 }
 
 TEST_F(ProcessorValidationTest, AcceptsLangFileForExpectedLanguage)
@@ -384,7 +391,7 @@ TEST_F(ProcessorValidationTest, RejectsCodeInMemberName)
 
 TEST_F(ProcessorValidationTest, RejectsRegexFormatInMemberName)
 {
-    // "$&" would be expanded by regex_replace, so declarations and accessors disagree.
+    // Not an identifier, so it could break the generated code.
     expect_rejected(make_spec(R"({"1":{"type":"float","name":"a$&b"}})"));
 }
 

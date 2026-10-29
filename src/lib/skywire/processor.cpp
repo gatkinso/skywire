@@ -241,9 +241,9 @@ bool Processor::process_and_write(results_t& output_str_map, const std::string& 
 
 bool Processor::process(results_t& output_str_map, int& errorcode, bool generate_tests, bool generate_relay)
 {
-    // The generators index lang file values and compile some as regular
-    // expressions, so a lang file can make them throw. Report it as a bad
-    // lang file rather than let wiregen abort.
+    // The generators index lang file values, so a lang file they can't use
+    // can make them throw. Report it as a bad lang file rather than let
+    // wiregen abort.
     try
     {
         return generate(output_str_map, errorcode, generate_tests, generate_relay);

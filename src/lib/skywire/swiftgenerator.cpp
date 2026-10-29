@@ -13,7 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#include <regex>
 #include <map>
 #include <string>
 #include "swiftgenerator.h"
@@ -101,7 +100,7 @@ bool SwiftGenerator::imp_imports(int& errorcode)
 
     for (auto& item : values)
     {
-        std::string template_str = std::regex_replace(import_str, std::regex(import_substr), item);
+        std::string template_str = replace_all(import_str, import_substr, item);
         ss_ << template_str;
     }
 
@@ -114,7 +113,7 @@ bool SwiftGenerator::imp_classname(int& errorcode)
 {
     std::string template_str = lang_spec_.get_value_string("classname_str");
     const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
-    template_str = std::regex_replace(template_str, std::regex(classname_substr), classname_);
+    template_str = replace_all(template_str, classname_substr, classname_);
     ss_ << template_str;
 
     return true;
@@ -140,15 +139,15 @@ bool SwiftGenerator::imp_members(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("member_string_decl_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else
         {
             template_str = lang_spec_.get_value_string(is_user_type(std::get<member_type>(member.second)) ? "member_user_decl_str" : "member_decl_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), swift_type(std::get<member_type>(member.second)));
+            template_str = replace_all(template_str, type_substr, swift_type(std::get<member_type>(member.second)));
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -198,12 +197,12 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("serialize_string_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_native_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("serialize_native_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), swift_endian(std::get<member_endianness>(member.second)));
+            template_str = replace_all(template_str, endian_substr, swift_endian(std::get<member_endianness>(member.second)));
         }
         else
         {
@@ -211,7 +210,7 @@ bool SwiftGenerator::imp_serialize(int& errorcode)
             template_str = lang_spec_.get_value_string("serialize_user_mem_str");
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str << std::endl;
     }
 
@@ -254,12 +253,12 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("deserialize_string_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_native_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("deserialize_native_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(endian_substr), swift_endian(std::get<member_endianness>(member.second)));
+            template_str = replace_all(template_str, endian_substr, swift_endian(std::get<member_endianness>(member.second)));
         }
         else
         {
@@ -267,7 +266,7 @@ bool SwiftGenerator::imp_deserialize(int& errorcode)
             template_str = lang_spec_.get_value_string("deserialize_user_mem_str");
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str << std::endl;
     }
 
@@ -306,17 +305,17 @@ bool SwiftGenerator::imp_size(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("size_string_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_native_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("size_native_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), swift_type(std::get<member_type>(member.second)));
+            template_str = replace_all(template_str, type_substr, swift_type(std::get<member_type>(member.second)));
         }
         else
         {
             template_str = lang_spec_.get_value_string("size_user_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         }
 
         terms.push_back(template_str);
@@ -341,7 +340,7 @@ bool SwiftGenerator::imp_equals(int& errorcode)
 {
     std::string template_str = lang_spec_.get_value_string("equals_str");
     const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
-    template_str = std::regex_replace(template_str, std::regex(classname_substr), classname_);
+    template_str = replace_all(template_str, classname_substr, classname_);
     insert_indents(1);
     ss_ << template_str;
 
@@ -359,7 +358,7 @@ bool SwiftGenerator::imp_equals(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             member_tmpl = lang_spec_.get_value_string("equals_string_mem_str");
-            member_tmpl = std::regex_replace(member_tmpl, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            member_tmpl = replace_all(member_tmpl, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_user_type(std::get<member_type>(member.second)))
         {
@@ -370,7 +369,7 @@ bool SwiftGenerator::imp_equals(int& errorcode)
             member_tmpl = lang_spec_.get_value_string("equals_mem_str");
         }
 
-        member_tmpl = std::regex_replace(member_tmpl, std::regex(member_substr), std::get<member_name>(member.second));
+        member_tmpl = replace_all(member_tmpl, member_substr, std::get<member_name>(member.second));
         insert_indents(3);
         ss_ << member_tmpl;
 
@@ -408,10 +407,10 @@ bool SwiftGenerator::imp_get_functions(int& errorcode)
         else
         {
             template_str = lang_spec_.get_value_string("get_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), swift_type(std::get<member_type>(member.second)));
+            template_str = replace_all(template_str, type_substr, swift_type(std::get<member_type>(member.second)));
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -432,7 +431,7 @@ bool SwiftGenerator::imp_set_functions(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("set_string_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_bitfield(member.second) && std::get<member_bits>(member.second) < bitfields::width(std::get<member_type>(member.second)))
         {
@@ -445,10 +444,10 @@ bool SwiftGenerator::imp_set_functions(int& errorcode)
         else
         {
             template_str = lang_spec_.get_value_string("set_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), swift_type(std::get<member_type>(member.second)));
+            template_str = replace_all(template_str, type_substr, swift_type(std::get<member_type>(member.second)));
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 

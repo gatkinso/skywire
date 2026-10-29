@@ -68,6 +68,10 @@ protected:
     bool gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents);
     // Writes each line of text, indented.
     void gen_lines(std::string text, unsigned int indents);
+    // text with every occurrence of token replaced by with, left to right.
+    // Lang file patterns are literal text, not regular expressions; an empty
+    // token leaves text unchanged.
+    static std::string replace_all(std::string text, const std::string& token, const std::string& with);
     // The distinct nested message types this message uses, sorted.
     std::set<std::string> user_types();
     // C and C++ includes: the given ones, then each nested type's generated

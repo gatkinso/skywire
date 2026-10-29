@@ -52,9 +52,10 @@ unsigned int GoGenerator::go_bits(const std::string& type)
         return 0;
     }
 
+    static const std::regex trailing_digits("([0-9]+)$");
     std::smatch match;
     std::string mapped = go_type(type);
-    if (std::regex_search(mapped, match, std::regex("([0-9]+)$")))
+    if (std::regex_search(mapped, match, trailing_digits))
     {
         return static_cast<unsigned int>(std::stoul(match[1]));
     }
@@ -72,19 +73,19 @@ std::string GoGenerator::subst(std::string template_str, const member_desc_t& me
     unsigned int bits = go_bits(type);
     unsigned int wire_size = is_string_type(type) ? std::get<member_length>(member) : bits / 8;
 
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("structname_substr")), classname_);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), go_type(type));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("endian_substr")), go_endian(std::get<member_endianness>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("bits_substr")), std::to_string(bits));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("size_substr")), std::to_string(wire_size));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("structname_substr"), classname_);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), go_type(type));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("endian_substr"), go_endian(std::get<member_endianness>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("bits_substr"), std::to_string(bits));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("size_substr"), std::to_string(wire_size));
     // A bitfield setter shifts the field's bits to the top and back, which
     // masks unsigned values and sign-extends signed ones.
     if (is_bitfield(member))
     {
-        template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("unused_bits_substr")),
-                                          std::to_string(bits - std::get<member_bits>(member)));
+        template_str = replace_all(template_str, lang_spec_.get_value_string("unused_bits_substr"),
+            std::to_string(bits - std::get<member_bits>(member)));
     }
 
     return template_str;
@@ -194,7 +195,7 @@ bool GoGenerator::imp_imports(int& errorcode)
         std::string body;
         for (auto& package : packages)
         {
-            body += std::regex_replace(import_str, std::regex(include_substr), package);
+            body += replace_all(import_str, include_substr, package);
         }
 
         return body;
@@ -289,8 +290,8 @@ std::string GoGenerator::members_at(const std::string& direction)
             key = direction + "_int_mem_str";
 
         std::string line = subst(lang_spec_.get_value_string(key), member.second);
-        line = std::regex_replace(line, std::regex(at_substr), at);
-        line = std::regex_replace(line, std::regex(index_substr), index);
+        line = replace_all(line, at_substr, at);
+        line = replace_all(line, index_substr, index);
         body += line;
 
         if (!is_native_type(type))
@@ -403,8 +404,8 @@ bool GoGenerator::do_block(const std::string block_id, std::function<std::string
 
     std::string new_body_str = builder();
 
-    block_str = std::regex_replace(block_str, std::regex(structname_substr), classname_);
-    block_str = std::regex_replace(block_str, std::regex(body_token_str), new_body_str);
+    block_str = replace_all(block_str, structname_substr, classname_);
+    block_str = replace_all(block_str, body_token_str, new_body_str);
 
     ss_ << block_str << lang_spec_.get_value_string("block_separator_str");
 

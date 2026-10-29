@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
-#include <regex>
 #include <set>
 #include <string>
 #include "csharpgenerator.h"
@@ -148,7 +147,7 @@ std::string CSharpGenerator::cs_endian(unsigned int endian_flag)
 
 std::string CSharpGenerator::replace(std::string template_str, const std::string& substr_key, const std::string& with)
 {
-    return std::regex_replace(template_str, std::regex(value(substr_key)), with);
+    return replace_all(template_str, value(substr_key), with);
 }
 
 std::string CSharpGenerator::subst(std::string template_str, const member_desc_t& member)

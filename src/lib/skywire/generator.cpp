@@ -14,7 +14,6 @@
 //
 
 #include <iostream>
-#include <regex>
 #include <algorithm>
 #include "generator.h"
 #include "test_values.h"
@@ -321,6 +320,19 @@ void Generator::gen_lines(std::string text, unsigned int indents)
     }
 }
 
+std::string Generator::replace_all(std::string text, const std::string& token, const std::string& with)
+{
+    if (token.empty())
+    {
+        return text;
+    }
+    for (auto pos = text.find(token); pos != std::string::npos; pos = text.find(token, pos + with.size()))
+    {
+        text.replace(pos, token.size(), with);
+    }
+    return text;
+}
+
 bool Generator::gen_one_line_subst(const std::string& template_key, const std::string& subst_key, const std::string& target_key, unsigned int indents)
 {
     std::string template_str = lang_spec_.get_value_string(template_key);
@@ -329,7 +341,7 @@ bool Generator::gen_one_line_subst(const std::string& template_key, const std::s
 
     insert_indents(indents);
 
-    template_str = std::regex_replace(template_str, std::regex(target_str), subst_str);
+    template_str = replace_all(template_str, target_str, subst_str);
 
     ss_ << template_str;
 

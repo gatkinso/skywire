@@ -13,7 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#include <regex>
 #include <map>
 #include <cstdio>
 #include "cpptestgenerator.h"

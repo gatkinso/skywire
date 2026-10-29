@@ -14,7 +14,6 @@
 //
 
 #include <algorithm>
-#include <regex>
 #include <map>
 #include <set>
 #include <string>
@@ -69,10 +68,10 @@ unsigned int Py3Generator::py_size(const member_desc_t& member)
 
 std::string Py3Generator::subst(std::string template_str, const member_desc_t& member)
 {
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("classname_substr")), classname_);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("classname_substr"), classname_);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), std::get<member_type>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
 
     return template_str;
 }
@@ -172,7 +171,7 @@ bool Py3Generator::imp_includes(int& errorcode)
 
     for (auto& module : modules)
     {
-        ss_ << std::regex_replace(include_str, std::regex(include_substr), module);
+        ss_ << replace_all(include_str, include_substr, module);
     }
 
     // Each nested message type comes from its own generated module.
@@ -181,7 +180,7 @@ bool Py3Generator::imp_includes(int& errorcode)
 
     for (auto& type : user_types())
     {
-        ss_ << std::regex_replace(user_import_str, std::regex(type_substr), type);
+        ss_ << replace_all(user_import_str, type_substr, type);
     }
 
     return true;
@@ -221,7 +220,7 @@ bool Py3Generator::imp_cons(int& errorcode)
             init_key = "init_int_str";
 
         std::string template_str = lang_spec_.get_value_string("cons_member_init_str");
-        template_str = std::regex_replace(template_str, std::regex(init_substr), lang_spec_.get_value_string(init_key));
+        template_str = replace_all(template_str, init_substr, lang_spec_.get_value_string(init_key));
         line(subst(template_str, member.second));
     }
 
@@ -646,10 +645,10 @@ bool Py3Generator::imp_dunders(int& errorcode)
     const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
 
     method("eq_fcn_str");
-    line(std::regex_replace(lang_spec_.get_value_string("eq_body_str"), std::regex(classname_substr), classname_));
+    line(replace_all(lang_spec_.get_value_string("eq_body_str"), classname_substr, classname_));
 
     method("repr_fcn_str");
-    line(std::regex_replace(lang_spec_.get_value_string("repr_body_str"), std::regex(classname_substr), classname_));
+    line(replace_all(lang_spec_.get_value_string("repr_body_str"), classname_substr, classname_));
 
     return true;
 }

@@ -13,7 +13,6 @@
 //   permissions and limitations under the License.
 //
 
-#include <regex>
 #include <map>
 #include "cppgenerator.h"
 #include "sw_endian.h"
@@ -106,7 +105,7 @@ bool CppGenerator::hdr_includes(int& errorcode)
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
 
-        template_str = std::regex_replace(template_str, std::regex(target_str), item);
+        template_str = replace_all(template_str, target_str, item);
 
         ss_ << template_str;
     }
@@ -212,15 +211,15 @@ bool CppGenerator::hdr_get_functions(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("get_string_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else
         {
             template_str = lang_spec_.get_value_string("get_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+            template_str = replace_all(template_str, type_substr, std::get<member_type>(member.second));
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -247,7 +246,7 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("set_string_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_bitfield(member.second))
         {
@@ -259,10 +258,10 @@ bool CppGenerator::hdr_set_functions(int& errorcode)
         else
         {
             template_str = lang_spec_.get_value_string("set_str");
-            template_str = std::regex_replace(template_str, std::regex(type_substr), std::get<member_type>(member.second));
+            template_str = replace_all(template_str, type_substr, std::get<member_type>(member.second));
         }
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
     }
 
@@ -312,7 +311,7 @@ bool CppGenerator::hdr_deserialize(int& errorcode)
     }
 
     std::string pz_branch = lang_spec_.get_value_string("deserialize_pz_branch_str");
-    pz_branch = std::regex_replace(pz_branch, std::regex(lang_spec_.get_value_string("classname_substr")), msg_spec_.get_value_string("classname"));
+    pz_branch = replace_all(pz_branch, lang_spec_.get_value_string("classname_substr"), msg_spec_.get_value_string("classname"));
     gen_lines(pz_branch, 3);
     gen_lines(lang_spec_.get_value_string("deserialize_sw_call_str"), 3);
     insert_indents(2);
@@ -366,9 +365,9 @@ bool CppGenerator::members_sw(const std::string& direction, int& errorcode)
         else
             template_str = lang_spec_.get_value_string(direction + "_user_mem_str");
 
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-        template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
-        template_str = std::regex_replace(template_str, std::regex(endian_substr), endianness(std::get<member_endianness>(member.second)));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+        template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
+        template_str = replace_all(template_str, endian_substr, endianness(std::get<member_endianness>(member.second)));
 
         insert_indents(3);
         ss_ << template_str << std::endl;
@@ -389,12 +388,12 @@ std::string CppGenerator::pb_subst(std::string template_str, uint32_t tag, const
     else if (pb_type == "double")
         wire_type = "fixed64";
 
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("member_substr")), std::get<member_name>(member));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), type);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("length_substr")), std::to_string(std::get<member_length>(member)));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("tag_substr")), std::to_string(tag));
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("pbtype_substr")), pb_type);
-    template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("wiretype_substr")), wire_type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("tag_substr"), std::to_string(tag));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("pbtype_substr"), pb_type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("wiretype_substr"), wire_type);
 
     return template_str;
 }
@@ -445,8 +444,8 @@ bool CppGenerator::hdr_deserialize_pb(int& errorcode)
         {
             // Out-of-range values from another encoder are cut to the field, as the setter does.
             template_str = lang_spec_.get_value_string("deserialize_pb_bits_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("fit_substr")),
-                                              bitfields::c_fit(std::get<member_type>(member.second), std::get<member_bits>(member.second), "pbf.get___PBTYPE__()"));
+            template_str = replace_all(template_str, lang_spec_.get_value_string("fit_substr"),
+                bitfields::c_fit(std::get<member_type>(member.second), std::get<member_bits>(member.second), "pbf.get___PBTYPE__()"));
         }
         gen_lines(pb_subst(template_str, member.first, member.second), 3);
     }
@@ -497,17 +496,17 @@ bool CppGenerator::hdr_size(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("size_string_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else if (is_native_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("size_native_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_type>(member.second));
+            template_str = replace_all(template_str, member_substr, std::get<member_type>(member.second));
         }
         else
         {
             template_str = lang_spec_.get_value_string("size_user_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(lang_spec_.get_value_string("type_substr")), std::get<member_type>(member.second));
+            template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), std::get<member_type>(member.second));
         }
 
         terms.push_back(template_str);
@@ -558,7 +557,7 @@ bool CppGenerator::hdr_equals(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             template_str = lang_spec_.get_value_string("equals_string_mem_str");
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
         }
         else
         {
@@ -566,7 +565,7 @@ bool CppGenerator::hdr_equals(int& errorcode)
         }
 
         insert_indents(4);
-        template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
+        template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
         ss_ << template_str;
 
         if (i++ < ordered_members_.size() - 1)
@@ -603,8 +602,8 @@ bool CppGenerator::hdr_members(int& errorcode)
         if (is_string_type(std::get<member_type>(member.second)))
         {
             std::string template_str = lang_spec_.get_value_string("member_string_decl_str");
-            template_str = std::regex_replace(template_str, std::regex(member_substr), std::get<member_name>(member.second));
-            template_str = std::regex_replace(template_str, std::regex(length_substr), std::to_string(std::get<member_length>(member.second)));
+            template_str = replace_all(template_str, member_substr, std::get<member_name>(member.second));
+            template_str = replace_all(template_str, length_substr, std::to_string(std::get<member_length>(member.second)));
             ss_ << template_str << std::endl;
         }
         else
