@@ -32,3 +32,15 @@ add_test(NAME skywire_install:Consumer
             -DC_COMPILER=${CMAKE_C_COMPILER}
             -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/run_install_test.cmake)
+
+#  skywire_install:SwiftPM builds the Swift example as a separate Swift package
+#  that depends on the Package.swift at the top of the source tree.
+
+add_test(NAME skywire_install:SwiftPM
+    COMMAND ${CMAKE_COMMAND}
+            -DWIREGEN=$<TARGET_FILE:wiregen>
+            -DSOURCE_DIR=${PROJECT_SOURCE_DIR}
+            -DOUTDIR=${CMAKE_CURRENT_BINARY_DIR}/swiftpm
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_swiftpm_test.cmake)
+set_tests_properties(skywire_install:SwiftPM PROPERTIES
+    SKIP_REGULAR_EXPRESSION "SWIFT_TOOLCHAIN_NOT_FOUND")

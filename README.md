@@ -304,7 +304,7 @@ include path and links the language's runtime. `OUT_VAR` receives the generated
 file names. Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs
-`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`.
+`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the Swift package below.
 
 Without CMake, use `skywire.pc`. It gives the include path, and its `wiregen`,
 `langdir` and `runtimedir` variables give the generator, the lang files and the
@@ -319,6 +319,25 @@ wherever the install is:
 
 Neither runtime has anything to compile or link. For C++, add protozero's
 include directory and `-std=c++17`; protozero has no `.pc` of its own.
+
+A Swift package can depend on skywire for SWStream instead of copying
+`SWStream.swift`. The `Package.swift` at the top of the repository has one
+library, `Skywire`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/gatkinso/skywire.git", from: "0.10.0"),
+],
+targets: [
+    .executableTarget(name: "app", dependencies: [.product(name: "Skywire", package: "skywire")]),
+]
+```
+
+Generated Swift starts with `#if canImport(Skywire)` / `import Skywire`, so the
+same files build with the package or with a copy of `SWStream.swift` in the
+module. Your own files that use `SWStream` directly need `import Skywire`.
+wiregen itself still runs outside SwiftPM; check its output in, or generate it
+before `swift build`.
 
 Code generated with `--generate_tests` needs Google Test, for C and C++ only;
 the tests for the other languages use their standard library. The C and C++

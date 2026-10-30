@@ -26,6 +26,10 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   (`examples/javascript`, `skywire_example:JavaScript`) and a benchmark
   (`bench/javascript`).
 - `--language golang`, an alias for `go`.
+- A `Package.swift` with one library, `Skywire` (the Swift runtime,
+  SWStream), so a Swift package can depend on skywire instead of copying
+  `SWStream.swift`, and the `skywire_install:SwiftPM` ctest that builds the
+  Swift example that way.
 - `bench/wiregen_scale.py`, which times wiregen itself on large (100 to 4000
   members) and deeply nested (up to 64 levels) synthetic messages in every
   language.
@@ -41,6 +45,9 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   and unwritable files, and specification file writing.
 
 ### Changed
+- Generated Swift files start with `#if canImport(Skywire)` / `import Skywire`
+  (`banner_str` in `lang.swift.json`), so they build against the Swift package
+  as well as a copied `SWStream.swift`.
 - GitHub Actions run only when a release is cut: a `v*` tag runs CI alongside
   the release build and publishes only if both pass. Pull requests and pushes
   to master run nothing; CI and fuzzing can be started by hand on any branch.
