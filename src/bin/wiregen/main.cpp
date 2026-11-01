@@ -415,7 +415,7 @@ std::filesystem::path executable_dir(const char* argv0)
 }
 
 // A build keeps the lang files next to wiregen; an install puts them in
-// <prefix>/share/skywire/lang with wiregen in <prefix>/bin.
+// <prefix>/share/skywire/lang, WIREGEN_LANG_RELDIR from wiregen.
 std::filesystem::path installed_lang_path(const std::filesystem::path& exe_dir, const std::string& name)
 {
     std::error_code ec;
@@ -424,7 +424,7 @@ std::filesystem::path installed_lang_path(const std::filesystem::path& exe_dir, 
     {
         return beside;
     }
-    const std::filesystem::path shared = exe_dir.parent_path() / "share" / "skywire" / "lang" / name;
+    const std::filesystem::path shared = exe_dir / WIREGEN_LANG_RELDIR / name;
     if (std::filesystem::exists(shared, ec))
     {
         return shared;

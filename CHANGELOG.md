@@ -26,6 +26,29 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   (`examples/javascript`, `skywire_example:JavaScript`) and a benchmark
   (`bench/javascript`).
 - `--language golang`, an alias for `go`.
+- A `Package.swift` with one library, `Skywire` (the Swift runtime,
+  SWStream), so a Swift package can depend on skywire instead of copying
+  `SWStream.swift`, and the `skywire_install:SwiftPM` ctest that builds the
+  Swift example that way.
+- A Homebrew formula for Apple silicon Macs, `gatkinso/tap/skywire`, that
+  installs the macOS release archive with protozero.
+  `packaging/homebrew/make_formula.py` writes it from a release's
+  `SHA256SUMS`, and the release workflow's macOS smoke test installs it from
+  the archive it tests, runs `brew test`, and builds
+  `src/test/install/consumer` against it.
+- A vcpkg overlay port, `packaging/vcpkg/skywire`: wiregen in
+  `tools/skywire`, the runtime headers, the CMake package and `skywire.pc`,
+  depending on protobuf and protozero. `packaging/vcpkg/test_port.py`
+  installs it in manifest mode and builds `src/test/install/consumer` with it;
+  the release workflow runs it on its Linux x86_64 build.
+- A Conan 2 recipe, `packaging/conan`: wiregen (protobuf linked in
+  statically), the runtime headers, skywire's own CMake package and
+  `skywire.pc`, requiring protozero. Its `test_package` builds
+  `src/test/install/consumer`; the release workflow runs `conan create` on
+  its Linux x86_64 build.
+- CMake options `SKYWIRE_BIN_INSTALL_DIR` (where wiregen is installed; it
+  finds the lang files relative to it) and `SKYWIRE_INSTALL_DLLS` (Windows:
+  install wiregen's DLLs beside it, default ON), for packages.
 - `bench/wiregen_scale.py`, which times wiregen itself on large (100 to 4000
   members) and deeply nested (up to 64 levels) synthetic messages in every
   language.
@@ -41,6 +64,9 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   and unwritable files, and specification file writing.
 
 ### Changed
+- Generated Swift files start with `#if canImport(Skywire)` / `import Skywire`
+  (`banner_str` in `lang.swift.json`), so they build against the Swift package
+  as well as a copied `SWStream.swift`.
 - GitHub Actions run only when a release is cut: a `v*` tag runs CI alongside
   the release build and publishes only if both pass. Pull requests and pushes
   to master run nothing; CI and fuzzing can be started by hand on any branch.

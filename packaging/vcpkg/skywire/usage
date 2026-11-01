@@ -1,0 +1,8 @@
+skywire provides CMake targets and a function that runs wiregen:
+
+  find_package(skywire CONFIG REQUIRED)
+  skywire_generate(TARGET main LANGUAGE c SPECS msg.json)    # or LANGUAGE cpp
+
+skywire_generate() adds the generated sources and links skywire::c_runtime
+(or skywire::cpp_runtime, which brings in protozero). wiregen itself is in
+tools/skywire.

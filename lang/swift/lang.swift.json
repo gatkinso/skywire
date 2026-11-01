@@ -5,7 +5,7 @@
         "outputtestfilename": "{classname}_test.swift",
         "outputrelayfilename": "{classname}Relay.swift",
 
-        "banner_str":"// This is the generated Swift file\n\n",
+        "banner_str":"// This is the generated Swift file\n\n#if canImport(Skywire)\nimport Skywire\n#endif\n",
 
         "import_str":"import __INCLUDEFILE__\n",
         "import_substr":"__INCLUDEFILE__",
