@@ -33,9 +33,8 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cma
 ```
 
 Then `find_package(skywire CONFIG REQUIRED)` and `skywire_generate()` work
-as they do with any other install (README §3.2). When cross-compiling, add
-`{ "name": "skywire", "host": true }` as well, so there is a wiregen that runs
-on the build machine.
+as they do with any other install (README §3.2). Cross-compiling isn't
+supported yet: `skywire::wiregen` is the target triplet's wiregen.
 
 ## Testing
 

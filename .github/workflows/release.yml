@@ -151,6 +151,15 @@ jobs:
           python3 packaging/vcpkg/test_port.py --vcpkg-root "$SKYWIRE_VCPKG" \
             --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
 
+      # The Conan recipe and its test_package. protobuf comes from
+      # ConanCenter, built from source if it has no binary for this profile.
+      - name: Conan recipe
+        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
+        run: |
+          pipx install conan==2.34.0
+          conan profile detect
+          conan create packaging/conan --build=missing
+
       - name: Build and install (Windows)
         if: matrix.os == 'windows'
         shell: pwsh

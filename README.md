@@ -141,8 +141,9 @@ for generated C++:
 
 The formula and its tests are in [`packaging/homebrew`](packaging/homebrew/README.md).
 
-A vcpkg overlay port, which builds wiregen from source with vcpkg's protobuf,
-is in [`packaging/vcpkg`](packaging/vcpkg/README.md).
+A vcpkg overlay port and a Conan 2 recipe, which build wiregen from source,
+are in [`packaging/vcpkg`](packaging/vcpkg/README.md) and
+[`packaging/conan`](packaging/conan/README.md).
 
 ## [1.5] Versioning
 

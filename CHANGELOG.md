@@ -41,6 +41,11 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   depending on protobuf and protozero. `packaging/vcpkg/test_port.py`
   installs it in manifest mode and builds `src/test/install/consumer` with it;
   the release workflow runs it on its Linux x86_64 build.
+- A Conan 2 recipe, `packaging/conan`: wiregen (protobuf linked in
+  statically), the runtime headers, skywire's own CMake package and
+  `skywire.pc`, requiring protozero. Its `test_package` builds
+  `src/test/install/consumer`; the release workflow runs `conan create` on
+  its Linux x86_64 build.
 - CMake options `SKYWIRE_BIN_INSTALL_DIR` (where wiregen is installed; it
   finds the lang files relative to it) and `SKYWIRE_INSTALL_DLLS` (Windows:
   install wiregen's DLLs beside it, default ON), for packages.
