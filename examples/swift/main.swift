@@ -3,6 +3,9 @@
 //
 //   example_swift telemetry.bin
 
+#if canImport(Skywire)
+import Skywire // SWStream, when skywire is a SwiftPM dependency
+#endif
 import Foundation
 
 func fail(_ message: String) -> Never {

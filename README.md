@@ -134,6 +134,17 @@ The macOS build is not notarized. If macOS refuses to run a wiregen downloaded
 with a browser, remove the quarantine attribute:
 `xattr -d com.apple.quarantine bin/wiregen`.
 
+On Apple silicon Macs, Homebrew installs the same archive, with protozero
+for generated C++:
+
+    brew install gatkinso/tap/skywire
+
+The formula and its tests are in [`packaging/homebrew`](packaging/homebrew/README.md).
+
+A vcpkg overlay port and a Conan 2 recipe, which build wiregen from source,
+are in [`packaging/vcpkg`](packaging/vcpkg/README.md) and
+[`packaging/conan`](packaging/conan/README.md).
+
 ## [1.5] Versioning
 
 Skywire follows [Semantic Versioning](https://semver.org/). The version covers:
@@ -228,6 +239,8 @@ Build options:
 | `SKYWIRE_SANITIZE` | OFF | Build all C and C++ with AddressSanitizer and UndefinedBehaviorSanitizer (MSVC: AddressSanitizer only). Use a separate build directory. |
 | `SKYWIRE_FUZZ` | OFF | Build the fuzz targets in `src/test/fuzz` with libFuzzer, and everything with ASan and UBSan (Clang only; see [`src/test/fuzz`](src/test/fuzz/README.md)). Use a separate build directory. |
 | `SKYWIRE_COVERAGE` | OFF | Build all C and C++ with gcov coverage counters, for `scripts/coverage.py` (GCC or Clang; see 4.0). Use a separate Debug build directory. |
+| `SKYWIRE_BIN_INSTALL_DIR` | `bin` | Where `cmake --install` puts wiregen, relative to the prefix; wiregen finds the lang files from there. The vcpkg port uses `tools/skywire`. |
+| `SKYWIRE_INSTALL_DLLS` | ON | Windows: install the DLLs wiregen needs beside it. The vcpkg port turns it off, since those DLLs come from their own packages. |
 
 ## [3.1] Windows
 
@@ -304,7 +317,7 @@ include path and links the language's runtime. `OUT_VAR` receives the generated
 file names. Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs
-`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`.
+`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the Swift package below.
 
 Without CMake, use `skywire.pc`. It gives the include path, and its `wiregen`,
 `langdir` and `runtimedir` variables give the generator, the lang files and the
@@ -319,6 +332,25 @@ wherever the install is:
 
 Neither runtime has anything to compile or link. For C++, add protozero's
 include directory and `-std=c++17`; protozero has no `.pc` of its own.
+
+A Swift package can depend on skywire for SWStream instead of copying
+`SWStream.swift`. The `Package.swift` at the top of the repository has one
+library, `Skywire`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/gatkinso/skywire.git", from: "0.10.0"),
+],
+targets: [
+    .executableTarget(name: "app", dependencies: [.product(name: "Skywire", package: "skywire")]),
+]
+```
+
+Generated Swift starts with `#if canImport(Skywire)` / `import Skywire`, so the
+same files build with the package or with a copy of `SWStream.swift` in the
+module. Your own files that use `SWStream` directly need `import Skywire`.
+wiregen itself still runs outside SwiftPM; check its output in, or generate it
+before `swift build`.
 
 Code generated with `--generate_tests` needs Google Test, for C and C++ only;
 the tests for the other languages use their standard library. The C and C++

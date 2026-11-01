@@ -13,3 +13,5 @@ build
 __build*
 __pycache__
 CTestConfig.cmake
+.build
+.swiftpm

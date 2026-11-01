@@ -142,6 +142,24 @@ jobs:
           mkdir dist
           tar -C stage -czf "dist/$ARCHIVE.tar.gz" "$ARCHIVE"
 
+      # The vcpkg overlay port, installed in manifest mode with the protobuf
+      # this job's vcpkg cache already has, and the consumer project built
+      # against it.
+      - name: vcpkg port
+        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
+        run: |
+          python3 packaging/vcpkg/test_port.py --vcpkg-root "$SKYWIRE_VCPKG" \
+            --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
+
+      # The Conan recipe and its test_package. protobuf comes from
+      # ConanCenter, built from source if it has no binary for this profile.
+      - name: Conan recipe
+        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
+        run: |
+          pipx install conan==2.34.0
+          conan profile detect
+          conan create packaging/conan --build=missing
+
       - name: Build and install (Windows)
         if: matrix.os == 'windows'
         shell: pwsh
@@ -213,6 +231,14 @@ jobs:
           mkdir unpacked
           tar -C unpacked -xzf "dist/$ARCHIVE.tar.gz"
           python3 scripts/release_smoke_test.py "unpacked/$ARCHIVE" --version "$VERSION"
+
+      # The Homebrew formula, installed from this archive. brew audit spends
+      # a minute installing gems on a 10x runner; run it locally instead.
+      - name: Homebrew formula
+        if: matrix.os == 'macos'
+        env:
+          NAME: ${{ needs.version.outputs.name }}
+        run: python3 packaging/homebrew/test_formula.py dist --version "$NAME" --no-audit
 
       - name: Smoke test (Windows)
         if: matrix.os == 'windows'
