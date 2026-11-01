@@ -1,5 +1,5 @@
 prefix=${pcfiledir}/@SKYWIRE_PC_PREFIX@
-bindir=${prefix}/@CMAKE_INSTALL_BINDIR@
+bindir=${prefix}/@SKYWIRE_BIN_INSTALL_DIR@
 includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
 datadir=${prefix}/@CMAKE_INSTALL_DATADIR@
 wiregen=${bindir}/wiregen@CMAKE_EXECUTABLE_SUFFIX@

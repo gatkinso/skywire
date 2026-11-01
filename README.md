@@ -141,6 +141,9 @@ for generated C++:
 
 The formula and its tests are in [`packaging/homebrew`](packaging/homebrew/README.md).
 
+A vcpkg overlay port, which builds wiregen from source with vcpkg's protobuf,
+is in [`packaging/vcpkg`](packaging/vcpkg/README.md).
+
 ## [1.5] Versioning
 
 Skywire follows [Semantic Versioning](https://semver.org/). The version covers:
@@ -235,6 +238,8 @@ Build options:
 | `SKYWIRE_SANITIZE` | OFF | Build all C and C++ with AddressSanitizer and UndefinedBehaviorSanitizer (MSVC: AddressSanitizer only). Use a separate build directory. |
 | `SKYWIRE_FUZZ` | OFF | Build the fuzz targets in `src/test/fuzz` with libFuzzer, and everything with ASan and UBSan (Clang only; see [`src/test/fuzz`](src/test/fuzz/README.md)). Use a separate build directory. |
 | `SKYWIRE_COVERAGE` | OFF | Build all C and C++ with gcov coverage counters, for `scripts/coverage.py` (GCC or Clang; see 4.0). Use a separate Debug build directory. |
+| `SKYWIRE_BIN_INSTALL_DIR` | `bin` | Where `cmake --install` puts wiregen, relative to the prefix; wiregen finds the lang files from there. The vcpkg port uses `tools/skywire`. |
+| `SKYWIRE_INSTALL_DLLS` | ON | Windows: install the DLLs wiregen needs beside it. The vcpkg port turns it off, since those DLLs come from their own packages. |
 
 ## [3.1] Windows
 

@@ -142,6 +142,15 @@ jobs:
           mkdir dist
           tar -C stage -czf "dist/$ARCHIVE.tar.gz" "$ARCHIVE"
 
+      # The vcpkg overlay port, installed in manifest mode with the protobuf
+      # this job's vcpkg cache already has, and the consumer project built
+      # against it.
+      - name: vcpkg port
+        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
+        run: |
+          python3 packaging/vcpkg/test_port.py --vcpkg-root "$SKYWIRE_VCPKG" \
+            --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
+
       - name: Build and install (Windows)
         if: matrix.os == 'windows'
         shell: pwsh

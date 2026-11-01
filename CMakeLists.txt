@@ -114,6 +114,14 @@ option(SKYWIRE_EXAMPLES "Build and test the example programs in examples/" ON)
 # source tree; set it when building from a tarball or for a package.
 set(SKYWIRE_REVISION "" CACHE STRING "Revision to report instead of git describe")
 
+# For packages: vcpkg wants wiregen in tools/<port>, and on Windows installs
+# the DLLs it needs from their own packages.
+set(SKYWIRE_BIN_INSTALL_DIR "" CACHE STRING "Where to install wiregen (default: CMAKE_INSTALL_BINDIR)")
+option(SKYWIRE_INSTALL_DLLS "Windows: install the DLLs wiregen needs beside it" ON)
+if(SKYWIRE_BIN_INSTALL_DIR STREQUAL "")
+    set(SKYWIRE_BIN_INSTALL_DIR ${CMAKE_INSTALL_BINDIR})
+endif()
+
 TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
 
 if(IS_BIG_ENDIAN)

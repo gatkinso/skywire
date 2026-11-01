@@ -37,6 +37,12 @@ add_dependencies(${TARGETNAME} skywire specification cli)
 
 target_link_libraries(${TARGETNAME} skywire cli)
 
+# Where an installed wiregen finds the lang files, relative to itself:
+# ../share/skywire/lang, or ../../share/skywire/lang from vcpkg's tools/skywire.
+file(RELATIVE_PATH WIREGEN_LANG_RELDIR
+     /prefix/${SKYWIRE_BIN_INSTALL_DIR} /prefix/${CMAKE_INSTALL_DATADIR}/skywire/lang)
+target_compile_definitions(${TARGETNAME} PRIVATE WIREGEN_LANG_RELDIR="${WIREGEN_LANG_RELDIR}")
+
 add_custom_command(TARGET ${TARGETNAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGETNAME}> ${CMAKE_BINARY_DIR}/bin/${TARGETNAME}${CMAKE_EXECUTABLE_SUFFIX})
 
@@ -79,19 +85,20 @@ if(WIN32)
                        COMMAND_EXPAND_LISTS)
 endif()
 
-# wiregen goes in <prefix>/bin, with the DLLs it needs on Windows, and the lang
-# files in <prefix>/share/skywire/lang, where it looks when they aren't beside it.
-if(WIN32)
+# wiregen goes in <prefix>/bin (SKYWIRE_BIN_INSTALL_DIR), with the DLLs it needs
+# on Windows unless SKYWIRE_INSTALL_DLLS is off, and the lang files in
+# <prefix>/share/skywire/lang, where it looks when they aren't beside it.
+if(WIN32 AND SKYWIRE_INSTALL_DLLS)
     install(TARGETS ${TARGETNAME} EXPORT skywireTargets
             RUNTIME_DEPENDENCY_SET wiregen_dlls
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+            RUNTIME DESTINATION ${SKYWIRE_BIN_INSTALL_DIR})
     install(RUNTIME_DEPENDENCY_SET wiregen_dlls
             PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
             POST_EXCLUDE_REGEXES ".*[Ss]ystem32/.*\\.dll"
             DIRECTORIES $<TARGET_RUNTIME_DLL_DIRS:${TARGETNAME}>
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+            RUNTIME DESTINATION ${SKYWIRE_BIN_INSTALL_DIR})
 else()
     install(TARGETS ${TARGETNAME} EXPORT skywireTargets
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+            RUNTIME DESTINATION ${SKYWIRE_BIN_INSTALL_DIR})
 endif()
 install(FILES ${INSTALL_LANG_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/skywire/lang)

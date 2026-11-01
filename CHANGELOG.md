@@ -36,6 +36,14 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   `SHA256SUMS`, and the release workflow's macOS smoke test installs it from
   the archive it tests, runs `brew test`, and builds
   `src/test/install/consumer` against it.
+- A vcpkg overlay port, `packaging/vcpkg/skywire`: wiregen in
+  `tools/skywire`, the runtime headers, the CMake package and `skywire.pc`,
+  depending on protobuf and protozero. `packaging/vcpkg/test_port.py`
+  installs it in manifest mode and builds `src/test/install/consumer` with it;
+  the release workflow runs it on its Linux x86_64 build.
+- CMake options `SKYWIRE_BIN_INSTALL_DIR` (where wiregen is installed; it
+  finds the lang files relative to it) and `SKYWIRE_INSTALL_DLLS` (Windows:
+  install wiregen's DLLs beside it, default ON), for packages.
 - `bench/wiregen_scale.py`, which times wiregen itself on large (100 to 4000
   members) and deeply nested (up to 64 levels) synthetic messages in every
   language.
