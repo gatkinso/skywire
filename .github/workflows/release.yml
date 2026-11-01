@@ -214,6 +214,14 @@ jobs:
           tar -C unpacked -xzf "dist/$ARCHIVE.tar.gz"
           python3 scripts/release_smoke_test.py "unpacked/$ARCHIVE" --version "$VERSION"
 
+      # The Homebrew formula, installed from this archive. brew audit spends
+      # a minute installing gems on a 10x runner; run it locally instead.
+      - name: Homebrew formula
+        if: matrix.os == 'macos'
+        env:
+          NAME: ${{ needs.version.outputs.name }}
+        run: python3 packaging/homebrew/test_formula.py dist --version "$NAME" --no-audit
+
       - name: Smoke test (Windows)
         if: matrix.os == 'windows'
         shell: pwsh

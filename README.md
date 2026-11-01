@@ -134,6 +134,13 @@ The macOS build is not notarized. If macOS refuses to run a wiregen downloaded
 with a browser, remove the quarantine attribute:
 `xattr -d com.apple.quarantine bin/wiregen`.
 
+On Apple silicon Macs, Homebrew installs the same archive, with protozero
+for generated C++:
+
+    brew install gatkinso/tap/skywire
+
+The formula and its tests are in [`packaging/homebrew`](packaging/homebrew/README.md).
+
 ## [1.5] Versioning
 
 Skywire follows [Semantic Versioning](https://semver.org/). The version covers:

@@ -30,6 +30,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   SWStream), so a Swift package can depend on skywire instead of copying
   `SWStream.swift`, and the `skywire_install:SwiftPM` ctest that builds the
   Swift example that way.
+- A Homebrew formula for Apple silicon Macs, `gatkinso/tap/skywire`, that
+  installs the macOS release archive with protozero.
+  `packaging/homebrew/make_formula.py` writes it from a release's
+  `SHA256SUMS`, and the release workflow's macOS smoke test installs it from
+  the archive it tests, runs `brew test`, and builds
+  `src/test/install/consumer` against it.
 - `bench/wiregen_scale.py`, which times wiregen itself on large (100 to 4000
   members) and deeply nested (up to 64 levels) synthetic messages in every
   language.
