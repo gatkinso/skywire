@@ -26,6 +26,15 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   (`examples/javascript`, `skywire_example:JavaScript`) and a benchmark
   (`bench/javascript`).
 - `--language golang`, an alias for `go`.
+- JSON Schemas for specifications and lang files,
+  `schema/skywire-spec.schema.json` and `schema/skywire-lang.schema.json`
+  (draft 2020-12), installed in `share/skywire/schema/`. Editors that know
+  the schema complete and check specifications as you type. The
+  `skywire_schema:Check` ctest (needs Python's `jsonschema`) validates every
+  spec and lang file in the repository and checks the schema rejects what
+  wiregen rejects.
+- wiregen accepts a top-level `"$schema"` in a specification or lang file and
+  ignores it, so a file can name its schema.
 - A `Package.swift` with one library, `Skywire` (the Swift runtime,
   SWStream), so a Swift package can depend on skywire instead of copying
   `SWStream.swift`, and the `skywire_install:SwiftPM` ctest that builds the
@@ -64,6 +73,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   and unwritable files, and specification file writing.
 
 ### Changed
+- The README is now a short introduction with a quick start; the reference
+  material moved to `docs/`, which is also built as a site with MkDocs
+  (`mkdocs.yml`) and checked by CI's new docs job. New pages: a quick start
+  from an ICD table, "Why skywire?" (what skywire doesn't do, and Kaitai
+  Struct, protobuf, FlatBuffers, Cap'n Proto, DFDL and hand-written structs
+  compared), and a specification reference.
 - Generated Swift files start with `#if canImport(Skywire)` / `import Skywire`
   (`banner_str` in `lang.swift.json`), so they build against the Swift package
   as well as a copied `SWStream.swift`.
@@ -90,6 +105,10 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   it now says `--input_str`. With neither `--input_file` nor `--input_str`
   wiregen says so instead of failing on a blank spec, and a blank message
   string is no longer reported as a blank lang string.
+
+### Removed
+- The unused `cfg/*.test.json` specifications and `scripts/test_wiregen.bat`,
+  which ran wiregen over them by hand; the ctest suite covers every language.
 
 ## [0.9.0] - 2026-10-25
 

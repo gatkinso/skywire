@@ -56,7 +56,9 @@ foreach(file
         share/skywire/lang/lang.proto3.json
         share/skywire/lang/lang.python3.json
         share/skywire/lang/lang.rust.json
-        share/skywire/lang/lang.swift.json)
+        share/skywire/lang/lang.swift.json
+        share/skywire/schema/skywire-spec.schema.json
+        share/skywire/schema/skywire-lang.schema.json)
     if(NOT EXISTS ${prefix}/${file})
         message(FATAL_ERROR "not installed: ${file}")
     endif()

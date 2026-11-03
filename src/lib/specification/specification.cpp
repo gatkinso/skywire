@@ -18,9 +18,42 @@
 #include "specification.h"
 #include "google/protobuf/util/json_util.h"
 #include "google/protobuf/reflection.h"
+#include "google/protobuf/struct.pb.h"
 
 namespace skyloupe
 {
+
+namespace
+{
+
+// A spec may name its JSON Schema ("$schema": ..., for editors). Specification
+// has no such field and the parser rejects unknown ones, so drop it first.
+// Only a top-level "$schema" is dropped; JSON that isn't an object with one
+// is left for the real parse to accept or reject.
+std::string without_schema_key(const std::string& json_str)
+{
+    if (json_str.find("\"$schema\"") == std::string::npos)
+    {
+        return json_str;
+    }
+
+    google::protobuf::Struct root;
+    if (false == google::protobuf::util::JsonStringToMessage(json_str, &root).ok() ||
+        root.mutable_fields()->erase("$schema") == 0)
+    {
+        return json_str;
+    }
+
+    std::string stripped;
+    if (false == google::protobuf::util::MessageToJsonString(root, &stripped).ok())
+    {
+        return json_str;
+    }
+
+    return stripped;
+}
+
+}
 
 bool Specification::read_file(const std::string& pathname)
 {
@@ -98,7 +131,7 @@ bool Specification::read_string(const std::string& json_str)
 
     try
     {
-        auto ret = google::protobuf::util::JsonStringToMessage(json_str, &spec_proto_);
+        auto ret = google::protobuf::util::JsonStringToMessage(without_schema_key(json_str), &spec_proto_);
 
         if (ret.ok() == false)
         {

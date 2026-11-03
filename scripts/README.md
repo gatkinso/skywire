@@ -3,11 +3,11 @@
 | Script | Purpose |
 |---|---|
 | `make_ring_bin.py` | Writes `RingyMcRingface.bin`, the input file of the cross-language serial test. |
-| `test_wiregen.bat` | Windows: runs wiregen over the `cfg/*.test.json` specs. |
 | `check_ctest_skips.py` | CI: fails if ctest skipped a test (reads `ctest --output-junit`). |
 | `release_notes.py` | Release: checks a tag against the source and prints its CHANGELOG section. |
 | `release_smoke_test.py` | Release: checks an unpacked release archive works on a machine that didn't build it. |
 | `run_fuzzers.py` | Runs the libFuzzer targets in a `-DSKYWIRE_FUZZ=ON` build for a while each. |
+| `check_schemas.py` | Checks the JSON Schemas in `schema/` against the repo's specs and lang files, and against wiregen (ctest `skywire_schema:Check`). |
 | `coverage.py` | Reports line and branch coverage of a `-DSKYWIRE_COVERAGE=ON` build after ctest. |
 
 ## make_ring_bin.py
@@ -80,9 +80,22 @@ python3 scripts/check_ctest_skips.py build/ctest.xml               # no skips al
 python3 scripts/check_ctest_skips.py build/ctest.xml --allow Swift # except tests matching the regex
 ```
 
+## check_schemas.py
+
+Checks the JSON Schemas in `schema/`: every spec in `examples/specs` and the
+generated tests, and every lang file, must validate, and a list of broken
+specs, one per rule wiregen enforces, must not. With `--wiregen`, it also
+checks wiregen rejects each broken spec and accepts one with a `"$schema"`
+line. ctest runs it as `skywire_schema:Check`. It needs the `jsonschema`
+module and prints `JSONSCHEMA_NOT_FOUND` (ctest's skip marker) without it.
+
+```
+python3 scripts/check_schemas.py --wiregen build/bin/wiregen
+```
+
 ## Making a release
 
-`.github/workflows/release.yml` builds the archives (README 1.4), tests each
+`.github/workflows/release.yml` builds the archives ([docs/install.md](../docs/install.md)), tests each
 on a fresh runner and publishes a GitHub release when a `v*` tag is pushed.
 
 1. Set the version in `project(skywire VERSION x.y.z)` in `CMakeLists.txt`
@@ -90,7 +103,8 @@ on a fresh runner and publishes a GitHub release when a `v*` tag is pushed.
 2. Optionally try a pre-release first: tag `vx.y.z-rc1` and push the tag. It
    is published as a pre-release, with the same notes. Delete it when done
    (`gh release delete vx.y.z-rc1 --cleanup-tag`).
-3. Date the CHANGELOG section, `## [x.y.z] - YYYY-MM-DD`, and merge that.
+3. Date the CHANGELOG section, `## [x.y.z] - YYYY-MM-DD`, set `VERSION=x.y.z`
+   in the quick start (`README.md` and `docs/quick-start.md`), and merge that.
 4. Tag that commit `vx.y.z` and push the tag.
 
 The workflow refuses a tag whose version isn't the project version, and a

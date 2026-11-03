@@ -360,6 +360,38 @@ TEST_F(SpecificationUnitTest, read_string_Empty)
     ASSERT_FALSE(spec.read_string(""));
 }
 
+TEST_F(SpecificationUnitTest, read_string_SchemaKey)
+{
+    skyloupe::Specification spec;
+
+    ASSERT_TRUE(spec.read_string(R"({
+        "$schema": "../schema/skywire-spec.schema.json",
+        "stringValues": { "classname": "Point" },
+        "members": { "1": { "type": "uint16_t", "name": "x", "endian": 1, "bits": 12 } }
+    })"));
+    ASSERT_EQ(spec.get_value_string("classname"), "Point");
+
+    std::string type;
+    std::string name;
+    uint32_t endian;
+    ASSERT_TRUE(spec.get_value_member(1, type, name, endian));
+    ASSERT_EQ(type, "uint16_t");
+    ASSERT_EQ(endian, SW_LITTLE_ENDIAN_FLAG);
+    ASSERT_EQ(spec.get_proto().members().at(1).bits(), 12u);
+}
+
+TEST_F(SpecificationUnitTest, read_string_SchemaKeyOnlyAtTop)
+{
+    skyloupe::Specification spec;
+
+    // "$schema" is dropped only at the top level; anywhere else it is still an unknown field.
+    ASSERT_FALSE(spec.read_string(R"({
+        "stringValues": { "classname": "Point" },
+        "members": { "1": { "$schema": "x", "type": "uint16_t", "name": "x" } }
+    })"));
+    ASSERT_FALSE(spec.read_string(R"({ "$schema": "x", "member": {} })"));
+}
+
 TEST_F(SpecificationUnitTest, set_value_string_NewKey)
 {
     skyloupe::Specification spec;
