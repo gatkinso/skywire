@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "skywire lang file",
+  "description": "A lang file: the templates and settings one wiregen generator uses. Only its shape is checked here; which templates a generator needs is up to the generator (README, Lang(uage) Files).",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "This schema, for editors. wiregen ignores it.",
+      "type": "string"
+    },
+    "stringValues": { "$ref": "#/$defs/stringValues" },
+    "string_values": { "$ref": "#/$defs/stringValues" },
+    "includes": {
+      "description": "Includes or imports every generated file needs, such as the language's runtime. They come before a specification's own.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nativeTypes": { "$ref": "#/$defs/nativeTypes" },
+    "native_types": { "$ref": "#/$defs/nativeTypes" }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    { "required": ["stringValues"], "not": { "required": ["string_values"] } },
+    { "required": ["string_values"], "not": { "required": ["stringValues"] } }
+  ],
+
+  "$defs": {
+    "stringValues": {
+      "description": "Templates and settings, by name. Tokens such as __MEMBERNAME__ mark where generated text goes.",
+      "type": "object",
+      "properties": {
+        "language": {
+          "description": "The generator this lang file is for.",
+          "enum": ["c", "c++", "csharp", "go", "java", "javascript", "proto3", "python3", "rust", "swift"]
+        },
+        "outputheaderfilename": { "$ref": "#/$defs/fileName" },
+        "outputimplfilename": { "$ref": "#/$defs/fileName" },
+        "outputtestfilename": { "$ref": "#/$defs/fileName" },
+        "outputrelayfilename": { "$ref": "#/$defs/fileName" }
+      },
+      "required": ["language"],
+      "additionalProperties": { "type": "string" }
+    },
+    "fileName": {
+      "description": "Output file name pattern. {classname} and {classname_snake} stand for the class name as is and in snake_case.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.+{}-]+$"
+    },
+    "nativeTypes": {
+      "description": "The member types that are not messages. A member type outside this list (and not string) names a nested message.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    }
+  }
+}

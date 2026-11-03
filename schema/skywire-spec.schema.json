@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "skywire message specification",
+  "description": "The input to wiregen: one message, its members in tag order. Mirrors Specification in src/lib/skywireproto/specification.proto, read as protobuf JSON, plus the checks wiregen makes before generating.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "This schema, for editors. wiregen ignores it.",
+      "type": "string"
+    },
+    "stringValues": { "$ref": "#/$defs/stringValues" },
+    "string_values": { "$ref": "#/$defs/stringValues" },
+    "members": {
+      "description": "The members, keyed by tag. Tags order the members on the wire and are their protobuf field numbers: 1 to 536870911, but not 19000-19999.",
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^(?!19[0-9]{3}$)([1-9][0-9]{0,7}|[1-4][0-9]{8}|5[0-2][0-9]{7}|53[0-5][0-9]{6}|536[0-7][0-9]{5}|5368[0-6][0-9]{4}|536870[0-8][0-9]{2}|53687090[0-9]|53687091[01])$"
+      },
+      "additionalProperties": { "$ref": "#/$defs/member" }
+    },
+    "includes": {
+      "description": "Extra includes or imports for the generated code: a path, <path> or \"path\". The lang file's own come first; a nested message's are added without listing it here.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(<[A-Za-z0-9_./+-]+>|\"[A-Za-z0-9_./+-]+\"|[A-Za-z0-9_./+-]+)$"
+      }
+    },
+    "nativeTypes": { "$ref": "#/$defs/nativeTypes" },
+    "native_types": { "$ref": "#/$defs/nativeTypes" }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    { "required": ["stringValues"], "not": { "required": ["string_values"] } },
+    { "required": ["string_values"], "not": { "required": ["stringValues"] } }
+  ],
+  "required": ["members"],
+
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "fileName": {
+      "description": "A plain file name, no directories. {classname} and {classname_snake} stand for the class name as is and in snake_case.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.+{}-]+$",
+      "not": { "enum": [".", ".."] }
+    },
+    "stringValues": {
+      "description": "Named settings for the message. Other keys are allowed and ignored.",
+      "type": "object",
+      "properties": {
+        "classname": {
+          "description": "The message's class (struct, type) name. A nested message's spec is <classname>.json.",
+          "$ref": "#/$defs/identifier"
+        },
+        "namespace": {
+          "description": "Namespace, package or module: identifiers joined by '.' or '::'. wiregen --namespace overrides it.",
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*((\\.|::)[A-Za-z_][A-Za-z0-9_]*)*$"
+        },
+        "bitorder": {
+          "description": "Where a storage unit's first bitfield goes: lsb (low bits, the default) or msb (high bits).",
+          "enum": ["lsb", "msb"]
+        },
+        "outputheaderfilename": {
+          "description": "Header file name, instead of the lang file's.",
+          "$ref": "#/$defs/fileName"
+        },
+        "outputimplfilename": {
+          "description": "Implementation file name, instead of the lang file's.",
+          "$ref": "#/$defs/fileName"
+        },
+        "outputtestfilename": {
+          "description": "Unit test file name (--generate_tests), instead of the lang file's.",
+          "$ref": "#/$defs/fileName"
+        },
+        "outputrelayfilename": {
+          "description": "Relay file name (--generate_relay), instead of the lang file's.",
+          "$ref": "#/$defs/fileName"
+        },
+        "language": {
+          "description": "Ignored, with a warning: the language comes from the lang file, so one spec serves every language.",
+          "type": "string",
+          "deprecated": true
+        }
+      },
+      "required": ["classname"],
+      "additionalProperties": { "type": "string" }
+    },
+    "nativeTypes": {
+      "description": "Used by lang files; ignored in a message specification.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "member": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "A native type, string (a fixed-length char array), or the classname of another message in the same namespace.",
+          "anyOf": [
+            {
+              "enum": [
+                "char", "unsigned char",
+                "uint8_t", "int8_t", "uint16_t", "int16_t",
+                "uint32_t", "int32_t", "uint64_t", "int64_t",
+                "float", "double", "string"
+              ]
+            },
+            { "$ref": "#/$defs/identifier" }
+          ]
+        },
+        "name": {
+          "description": "The member's name, unique in the message.",
+          "$ref": "#/$defs/identifier"
+        },
+        "endian": {
+          "description": "Byte order on the wire: 0 big-endian (the default), 1 little-endian, 2 the host's. No effect on 8-bit types or nested messages.",
+          "type": "integer",
+          "enum": [0, 1, 2]
+        },
+        "length": {
+          "description": "A string's length in bytes, at least 1.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "bits": {
+          "description": "Makes an integer member a bitfield this many bits wide (1 to the type's width), packed with its neighbours.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        }
+      },
+      "required": ["type", "name"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "string" } } },
+          "then": {
+            "required": ["length"],
+            "properties": { "length": { "minimum": 1 } }
+          }
+        },
+        {
+          "if": {
+            "required": ["bits"],
+            "properties": { "bits": { "minimum": 1 } }
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "uint8_t", "int8_t", "uint16_t", "int16_t",
+                  "uint32_t", "int32_t", "uint64_t", "int64_t"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["uint8_t", "int8_t"] } } },
+          "then": { "properties": { "bits": { "maximum": 8 } } }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["uint16_t", "int16_t"] } } },
+          "then": { "properties": { "bits": { "maximum": 16 } } }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["uint32_t", "int32_t"] } } },
+          "then": { "properties": { "bits": { "maximum": 32 } } }
+        }
+      ]
+    }
+  }
+}

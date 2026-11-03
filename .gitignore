@@ -15,3 +15,6 @@ __pycache__
 CTestConfig.cmake
 .build
 .swiftpm
+
+# mkdocs build output
+/site/
