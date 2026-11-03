@@ -1,0 +1,67 @@
+# The documentation site, built from docs/ with MkDocs and Material for MkDocs:
+#
+#     pip install -r docs/requirements.txt
+#     mkdocs serve            # preview at http://127.0.0.1:8000
+#     mkdocs build --strict   # what CI checks
+site_name: Skywire
+site_description: Generates code to read and write binary messages, byte for byte, in nine languages.
+repo_url: https://github.com/gatkinso/skywire
+repo_name: gatkinso/skywire
+edit_uri: edit/master/docs/
+copyright: Copyright 2014-2026 Geoffrey Atkinson
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Quick start: quick-start.md
+  - Why skywire?: why.md
+  - Reference:
+      - Specifications: specs.md
+      - Running wiregen: cli.md
+      - Generated code: generated-code.md
+      - Languages: languages.md
+      - Protobuf (PZ) mode: protobuf.md
+      - Lang files: lang-files.md
+  - Setup:
+      - Installing: install.md
+      - Using skywire: using.md
+      - Building: building.md
+      - Testing: testing.md
+  - License: license.md

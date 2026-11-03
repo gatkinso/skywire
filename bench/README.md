@@ -30,7 +30,7 @@ C# and JavaScript benchmarks and prints one table:
 ...
 ```
 
-The main README (section 4.1) has a full table from one machine.
+[docs/testing.md](../docs/testing.md#benchmarks) has a full table from one machine.
 
 To run some languages only, or again without rebuilding:
 

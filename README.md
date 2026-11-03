@@ -15,1130 +15,164 @@ mrf
 Copyright 2014-2026 Geoffrey Atkinson. Licensed under the Apache License 2.0
 (see LICENSE).
 
-# [1.0] Introduction
-
-Welcome to Skywire!
-
-In this repository you will find a simple yet surprisingly versatile message 
-serialization generator for C, C++, C#, Go, Java, JavaScript, Python, Rust and Swift.
-
-Based on Google Protocol Buffer technology, Skywire takes protocol buffers to 
-a place it fears to tread:  namely, the ability to define a wire protocol.
-
-Yes, that's right.  Bits.  Endianness.  Terrible things to behold.  Oh my.
-
-Unlike generators like Protocol Buffers, the Skywire generator (known as 
-"wiregen") is asymmetric:  wiregen generated code only has to run on one 
-side of the connection:  if you have an ICD for the component or device you 
-are trying to communicate with, wiregen gives you the ability to define a 
-"stencil" for a message (a C++ class, a C struct, a Go struct, ...) that can
-be used to generate code to interface with it.
-
-wiregen generates messages in
-
-* C
-* C++ (which can also speak protobuf; see "Protobuf (PZ) mode")
-* C#
-* Go
-* Java
-* JavaScript (ES modules, with TypeScript declarations)
-* Python 3
-* Rust
-* Swift
-
-and can also write the matching proto3 `.proto` file.
-
-A message specification is a JSON file listing the message's members: each
-one's tag, type, name and byte order, plus fixed-length strings, bitfields and
-nested messages. It says nothing about the language; the command line picks
-that, and a "lang file" per language holds the language's conventions. Every
-language puts the same bytes on the wire, and the tests check that they do
-(section 4.0).
-
-The developer is given wide latitude in defining the manner and style of the 
-generated code, so that the generated code can adhere to in-house naming and 
-style conventions to the greatest degree possible.
-
-In addition to this, wiregen can generate unit tests for the generated code
-(Google Test for C and C++, each language's own test style for the others),
-and a "relay" program that checks a message read from a file member by member.
-While these are not necessary for generating messages using default settings,
-they come in very handy when the wiregen generator has been customized.
-
-## [1.1] Source Code Repository
-
-At the time of this writing, the Skywire source code can be found at:
-
-https://github.com/gatkinso/skywire
-
-Qwikpirate (command-line parsing) is a git submodule, so clone with
-
-    git clone --recursive https://github.com/gatkinso/skywire.git
-
-or run `git submodule update --init` in an existing clone.
-
-## [1.2] Dependencies
-
-| Package | Used for |
-|---|---|
-| Google Protocol Buffers | wiregen reads specifications through it; the proto3 tests run its `protoc` |
-| protozero | The C++ runtime: every generated C++ message has protobuf (PZ) functions, so any program with generated C++ needs its headers, as do skywire's tests and examples |
-| Google Test | Skywire's tests, and the C and C++ tests that `--generate_tests` writes |
-| Qwikpirate | wiregen's command line (bundled as a submodule) |
-
-## [1.3] License of generated code
-
-Skywire itself is licensed under the Apache License 2.0. The code wiregen
-generates is yours: use it under any license, with no notice or attribution
-required. Generated files carry no copyright or license header.
-
-The runtime files that generated code needs (`cstream.h`, `sw_endian.h`,
-`stream.h`, `streamable.h` and `SWStream.swift`) carry a runtime exception
-that grants the same freedom, so a program built with them can be distributed
-under terms of your choice.
-
-## [1.4] Releases
-
-Each [release](https://github.com/gatkinso/skywire/releases) has a prebuilt
-archive per platform, so you can use wiregen without building skywire:
-
-| Archive | Runs on |
-|---|---|
-| `skywire-<version>-linux-x86_64.tar.gz` | Linux x86_64 with glibc 2.35 or newer (Ubuntu 22.04, Debian 12, RHEL 10 and later) |
-| `skywire-<version>-linux-aarch64.tar.gz` | The same, on arm64 |
-| `skywire-<version>-macos-arm64.tar.gz` | macOS 12 or newer on Apple silicon |
-| `skywire-<version>-windows-x64.zip` | Windows 10 or newer, x64 |
-
-wiregen in these archives needs nothing else installed: protobuf, abseil and
-(on Linux) the C++ runtime are linked in. Each archive is an install prefix,
-the same as `cmake --install` makes (see 3.2):
-
-| Path | Contents |
-|---|---|
-| `bin/` | `wiregen` |
-| `include/skywire/` | The C and C++ runtime headers |
-| `share/skywire/` | The lang files and the Swift runtime |
-| `lib/cmake/skywire/`, `lib/pkgconfig/` | The CMake package and `skywire.pc` |
-
-Unpack it anywhere and run `bin/wiregen`, or point `CMAKE_PREFIX_PATH` at it.
-`SHA256SUMS` lists each archive's checksum:
-
-    sha256sum --check --ignore-missing SHA256SUMS
-
-and each archive has a build provenance attestation, which shows it was built
-by this repository's release workflow from the tagged commit:
-
-    gh attestation verify skywire-<version>-linux-x86_64.tar.gz --repo gatkinso/skywire
-
-The macOS build is not notarized. If macOS refuses to run a wiregen downloaded
-with a browser, remove the quarantine attribute:
-`xattr -d com.apple.quarantine bin/wiregen`.
-
-On Apple silicon Macs, Homebrew installs the same archive, with protozero
-for generated C++:
-
-    brew install gatkinso/tap/skywire
-
-The formula and its tests are in [`packaging/homebrew`](packaging/homebrew/README.md).
-
-A vcpkg overlay port and a Conan 2 recipe, which build wiregen from source,
-are in [`packaging/vcpkg`](packaging/vcpkg/README.md) and
-[`packaging/conan`](packaging/conan/README.md).
-
-## [1.5] Versioning
-
-Skywire follows [Semantic Versioning](https://semver.org/). The version covers:
-
-* the specification JSON format,
-* the lang file format,
-* the public API of the generated code and of the runtime files, and
-* the bytes a generated message writes (its wire format).
-
-A change that breaks any of these needs a new major version. Before 1.0, a
-minor version may break them too; `CHANGELOG.md` lists every such change under
-**Changed** or **Removed**. `wiregen --version` prints the version, and
-`wiregen --banner` the commit it was built from.
-
-# [2.0] Build Requirements
-
-* CMake 3.28 or newer
-* A C++17 compiler (and a C99 compiler)
-
-Skywire is built and tested on:
-
-| Platform | Compiler | CMake generators |
-|---|---|---|
-| macOS (Apple silicon) | Apple clang | Unix Makefiles |
-| Ubuntu 24.04 (x86_64) | GCC | Unix Makefiles |
-| Windows 11 (x64) | Visual Studio 2026 (MSVC 19.50) | Ninja, Visual Studio 18 2026 |
-
-The tests that compile generated code in other languages need that language's
-toolchain, and are skipped without it (see 4.0).
-
-Every release is built and tested by GitHub Actions before it is published
-(`.github/workflows/ci.yml`, called from `release.yml`): Ubuntu 24.04 with GCC
-and every language toolchain (no test may be skipped), Ubuntu with Clang under
-AddressSanitizer and UndefinedBehaviorSanitizer, and macOS 15 with Apple clang
-and Windows with Visual Studio 2026, both with every language toolchain (again,
-no test may be skipped). CI can also be run by hand on any branch, as can the
-libFuzzer workflow (`.github/workflows/fuzz.yml`); see
-[`src/test/fuzz`](src/test/fuzz/README.md). Pull requests run no workflows.
-
-# [3.0] Build Instructions
-
-Skywire is heavily dependent on CMake.  No other build system is currently supported.
-That said, we'd be happy to integrate others should there be enough requests for 
-it.
-
-Point CMake at your protobuf and Google Test installs with `CMAKE_PREFIX_PATH`,
-and at protozero with `PROTOZERO_DIR` (the directory holding its `include`):
-
-    cmake -S skywire -B build_dir -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_PREFIX_PATH="$HOME/apps/protobuf;$HOME/apps/googletest" \
-          -DPROTOZERO_DIR=$HOME/apps/protozero \
-          -DCMAKE_INSTALL_PREFIX=$HOME/skywire
-    cmake --build build_dir
-    cmake --install build_dir
-
-On Ubuntu (24.04 or newer) the distribution's packages are enough:
-
-    sudo apt install libprotobuf-dev protobuf-compiler libgtest-dev libgmock-dev libprotozero-dev
-    cmake -S skywire -B build_dir -DCMAKE_BUILD_TYPE=Release -DPROTOZERO_DIR=/usr
-
-On macOS, Homebrew's `protobuf`, `googletest` and `protozero` work the same
-way, with `-DCMAKE_PREFIX_PATH=$(brew --prefix)` and
-`-DPROTOZERO_DIR=$(brew --prefix protozero)`.
-
-To build only wiregen and what it installs, configure with
-`-DBUILD_TESTING=OFF -DSKYWIRE_EXAMPLES=OFF`. Then protobuf is the only
-dependency: Google Test and protozero are needed for the tests and examples.
-
-`cmake --install build_dir --prefix <dir>` installs somewhere else without
-reconfiguring. Under the prefix:
-
-| Path | Contents |
-|---|---|
-| `bin/` | `wiregen` (on Windows, with the protobuf and abseil DLLs it needs) |
-| `include/skywire/` | The C and C++ runtimes, both header-only: `cstream.h`, `sw_endian.h`, `stream.h`, `streamable.h` |
-| `share/skywire/runtime/` | The Swift runtime, `swift/SWStream.swift` |
-| `share/skywire/lang/` | The lang files, `lang.*.json` |
-| `lib/cmake/skywire/` | The CMake package (see 3.2). Some Linux systems use `lib64` or a multiarch directory in place of `lib`. |
-| `lib/pkgconfig/` | `skywire.pc`, for builds without CMake (see 3.2) |
-| `share/doc/skywire/` | `README.md` and `LICENSE` |
-
-Nothing from the tests is installed. The generated C#, Go, Java, JavaScript,
-Python and Rust code needs no runtime. The build also leaves a ready-to-run `wiregen`, with its
-lang files beside it, in `build_dir/bin`.
-
-Build options:
-
-| Option | Default | Effect |
-|---|---|---|
-| `SKYWIRE_EXAMPLES` | ON | Build and test the programs in `examples/` (see 4.2). |
-| `SKYWIRE_BENCH` | OFF | Build the benchmarks in `bench/` (see 4.1). |
-| `SKYWIRE_SANITIZE` | OFF | Build all C and C++ with AddressSanitizer and UndefinedBehaviorSanitizer (MSVC: AddressSanitizer only). Use a separate build directory. |
-| `SKYWIRE_FUZZ` | OFF | Build the fuzz targets in `src/test/fuzz` with libFuzzer, and everything with ASan and UBSan (Clang only; see [`src/test/fuzz`](src/test/fuzz/README.md)). Use a separate build directory. |
-| `SKYWIRE_COVERAGE` | OFF | Build all C and C++ with gcov coverage counters, for `scripts/coverage.py` (GCC or Clang; see 4.0). Use a separate Debug build directory. |
-| `SKYWIRE_BIN_INSTALL_DIR` | `bin` | Where `cmake --install` puts wiregen, relative to the prefix; wiregen finds the lang files from there. The vcpkg port uses `tools/skywire`. |
-| `SKYWIRE_INSTALL_DLLS` | ON | Windows: install the DLLs wiregen needs beside it. The vcpkg port turns it off, since those DLLs come from their own packages. |
-
-## [3.1] Windows
-
-What is it with Windows?  Why must already complex tasks be further muddied
-with needless complexity?  Sigh...  it is a mystery.
-
-That said, it is a mystery that we must embrace if we are to target the OS that
-runs 90% of the computers on the planet.  The easiest route is vcpkg: install
-`protobuf`, `gtest` and `protozero` for the `x64-windows` triplet, then, from a
-Visual Studio x64 developer prompt:
-
-    cmake -S skywire -B build_dir -G Ninja -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ^
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-    cmake --build build_dir
-
-or `-G "Visual Studio 18 2026" -A x64` in place of `-G Ninja`, building with
-`cmake --build build_dir --config Release`. vcpkg puts protozero on the include
-path, so `PROTOZERO_DIR` is not needed.
-
-To install:
-
-    cmake --install build_dir --prefix C:/skywire
-
-adding `--config Release` for the Visual Studio generator. `bin` gets
-`libprotobuf.dll` and `abseil_dll.dll` beside `wiregen.exe`, so the installed
-wiregen runs without vcpkg on `PATH`.
-
-## [3.2] Using skywire from another project
-
-An installed skywire is a CMake package, used much like protobuf's:
-
-    find_package(skywire CONFIG REQUIRED COMPONENTS c)
-
-    add_executable(app main.c)
-    skywire_generate(TARGET app LANGUAGE c SPECS specs/Position.json specs/Telemetry.json)
-
-Point `CMAKE_PREFIX_PATH` at the install prefix, and for C++ at protozero too
-(`PROTOZERO_DIR`, or vcpkg):
-
-    cmake -S app -B app_build -DCMAKE_PREFIX_PATH=$HOME/skywire \
-          -DPROTOZERO_DIR=$HOME/apps/protozero
-
-The components are `c` and `cpp`; without `COMPONENTS` you get whichever are
-available. Generated C++ always needs protozero, a header-only library that is
-not part of the install. The `cpp` component looks for it on the include path,
-under `PROTOZERO_DIR`, or in `SKYWIRE_PROTOZERO_INCLUDE_DIR` (the directory
-holding `protozero/`). Without it, `skywire::cpp_runtime` is not defined, a
-`find_package` that requires `cpp` fails and says so, and
-`skywire_generate(TARGET ... LANGUAGE cpp)` stops with the same advice.
-
-The package provides:
-
-| Name | What it is |
-|---|---|
-| `skywire::wiregen` | The generator, for your own `add_custom_command` |
-| `skywire::c_runtime` | The header-only runtime for generated C (`cstream.h`) |
-| `skywire::cpp_runtime` | The header-only runtime for generated C++, with protozero's include directory and C++17 |
-| `skywire_generate()` | Generates C or C++ at build time |
-| `SKYWIRE_INCLUDE_DIR`, `SKYWIRE_RUNTIME_DIR`, `SKYWIRE_LANG_DIR` | The installed headers, the Swift runtime and the lang files |
-
-    skywire_generate(LANGUAGE <c|cpp>
-                     SPECS <spec.json>...
-                     [TARGET <target>]
-                     [OUT_DIR <dir>]
-                     [OUT_VAR <variable>]
-                     [NAMESPACE <namespace>])
-
-`skywire_generate()` runs wiregen on each specification whenever it (or
-another in `SPECS`) changes. Its output goes to `OUT_DIR`, by default
-`skywire_c` or `skywire_cpp` in the current binary directory. With `TARGET` the
-generated sources are added to that target, which also gets `OUT_DIR` on its
-include path and links the language's runtime. `OUT_VAR` receives the generated
-file names. Give a nested message's specification in the same call as the
-message that holds it, in the same directory. For the other languages, run
-`skywire::wiregen` yourself; Swift code also needs
-`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the Swift package below.
-
-Without CMake, use `skywire.pc`. It gives the include path, and its `wiregen`,
-`langdir` and `runtimedir` variables give the generator, the lang files and the
-Swift runtime. Its paths are relative to the `.pc` file, so they stay right
-wherever the install is:
-
-    export PKG_CONFIG_PATH=$HOME/skywire/lib/pkgconfig
-    WIREGEN=$(pkg-config --variable=wiregen skywire)
-    mkdir -p out
-    $WIREGEN --language c --input_file Position.json --outdir out --write_to_file
-    cc -std=c99 $(pkg-config --cflags skywire) -Iout -o app main.c out/Position.c
-
-Neither runtime has anything to compile or link. For C++, add protozero's
-include directory and `-std=c++17`; protozero has no `.pc` of its own.
-
-A Swift package can depend on skywire for SWStream instead of copying
-`SWStream.swift`. The `Package.swift` at the top of the repository has one
-library, `Skywire`:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/gatkinso/skywire.git", from: "0.10.0"),
-],
-targets: [
-    .executableTarget(name: "app", dependencies: [.product(name: "Skywire", package: "skywire")]),
-]
+wiregen generates the code to read and write binary messages in a format you
+already have (a device's ICD, a radio link, another team's packed structs)
+in C, C++, C#, Go, Java, JavaScript, Python, Rust and Swift, and every
+language puts exactly the same bytes on the wire.
+
+Yes, that's right. Bits. Endianness. Terrible things to behold. Oh my.
+
+You describe a message once, in JSON: its members in order, each one's type
+and byte order, plus fixed-length strings, bitfields and nested messages.
+wiregen turns that into plain structs or classes with getters, setters,
+serialize, deserialize, equality and size, and, if you like, unit tests for
+them. Most languages need no runtime library, and the generated code is yours
+under any license. Generated C++ can also speak protobuf.
+
+skywire handles fixed layouts. If your format has arrays, variable-length or
+optional fields, or you get to design the format yourself, see
+[Why skywire?](docs/why.md) for what to use instead.
+
+## Quick start
+
+Say a temperature sensor's interface control document (ICD) describes the
+reading it sends, 9 bytes, big-endian:
+
+| Offset | Size | Field | Notes |
+|---|---|---|---|
+| 0 | 2 | Sensor ID | unsigned |
+| 2 | 4 | Timestamp | unsigned, milliseconds |
+| 6 | 2 | Temperature | signed, hundredths of a °C |
+| 8 | 1 | Mode (bits 7–4), flags (bits 3–0) | unsigned |
+
+### 1. Get wiregen
+
+Download the archive for your platform from the
+[latest release](https://github.com/gatkinso/skywire/releases/latest) and
+unpack it. On Linux x86_64:
+
+```sh
+VERSION=0.9.0
+curl -LO https://github.com/gatkinso/skywire/releases/download/v$VERSION/skywire-$VERSION-linux-x86_64.tar.gz
+tar xzf skywire-$VERSION-linux-x86_64.tar.gz
+SKYWIRE=$PWD/skywire-$VERSION-linux-x86_64
 ```
 
-Generated Swift starts with `#if canImport(Skywire)` / `import Skywire`, so the
-same files build with the package or with a copy of `SWStream.swift` in the
-module. Your own files that use `SWStream` directly need `import Skywire`.
-wiregen itself still runs outside SwiftPM; check its output in, or generate it
-before `swift build`.
+The archives are `linux-x86_64`, `linux-aarch64`, `macos-arm64` and
+`windows-x64` (a `.zip`); see [Installing](docs/install.md) for Homebrew and the
+rest.
 
-Code generated with `--generate_tests` needs Google Test, for C and C++ only;
-the tests for the other languages use their standard library. The C and C++
-test files include `<gtest/gtest.h>` and `<gmock/gmock.h>` and have no
-`main()`, so link them with `GTest::gtest_main` and `GTest::gmock` (from
-`find_package(GTest)`). Swift, Go, Python, Java, Rust, C# and JavaScript tests
-need only their own toolchain (for JavaScript, Node's built-in `node:test`).
+### 2. Write the specification
 
-`src/test/install/consumer` is a small project of this kind; ctest builds it
-against a scratch install (`skywire_install:Consumer`), once through the CMake
-package and once, when pkg-config is there, through `skywire.pc`.
-
-# [4.0] Running unit tests
-
-The tests are managed with CTest. After a successful build, run them from the
-build directory:
-
-    cd build_dir
-    ctest -j8 --output-on-failure
-
-With a multi-config generator (Visual Studio, Xcode) give the configuration
-you built: `ctest -C Release`. Without it every test fails as "Not Run" (Missing
-"-C <config>"). `ctest -R <regex>` runs a subset, for example
-`ctest -R skywire_example`, and `ctest -N` lists the tests without running them.
-
-Every test name starts with its group:
-
-| Group | What it tests |
-|---|---|
-| `skywire_unit_test:*` | wiregen's own code: specifications, lang files and each generator (Google Test) |
-| `wiregen_cli:*` | wiregen's command line: options, languages, lang files, errors |
-| `qwikpirate_test:*` | The qwikpirate command-line parser (Google Test) |
-| `skywire_generated_tests:*` | Generated C and C++, compiled into the build with their generated Google Test tests, plus bitfield, nested-message and PZ (protobuf) decoding checks |
-| `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust, C# and JavaScript code, each with its generated unit tests |
-| `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
-| `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
-| `skywire_ring:Serial` | One message through every language in turn |
-| `skywire_example:*` | The example programs (section 4.2); only with `SKYWIRE_EXAMPLES` |
-| `skywire_install:Consumer` | The install and its CMake package (section 3.2) |
-
-The `skywire_generated_tests:*RoundTrip` tests generate each language's code
-with its unit tests, then compile and run them. They need that language's
-toolchain (swiftc; go 1.21 or newer; python3; a JDK; rustc 1.58 or newer; the
-.NET SDK; Node.js 18 or newer) and
-report Skipped without it, as do the matching `skywire_example` tests.
-`JavaScriptTypes` needs `tsc` 5.1 or newer on `PATH` (`npm install -g
-typescript`); it never downloads one.
-`RustRoundTrip` also finds a rustup install in
-`~/.cargo/bin` when it isn't on `PATH`, builds with plain `rustc` (no Cargo),
-and fails on any compiler warning, on output that isn't rustfmt-clean (when
-rustfmt is installed), and on clippy warnings (when clippy is installed).
-`CSharpRoundTrip` builds every generated class and test into one program at C#
-7.3, with warnings as errors and overflow checking on, and runs it twice: with
-the `Span<T>` fast path, and with `SKYWIRE_PORTABLE` defined.
-`JavaScriptRoundTrip` checks every generated file with `node --check` and runs
-the tests with `node --test`; `JavaScriptTypes` type-checks, with `--strict`,
-code that reads and writes every member and calls every method through the
-generated `.d.ts` files, and expects an error from each wrongly typed use.
-
-`skywire_ring:Serial` passes one serialized message through the generated code
-of every language (C, C++, Swift, Go, Java, Python, Rust and JavaScript), in a random order each
-run, ending back in the language it started in. Each step checks the message for
-corruption or loss. A language without its toolchain is left out of the ring
-(set `SKYWIRE_RING_REQUIRE_ALL=1` to fail instead), and the test reports
-Skipped with fewer than two languages. Its input file is
-written by `scripts/make_ring_bin.py`. See `src/test/generated_tests/ring/README.md`
-and `scripts/README.md`.
-
-`skywire_example:<Language>` builds and runs the example programs (section 4.2).
-
-`skywire_install:Consumer` installs the build into a scratch prefix (under
-`build_dir/src/test/install/run`, never `CMAKE_INSTALL_PREFIX`), checks what
-was installed, and builds and runs the C and C++ examples from a separate
-project that uses the install (section 3.2), with the CMake package and with
-`skywire.pc`. It also checks that a project requiring the `cpp` component
-without protozero fails with a clear message.
-
-To see what the tests cover, build with `SKYWIRE_COVERAGE` in its own
-directory, run ctest, then report with `scripts/coverage.py` (needs
-[gcovr](https://gcovr.com)):
-
-    cmake -S skywire -B build-cov -DCMAKE_BUILD_TYPE=Debug -DSKYWIRE_COVERAGE=ON <your usual options>
-    cmake --build build-cov && ctest --test-dir build-cov -j8
-    python3 skywire/scripts/coverage.py build-cov --html build-cov/coverage/index.html
-
-It counts wiregen (`src/lib`, `src/bin`, `include`) and the C and C++
-runtimes (`lang/c`, `lang/cpp`); tests, examples and generated code are left
-out. Run it on a build with every language toolchain, since the round trips
-are what exercise each generator. CI's coverage job does this with GCC and
-uploads the report.
-
-To submit results to a CDash dashboard (`ctest -D Experimental`), put your
-own `CTestConfig.cmake` in the source directory. It is not part of the
-repository.
-
-# [4.1] Benchmarks
-
-`bench/` times the generated code of every language on the ring message (135
-bytes, a different byte order on nearly every field, a nested message,
-bitfields and fixed-length strings). The benchmarks are not part of ctest.
-Build them in a Release directory without sanitizers:
-
-	cmake -S skywire -B build-bench -DCMAKE_BUILD_TYPE=Release -DSKYWIRE_BENCH=ON <your usual options>
-	cmake --build build-bench --target bench
-
-or, after a build, `bench/run.sh --build build-bench [c cpp swift go python java rust csharp javascript]`.
-`bench/README.md` says exactly what each number times and how to run them on
-Windows.
-
-Nanoseconds per message on an Apple M1 Pro (October 2026; Apple clang, Swift
-6.4 with `-wmo`, Go 1.21, Python 3.14, JDK 19, Rust 1.99, .NET 10, Node 26), serializing into a
-reused buffer:
-
-| Language | Serialize | Deserialize | Notes |
-|---|---:|---:|---|
-| C++ | 7.8 | 11.9 | |
-| C | 7.9 | 10.3 | |
-| Go | 8.8 | 8.6 | `Serialize()` to a new slice: 33 |
-| Rust | 10.0 | 8.1 | `serialize()` to a new `Vec`: 26 |
-| C# | 20 | 20 | `Serialize()` to a new `byte[]`: 28 |
-| Java | 30 | 31 | `serialize()` to a new `byte[]`: 35 |
-| Swift | 34 | 43 | |
-| JavaScript | 53 | 121 | `serialize()` to a new `Uint8Array`: 255 |
-| Python | 1096 | 852 | 368 / 446 for a message in one byte order |
-
-The deserialize times for C, C++ and Swift include copying the input into the
-stream. Expect Swift to be slower without `-wmo` (whole-module optimization,
-the default for SwiftPM and Xcode release builds).
-
-wiregen's own time grows linearly with message size: on the M1 Pro a
-4000-member message, with its tests and relay, generates in 0.03 to 0.5 s
-depending on the language (a few times that on older or virtual machines).
-`bench/wiregen_scale.py` measures it on your machine (see `bench/README.md`).
-
-# [4.2] Examples
-
-`examples/` has a small program for each language: C, C++, Swift, Go, Python,
-Java, Rust, C# and JavaScript. Each one fills a message that holds a nested message, writes it
-to a file, reads it back and checks the copy is equal. A further C++ example,
-`examples/protobuf`, sends the message through a PZ-mode stream to protoc's C++
-code for the generated `.proto` and back. Both specs are in
-`examples/specs/`, and each language's directory has its own README with the
-wiregen and compiler commands. The examples are built and tested by ctest
-(`skywire_example:<Language>`); configure with `-DSKYWIRE_EXAMPLES=OFF` to
-leave them out. See `examples/README.md`.
-
-# [5.0] Deploying and running
-
-    wiregen --language c++ --input_file specs/MyClass.json --outdir out --write_to_file
-
-The message specification does not say which language to generate; the command
-line does. `--language` takes one of `c`, `c++` (or `cpp`), `csharp` (or `cs`,
-`c#`), `go` (or `golang`), `java`, `javascript` (or `js`),
-`proto3`, `python3` (or `python`), `rust` and `swift`, and uses that language's lang
-file from wiregen's own directory or, in an install, from `share/skywire/lang`. `--lang_file <path>` uses a
-different lang file instead (for example a customized copy); on its own it also
-sets the language, since every lang file names its language. If both are given
-they must agree. (`--langfile` is the old spelling of `--lang_file`.)
-
-`--namespace <name>` replaces the specification's `namespace` (the C++
-namespace, the C# namespace, or the Go, Java or Python package), so one specification can be
-generated into different namespaces. The specification need not have a
-namespace at all when the command line gives one. Rust has no use for it: a
-Rust module's path is wherever you declare it with `mod`.
-
-Without `--write_to_file` the generated code is printed to standard output.
-
-# [6.0] Command-line options
-
-| Option | Effect |
-|---|---|
-| `--input_file <file>` | The message specification to read. |
-| `--input_str <json>` | The message specification, given on the command line instead. |
-| `--language <name>` | The language to generate, using its installed lang file (see 5.0): `c`, `c++` (or `cpp`), `csharp` (or `cs`, `c#`), `go` (or `golang`), `java`, `javascript` (or `js`), `proto3`, `python3` (or `python`), `rust`, `swift`. |
-| `--lang_file <file>` | A lang file to use instead of the installed one (`--langfile` is the old spelling). |
-| `--langspec <json>` | Lang file contents, given on the command line instead. |
-| `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
-| `--generate_tests` | Also generate unit tests (see 7.1). The C and C++ tests need Google Test (see 3.2). |
-| `--generate_relay` | Also generate a relay program (see 7.1). |
-| `--write_to_file` | Write the generated files. Without it they are printed to standard output. |
-| `--outdir <dir>` | The directory to write the files to (default: the current directory). |
-| `--silent` | Do not print the success or failure summary. |
-| `--banner` | Print a banner with wiregen's version and how it was built (commit, branch, compiler, build type, platform), then carry on. On its own, print it and exit. |
-| `--version` | Print wiregen's version and exit. |
-| `--help` | Print the options and exit. |
-
-If an option is given twice, the last one wins. An unknown option, an option missing its
-value, or a value given to an option that takes none is an error, and wiregen
-generates nothing. With no arguments wiregen prints its options. On failure the
-exit status is non-zero.
-
-The version is the `VERSION` in the top-level `CMakeLists.txt`; the library
-reports it as `skyloupe::version()` (and `version_major()`, `version_minor()`,
-`version_patch()`). The revision `--banner` shows is `git describe --tags
---always --dirty` of the source tree, taken at build time, so it follows
-commits without reconfiguring; the library reports it as `skyloupe::revision()`.
-When building outside a git checkout (a source tarball, a package) it is empty
-unless you give one with `-DSKYWIRE_REVISION=<revision>`. The rest of the
-banner — full commit hash and date, branch, compiler, build type, platform and
-whether sanitizers are on — is `skyloupe::build_info()`. There is no build
-timestamp, so rebuilding unchanged sources rebuilds nothing.
-
-# [7.0] Syntax Overview
-
-As stated above, the input to wiregen is a JSON file. For example, `Example.json`:
+`SensorReading.json` says the same as the table:
 
 ```json
 {
-   "stringValues": {
-      "classname": "Example",
-      "namespace": "SomeNamespace"
-   },
-   "members": {
-      "100": { "type": "float",    "name": "myfloat100",   "endian": 1 },
-      "200": { "type": "uint32_t", "name": "myuint32_200", "endian": 0 }
-   }
+  "stringValues": { "classname": "SensorReading", "bitorder": "msb" },
+  "members": {
+    "1": { "type": "uint16_t", "name": "sensor_id" },
+    "2": { "type": "uint32_t", "name": "timestamp_ms" },
+    "3": { "type": "int16_t",  "name": "temp_centi_c" },
+    "4": { "type": "uint8_t",  "name": "mode",  "bits": 4 },
+    "5": { "type": "uint8_t",  "name": "flags", "bits": 4 }
+  }
 }
 ```
 
-`endian` is 0 for big-endian (the default), 1 for little-endian and 2 for the
-host's own order. Keep in mind the JSON values are case sensitive. Running
+Members go on the wire in tag order (`"1"`, `"2"`, ...). Big-endian is the
+default; a little-endian member would add `"endian": 1`. `bits` packs `mode`
+and `flags` into one byte, and `"bitorder": "msb"` puts the first one in the
+high bits, as the ICD draws it. [Specifications](docs/specs.md) has the rest.
 
-    wiregen --language c++ --generate_tests --input_file Example.json --outdir out --write_to_file
+### 3. Generate C
 
-writes `out/Example.h`:
-
-```cpp
-// This is the generated file
-
-#pragma once
-
-#include "streamable.h"
-#include <stdint.h>
-
-namespace SomeNamespace {
-    class Example : public skyloupe::Streamable {
-    public:
-        Example() {}
-        virtual ~Example() {}
-        bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
-            if (str.mode() == skyloupe::Stream::PZ) {
-                protozero::pbf_writer pbf{str.pz_buffer()};
-                return serialize_pb(pbf);
-            }
-            char* p = str.claim(size());
-            if (p == nullptr) return false;
-            serialize_sw(p);
-            return true;
-        }
-        // Writes the SW wire form, size() bytes, at p; returns the end.
-        char* serialize_sw(char* p) const {
-            p = skyloupe::wire::put(p, myfloat100, skyloupe::Endianness::Little);
-            p = skyloupe::wire::put(p, myuint32_200, skyloupe::Endianness::Big);
-            return p;
-        }
-        bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
-            if (str.mode() == skyloupe::Stream::PZ) {
-                Example decoded;
-                try {
-                    if (false == decoded.deserialize_pb(protozero::pbf_reader{str.pz_buffer()})) return false;
-                } catch (const protozero::exception&) {
-                    return false;
-                }
-                *this = decoded;
-                str.clear();
-                return true;
-            }
-            const char* p = str.consume(size());
-            if (p == nullptr) return false;
-            deserialize_sw(p);
-            return true;
-        }
-        // Reads the SW wire form, size() bytes, from p; returns the end.
-        const char* deserialize_sw(const char* p) {
-            p = skyloupe::wire::get(p, myfloat100, skyloupe::Endianness::Little);
-            p = skyloupe::wire::get(p, myuint32_200, skyloupe::Endianness::Big);
-            return p;
-        }
-        bool serialize_pb(protozero::pbf_writer& pbf) const {
-            if (skyloupe::pb_nonzero(myfloat100)) pbf.add_float(100, myfloat100);
-            if (skyloupe::pb_nonzero(myuint32_200)) pbf.add_uint32(200, myuint32_200);
-            return true;
-        }
-        bool deserialize_pb(protozero::pbf_reader pbf) {
-            while (pbf.next()) {
-                switch (pbf.tag_and_type()) {
-                case protozero::tag_and_type(100, protozero::pbf_wire_type::fixed32): myfloat100 = static_cast<float>(pbf.get_float()); break;
-                case protozero::tag_and_type(200, protozero::pbf_wire_type::varint): myuint32_200 = static_cast<uint32_t>(pbf.get_uint32()); break;
-                default: pbf.skip(); break;
-                }
-            }
-            return true;
-        }
-        static size_t size() {
-            return(
-                sizeof(float) +
-                sizeof(uint32_t)
-            );
-        }
-        bool operator==(const Example& other) const {
-            if(this == &other) return true;
-            return(
-                myfloat100 == other.myfloat100 &&
-                myuint32_200 == other.myuint32_200
-            );
-        }
-        float Get_myfloat100() const { return myfloat100; }
-        uint32_t Get_myuint32_200() const { return myuint32_200; }
-        void Set_myfloat100(const float newval) { myfloat100 = newval; }
-        void Set_myuint32_200(const uint32_t newval) { myuint32_200 = newval; }
-    private:
-        float myfloat100{};
-        uint32_t myuint32_200{};
-    };
-}
+```sh
+mkdir -p out
+$SKYWIRE/bin/wiregen --language c --input_file SensorReading.json --outdir out --write_to_file
 ```
 
-The PZ functions are the protobuf encoding (see "Protobuf (PZ) mode"); the
-`*_sw` functions write and read memory directly (see "Serializing in place").
-The runtime, `skyloupe::Stream` and friends, is the header-only `lang/cpp`
-(`streamable.h`, `stream.h`), which needs protozero's headers.
+This writes `out/SensorReading.h` and `out/SensorReading.c`: a
+`SensorReading` struct and the functions that read and write it.
 
-`--generate_tests` also writes `out/ExampleTest.cpp`, a Google Test file
-(link it with `GTest::gtest_main` and `GTest::gmock`), which begins:
+### 4. Use it
 
-```cpp
-// This is the generated file
+`main.c` decodes a reading as the sensor sends it, then encodes it again:
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-#include <cstdint>
-#include <cstring>
-#include "Example.h"
+```c
+#include <stdio.h>
+#include <string.h>
+#include "SensorReading.h"
 
-TEST(ExampleTest, SerDes)
+int main(void)
 {
-    SomeNamespace::Example in, out;
-    skyloupe::Stream stream;
+    /* A reading as the sensor sends it. */
+    const char wire[] = "\x00\x2a" "\x00\x01\xe2\x40" "\x09\xc4" "\x31";
+    SensorReading r;
+    SensorReading_DeserializeSw(&r, wire);
+    printf("sensor %u at %u ms: %.2f C, mode %u, flags %u\n",
+           r.sensor_id, r.timestamp_ms, r.temp_centi_c / 100.0, r.mode, r.flags);
 
-    in.Set_myfloat100(3.5);
-    in.Set_myuint32_200(3000000000);
-
-    bool success = in.serialize(stream);
-    ASSERT_TRUE(success);
-
-    success = out.deserialize(stream);
-    ASSERT_TRUE(success);
-}
-
-TEST(ExampleTest, Size)
-{
-    SomeNamespace::Example msg;
-
-    ASSERT_EQ(msg.size(), sizeof(float)+sizeof(uint32_t));
-}
-
-TEST(ExampleTest, EqualityOperator)
-{
-    SomeNamespace::Example in, out;
-    skyloupe::Stream stream;
-
-    in.Set_myfloat100(3.5);
-    in.Set_myuint32_200(3000000000);
-
-    bool success = in.serialize(stream);
-    ASSERT_TRUE(success);
-
-    success = out.deserialize(stream);
-    ASSERT_TRUE(success);
-
-    ASSERT_EQ(in, out);
+    /* And back to bytes. */
+    char out[sizeof wire];
+    SensorReading_SerializeSw(&r, out);
+    printf("%zu bytes, %s\n", SensorReading_Size(),
+           memcmp(out, wire, SensorReading_Size()) == 0 ? "same" : "different");
+    return 0;
 }
 ```
 
-and goes on to check a short buffer, the exact wire bytes, and the PZ encoding.
-
-The same specification with `--language c` gives `Example.h` and `Example.c`:
-a plain `Example` struct with `Example_Serialize`, `Example_Deserialize`,
-`Example_Size`, `Example_Equals` and getters and setters, using the C runtime
-in `lang/c` (`cstream.h`, header-only); its generated tests are also Google
-Test C++. The C and C++ code puts the same bytes on the wire; see
-`src/test/generated_tests` for the proof. `examples/` has a complete program
-in every language.
-
-Each member's key (`"100"`, `"200"` above) is its tag. Members are serialized in
-numeric tag order, and the tags are also protobuf field numbers (below), so a
-tag must be a valid field number: from 1 to 536870911, and not 19000–19999,
-which protobuf reserves. wiregen rejects any other tag as an invalid
-specification.
-
-#### Bitfield members
-
-An integer member with `bits` takes only that many bits on the wire, packed
-with its neighbours into a storage unit:
-
-```
-"stringValues": { "classname": "Header", "bitorder": "lsb" },
-"members": {
-   "1": { "type": "uint8_t",  "name": "version", "bits": 4 },
-   "2": { "type": "uint8_t",  "name": "flags",   "bits": 4 },
-   "3": { "type": "uint16_t", "name": "id",      "bits": 12, "endian": 0 },
-   "4": { "type": "int16_t",  "name": "delta",   "bits": 4,  "endian": 0 }
-}
+```sh
+cc -std=c99 -I$SKYWIRE/include/skywire -Iout -o reading main.c out/SensorReading.c
+./reading
 ```
 
-- `bits` is allowed on `uint8_t` … `int64_t` only, from 1 to the type's width.
-- Walking the members in tag order, a bitfield joins the open unit if it has
-  the unit's type and `endian` and fits in the bits left. Otherwise it starts
-  a new unit; fields never straddle units. Any other member closes the unit.
-  Above, `version` and `flags` fill one byte. `id` starts a big-endian
-  `uint16_t`, and `delta`, a different type, starts another.
-- A unit goes on the wire as one integer of its type, in its `endian` (as for
-  any member, endian has no effect on an 8-bit unit). Unused bits are written
-  as 0 and ignored on read.
-- `bitorder` (a `stringValues` entry, default `lsb`) sets where the first field
-  goes: `lsb` puts it in the unit's low bits (as GCC and Clang do on
-  little-endian hosts), `msb` in its high bits (as protocol diagrams draw it).
-- In every language the member is held in its full type (in C a plain struct
-  field, not a C bitfield). Setters keep only the field's bits, and signed
-  fields are sign-extended: `Set_delta(-3)` reads back -3, `Set_flags(0x1f)`
-  reads back 15.
+```
+sensor 42 at 123456 ms: 25.00 C, mode 3, flags 1
+9 bytes, same
+```
 
-**Caution: writing a bitfield member without its setter.** In some languages
-the member can be assigned directly, skipping the setter's masking. Serialize
-masks again, so an out-of-range value never spills into its neighbours. But
-the message keeps the value as written: `Equals`, the getter and printing all
-see it, while the wire carries only the low bits. A message that goes through
-serialize and deserialize then no longer equals the original, and nothing
-warns about it. Use the setters, or keep values in range:
+The runtime (`cstream.h`) is header-only, so there is nothing to link.
 
-| Language | Direct writes possible? |
+The same specification with `--language` `c++`, `csharp`, `go`, `java`,
+`javascript`, `python3`, `rust` or `swift` writes the same 9 bytes.
+
+## Installing
+
+- **Release archives** for Linux (x86_64, arm64), macOS (Apple silicon) and
+  Windows (x64): unpack and run, nothing else needed. See
+  [Installing](docs/install.md).
+- **Homebrew** on Apple silicon: `brew install gatkinso/tap/skywire`.
+- **vcpkg and Conan**: a port and a recipe in [`packaging/`](packaging).
+- **Swift package**: the Swift runtime, from this repository's `Package.swift`.
+- **From source**: CMake 3.28, a C++17 compiler and protobuf; see
+  [Building](docs/building.md).
+
+## Documentation
+
+| Page | What's in it |
 |---|---|
-| C | Yes: the members are plain struct fields (`msg.version = 20;`). |
-| Python | Yes: the members are public attributes (`msg.version = 20`). |
-| Go | Within the message's own package: the fields are unexported. |
-| Swift | Within the module that compiles the message: the stored properties are `internal`. |
-| C++ | No: the members are `private`. |
-| Java | No: the fields are `private`. |
-| C# | No: the fields are `private`, and the properties' setters mask. |
-| JavaScript | Yes, through the backing properties (`msg._version = 20`); the accessors (`msg.version = 20`) mask. |
-| Rust | No: the fields are private to the message's module. |
+| [Quick start](docs/quick-start.md) | The example above, step by step |
+| [Why skywire?](docs/why.md) | What it's for, what it isn't, and the alternatives |
+| [Specifications](docs/specs.md) | The JSON format: members, types, byte order, bitfields, nested messages, editor support |
+| [Running wiregen](docs/cli.md) | The command line |
+| [Generated code](docs/generated-code.md) | What wiregen writes, and serializing in place |
+| [Languages](docs/languages.md) | Each language's runtime, tests and details |
+| [Protobuf (PZ) mode](docs/protobuf.md) | Generated C++ speaking protobuf |
+| [Lang files](docs/lang-files.md) | Customizing the generated code |
+| [Installing](docs/install.md) | Release archives, Homebrew, vcpkg, Conan, versioning |
+| [Using skywire](docs/using.md) | The CMake package, `skywire_generate()`, pkg-config, SwiftPM |
+| [Building](docs/building.md) | Building skywire from source |
+| [Testing](docs/testing.md) | The test suite, coverage, benchmarks and examples |
+| [License](docs/license.md) | Skywire's license, and the generated code's |
 
-In protobuf (PZ) mode a bitfield is an ordinary field under its own tag, of its
-type's proto3 type; decoding cuts an out-of-range value to the field's bits,
-as the setter does. The `.proto` comment records the layout, e.g.
-`uint32 version = 1; // uint8_t:4, bits 0-3`.
+## License
 
-#### Nested messages
+Skywire is licensed under the Apache License 2.0 (see [LICENSE](LICENSE)).
+The code wiregen generates is yours: use it under any license, with no notice
+or attribution required, and the runtime files it needs carry an exception
+that grants the same freedom (see [License](docs/license.md)).
 
-A member's type can be another generated message: any type that is not a
-native type or `string` names a message, by its class name, in the same
-namespace (package, module).
-
-```
-"members": {
-   "1": { "type": "uint8_t", "name": "count" },
-   "2": { "type": "Inner",   "name": "inner" }
-}
-```
-
-Generate `Inner` from its own specification, into the same place. The generated
-code imports it where the language needs that: `#include "Inner.h"` in C and
-C++, `from Inner import Inner` in Python, `import "Inner.proto";` in proto3,
-`use super::inner::Inner;` in Rust, `import { Inner } from "./Inner.js";` in
-JavaScript; C#, Go, Java and Swift need nothing. The
-specification does not need to list it in `includes`.
-
-On the wire a nested message is its own serialization, inline, in tag order
-like any member. Its members keep their own byte orders, so the nested member's
-`endian` has no effect. Its size is the nested message's size, and if it fails
-to deserialize, so does the message containing it.
-
-#### Serializing in place
-
-In C, C++, Swift, Go and Rust the generated code handles a whole message at
-once: it claims `size()` bytes from the stream (or slice), then stores each
-member at its offset in the requested byte order, with no per-member calls into
-the runtime; reading is the same in reverse. Python packs and unpacks one
-`struct` per byte order, Java uses `ByteBuffer`, C# writes each member
-into a `byte[]` at an offset, and JavaScript through a `DataView` at an offset. The functions that work in
-place are public, so a message can also be written into, or read from, memory
-you manage:
-
-| Language | Stream functions | In place | Runtime |
-|---|---|---|---|
-| C | `X_Serialize`, `X_Deserialize` | `char* X_SerializeSw(const X*, char*)`, `const char* X_DeserializeSw(X*, const char*)` | `cstream_claim`, `cstream_consume`; `sw_put`, `sw_get` in `cstream.h` |
-| C++ | `serialize(Stream&)`, `deserialize(Stream&)` | `char* serialize_sw(char*) const`, `const char* deserialize_sw(const char*)` | `Stream::claim`, `Stream::consume` (SW mode); `skyloupe::wire::put`, `get` |
-| Swift | `serialize(stream)`, `deserialize(stream)` | `serialize(into: &p)`, `deserialize(from: &p)` | `SWStream.claim`, `consume`, `clear`, `reserve`; `SWWire.put`, `get` |
-| Go | `Serialize()`, `AppendTo(o)`, `Deserialize(o)` | `Put(b)` | `const XSize` |
-| Rust | `serialize()`, `serialize_into(&mut Vec)`, `deserialize(&[u8])` | `write_to(&mut [u8])` | `X::SIZE` |
-| Python | `serialize()`, `deserialize(buffer)` | | `X.SIZE` |
-| Java | `serialize()`, `serialize(ByteBuffer)`, `deserialize(...)` | | |
-| C# | `Serialize()`, `Deserialize(byte[])` | `Serialize(byte[], ref int offset)`, `Deserialize(byte[], ref int offset)` | `Size()` |
-| JavaScript | `serialize()`, `deserialize(bytes)`, `fromBytes(bytes)` | `serializeInto(buf, offset)`, `deserializeFrom(buf, offset)` | `X.SIZE` |
-
-The C, C++ and Swift in-place functions don't check bounds: give them at least
-`size()` bytes. They return (C, C++) or advance `p` to (Swift) the end of what
-they wrote or read. Go's `Put` and Rust's `write_to` panic on a slice shorter
-than the message, C#'s throw `ArgumentException` if fewer than `Size()`
-bytes remain, and JavaScript's throw `RangeError`. A nested message is written and read in place by the same
-functions.
-
-Notes:
-
-* C `X_Serialize` returns -1 if the stream cannot grow.
-* C++ `Stream::clear()` keeps the buffer, so writes after it neither reallocate
-  nor zero-fill.
-* Both the C and C++ runtimes are header-only.
-* Swift `SWStream.byteSize()` is the number of unread bytes, the same as
-  `remaining()`. A stream used for many messages reuses the space it has read.
-* Go's `XSize` constant (e.g. `RingyMcRingfaceSize`) is a package-level name.
-* Java's `hashCode()` gives the same values as `Objects.hash` of the members,
-  without boxing them.
-
-#### Rust
-
-`--language rust` writes each message as a module of its own, named after the
-class in snake_case: `NestyMcNestface` becomes `nesty_mc_nestface.rs`. The code
-uses only `std`, so there is no runtime crate to add; it needs rustc 1.58 or
-newer (edition 2021) and is rustfmt- and clippy-clean. Declare the module next
-to the modules of the messages it contains, which it imports as
-`super::<module>`:
-
-```rust
-mod nesty_inner;
-mod nesty_mc_nestface;
-
-use nesty_mc_nestface::NestyMcNestface;
-
-fn main() -> std::io::Result<()> {
-    let mut msg = NestyMcNestface::default();
-    msg.set_a_myuint8_1(7);
-    msg.b_first2_mut().set_a_myint16_1(-3);
-
-    let wire = msg.serialize(); // NestyMcNestface::SIZE bytes
-    let back = NestyMcNestface::from_bytes(&wire)?;
-    assert_eq!(back, msg);
-    Ok(())
-}
-```
-
-| Item | Notes |
-|---|---|
-| `#[derive(Debug, Clone, Copy, Default, PartialEq)]` | `Default` is written out instead when a string is longer than 32 bytes, which std can't derive. |
-| `SIZE`, `size()` | The wire size, a constant. |
-| `serialize()`, `serialize_into(&mut Vec<u8>)` | `serialize_into` appends. |
-| `write_to(&mut [u8])` | Writes into the first `SIZE` bytes of the slice, as nested messages do; panics if it is shorter. |
-| `deserialize(&mut self, &[u8])`, `from_bytes(&[u8])` | Read from the start of the slice; extra bytes are ignored. A slice shorter than `SIZE` returns an `UnexpectedEof` `std::io::Error` and leaves the message unchanged. |
-| `equals(&other)` | The same as `==`. |
-| `x()`, `set_x(v)` | Fields are private. A bitfield setter keeps only the field's bits. |
-| `x() -> &[u8; N]`, `set_x(&[u8])` | A string; the setter truncates or zero-pads to `N` bytes. |
-| `x() -> &T`, `x_mut()`, `set_x(T)` | A nested message. |
-
-A member named after a Rust keyword becomes a raw identifier (`r#type`, with
-the setter `set_type`). wiregen rejects a member named `self`, `Self`,
-`super`, `crate` or `_`, and one whose accessors would collide with the
-generated items (`SIZE`, `size`, `serialize`, `serialize_into`, `write_to`,
-`deserialize`, `from_bytes`, `equals`, `default`) or with another member's (`a` and `set_a`).
-Names that aren't snake_case, and a class name that isn't CamelCase, are kept
-as they are, with `#![allow(non_snake_case)]` or
-`#![allow(non_camel_case_types)]` at the top of the module.
-
-The specification's `namespace` and `includes` are not used. A nested message
-is imported from its default module name, so generate it without overriding
-its `outputimplfilename`. PZ mode is not available in Rust.
-
-#### C#
-
-`--language csharp` (or `cs`, `c#`) writes each message as a
-`public sealed class` in a `.cs` file of its own, in the specification's
-`namespace` (or none, if it has none). The code is portable C# 7.3 with no
-runtime library and no `unsafe` code, so it builds for .NET Framework 4.6.2
-and later, Unity and .NET, with or without overflow checking.
-Where the target has `Span<T>` (.NET Core 2.1+, .NET Standard 2.1+), the
-generated helpers use it and `BinaryPrimitives` instead of writing one byte at
-a time; define `SKYWIRE_PORTABLE` to build the portable code everywhere.
-
-```csharp
-using System;
-using testspace;
-
-public static class Program
-{
-    public static void Main()
-    {
-        NestyMcNestface msg = new NestyMcNestface();
-        msg.a_myuint8_1 = 7;
-        msg.b_first2.a_myint16_1 = -3;
-
-        byte[] wire = msg.Serialize(); // msg.Size() bytes
-        NestyMcNestface back = new NestyMcNestface();
-        back.Deserialize(wire);
-        Console.WriteLine(back.Equals(msg)); // True
-    }
-}
-```
-
-| Member | Notes |
-|---|---|
-| `Size()` | The wire size. |
-| `Serialize()` | A new `byte[]` of `Size()` bytes. |
-| `Serialize(byte[] buf, ref int offset)` | Writes at `offset` and advances it past the message, as nested messages do. |
-| `Deserialize(byte[] data)`, `Deserialize(byte[] buf, ref int offset)` | Read from the start of `data`, or at `offset` (advancing it); extra bytes are ignored. With fewer than `Size()` bytes left, both overloads of `Serialize` and `Deserialize` throw `ArgumentException` and change nothing. |
-| `x { get; set; }` | A property per member. A bitfield's setter keeps only the field's bits; a nested message's rejects `null`. |
-| `Get_x()`, `Set_x(byte[])` | A string. `Get_x` returns a copy; `Set_x` copies, truncating or zero-padding to `N` bytes. |
-| `Equals`, `GetHashCode`, `ToString` | The class is `IEquatable<X>`. `float` and `double` members compare by their bits, as they go on the wire, so NaN equals itself and -0.0 differs from 0.0. |
-
-`char` and `int8_t` are `sbyte`; `unsigned char` and `uint8_t` are `byte`; the
-other integer types are `short`, `ushort`, `int`, `uint`, `long` and `ulong`.
-A member named after a C# keyword becomes a verbatim identifier (`@event`).
-wiregen rejects a member whose name would collide with something the class
-defines (`Size`, `Serialize`, `Deserialize`, `Equals`, `GetHashCode`,
-`ToString`, `GetType`, `Put`, `Get`, the class's own name, ...) or with
-another member's field or string methods (`a`'s field is `m_a`). The
-specification's `includes` become `using` lines.
-
-`examples/csharp` is a complete program, and `bench/` times C# like the other
-languages. C# has no relay yet, so it is not in the ring test.
-PZ mode is not available in C#.
-
-#### JavaScript
-
-`--language javascript` (or `js`) writes each message as an ES module, `X.js`,
-exporting `class X`, and its TypeScript declarations, `X.d.ts`. The module is
-ES2020 and uses only `Uint8Array`, `DataView`, `BigInt` and `TextEncoder`, with
-no Node APIs and no runtime package, so it runs unchanged in Node 18 and
-later, current browsers, Deno and Bun, and through any bundler. TypeScript
-5.1 or later picks up the declarations; nothing needs compiling.
-
-```js
-import { NestyMcNestface } from "./NestyMcNestface.js";
-
-const msg = new NestyMcNestface();
-msg.a_myuint8_1 = 7;
-msg.b_first2.a_myint16_1 = -3; // a nested message's accessors
-msg.c_myint64_3 = -9000000000n; // 64-bit integers are BigInts
-
-const wire = msg.serialize(); // a Uint8Array of NestyMcNestface.SIZE bytes
-const back = NestyMcNestface.fromBytes(wire);
-console.log(back.equals(msg)); // true
-```
-
-| Member | Notes |
-|---|---|
-| `X.SIZE`, `size()` | The wire size; `SIZE` is read-only. |
-| `serialize()` | A new `Uint8Array` of `SIZE` bytes. |
-| `serializeInto(buf, offset = 0)` | Writes into a `DataView`, any typed array (a Node `Buffer` too) or an `ArrayBuffer`, at `offset`, and returns the offset after the message, as nested messages do. |
-| `deserialize(bytes)`, `deserializeFrom(buf, offset = 0)`, `X.fromBytes(bytes)` | Read from the start of `bytes`, or at `offset` (returning the offset after the message); extra bytes are ignored. With fewer than `SIZE` bytes left, these and `serializeInto` throw `RangeError` and change nothing. |
-| `x` | A getter and setter per member. Setters wrap to the member's type as typed arrays and C do (`int16_t` 40000 becomes -25536); a bitfield's keeps only the field's bits; a nested message's takes only that class. |
-| `x`, `xText` | A string. The getter returns a copy of the `N` bytes as a `Uint8Array`; the setter takes a string (encoded as UTF-8) or bytes, truncated or zero-padded to `N`. `xText` decodes the bytes up to the first NUL as UTF-8. |
-| `equals(other)`, `toString()`, `toJSON()` | `float` and `double` members compare with `Object.is`, so NaN equals itself and -0 differs from 0. `toJSON()` gives 64-bit integers as decimal strings and strings as arrays of bytes, so `JSON.stringify` works. |
-
-`uint64_t` and `int64_t` are `bigint`; their setters also take an integral
-`number`. Every other integer type and both floating-point types are
-`number`; a `float` member holds its value rounded to single precision
-(`Math.fround`), so it reads back exactly as it was sent. Member names may be
-JavaScript reserved words (`msg.class`). wiregen rejects a member whose name
-would collide with something the class defines (`size`, `serialize`,
-`serializeInto`, `deserialize`, `deserializeFrom`, `fromBytes`, `equals`,
-`toJSON`, `toString`, `constructor`, `SIZE`, `then`, `valueOf`, `__proto__`,
-...) or with another member's backing property or text getter (`a`'s is
-`_a`, string `s`'s is `sText`), and a class or nested type named after a
-reserved word or a global the module uses (`Object`, `DataView`, ...). The
-specification's `namespace` is not used; its `includes` become side-effect
-imports (`import "./polyfill.js";`).
-
-The `.js` names suit browsers, bundlers, Deno, TypeScript and Node 22 and
-later, which detect ES module syntax. Node 18 and 20 need `"type": "module"`
-in the nearest `package.json`. Inside a `"type": "commonjs"` package, set the
-lang file's `outputimplfilename` to `{classname}.mjs` and
-`outputheaderfilename` to `{classname}.d.mts`; nested messages are imported
-by the same pattern.
-
-NaN payloads: the ECMAScript specification leaves the bits of a NaN read or
-written through a `DataView` up to the engine. V8 (Node, Chrome) keeps a quiet
-NaN's payload, which `src/test/generated_tests/nan_payload.test.js` checks,
-but a signaling `float` NaN comes back quiet, so a JavaScript relay can change
-those bytes. `examples/javascript` is a complete program, `bench/` times
-JavaScript like the other languages, and its relay is in the ring test. PZ
-mode is not available in JavaScript.
-
-#### Protobuf (PZ) mode
-
-A generated C++ message can also travel as protobuf, so it can talk directly to
-an existing protobuf service. Pick the stream when you make it:
-
-```
-skyloupe::Stream stream(512, 512, skyloupe::Stream::PZ);   // protobuf
-skyloupe::Stream stream;                                     // skywire (SW)
-```
-
-In PZ mode each member is the protobuf field numbered by its tag, and
-`wiregen --language proto3` writes the matching `.proto`:
-
-| Spec type | proto3 type | Notes |
-|-----------|-------------|-------|
-| `char`, `int8_t`, `int16_t`, `int32_t` | `int32` | |
-| `unsigned char`, `uint8_t`, `uint16_t`, `uint32_t` | `uint32` | |
-| `int64_t` / `uint64_t` | `int64` / `uint64` | |
-| `float` / `double` | `float` / `double` | |
-| `string` (`char[N]`) | `bytes` | sent without trailing NULs |
-| bitfield (`"bits": N`) | its type's proto3 type | one field per member; decoded values are cut to N bits |
-
-The encoding is canonical proto3, byte for byte what protoc produces: zero
-values and empty strings are left out (`-0.0` is still sent). Decoding takes
-fields in any order, treats missing ones as zero, lets a repeated field's last
-value win, and skips unknown fields and fields with an unexpected wire type.
-A wider value than the member holds is narrowed (as protobuf C++ narrows
-int32 to a smaller C type); a bytes value longer than the string member fails,
-a shorter one is zero-padded. On failure the message is left unchanged.
-Endianness has no effect in PZ mode; the `.proto` notes each member's C type,
-byte order, string length and bitfield layout in a comment.
-
-The namespace becomes the protobuf package (`a::b` becomes `a.b`). A nested
-message (see Nested messages) is an embedded message field of its own message type, imported
-from its own generated `.proto`; like any zero field, it is left out when all
-its members are zero, and a repeated one merges into the earlier one. PZ mode
-is C++ only. `examples/protobuf` (section 4.2) is a complete program that talks
-to protoc's generated C++ through a PZ stream.
-
-# [7.1] Lang(uage) Files
-
-Customization of generated code can be performed in the lang.xxx.json files.
-
-A lang file's templates mark where generated text goes with tokens such as
-`__MEMBERNAME__`; the `*_substr` and `*_token` values name them. wiregen
-replaces every occurrence of a token as literal text, not as a regular
-expression, so a token may contain any characters but must not be empty.
-
-Each lang file names the language it is for in its `"language"` value, which
-selects the generator. wiregen ignores (with a warning) a `"language"` value in a
-message specification.
-
-The lang file also names each output file, with `{classname}` standing for the
-message's `classname` and `{classname_snake}` for it in snake_case
-(`RingyMcRingface` becomes `ringy_mc_ringface`):
-
-| Language | Header (`outputheaderfilename`) | Implementation (`outputimplfilename`) | Test (`outputtestfilename`) | Relay (`outputrelayfilename`) |
-|----------|-------------|---------------------|-------------------------|------------------------|
-| c        | `{classname}.h` | `{classname}.c`     | `{classname}Test.cpp`   | `{classname}Relay.c`   |
-| c++      | `{classname}.h` |                     | `{classname}Test.cpp`   | `{classname}Relay.cpp` |
-| go       |                 | `{classname}.go`    | `{classname}_test.go`   | `{classname}Relay.go`  |
-| java     |                 | `{classname}.java`  | `{classname}Test.java`  | `{classname}Relay.java`|
-| proto3   |                 | `{classname}.proto` | `{classname}Test.txtpb` |                        |
-| python3  |                 | `{classname}.py`    | `{classname}Test.py`    | `{classname}Relay.py`  |
-| csharp   |                 | `{classname}.cs`    | `{classname}Test.cs`    |                        |
-| javascript | `{classname}.d.ts` | `{classname}.js` | `{classname}.test.js` | `{classname}Relay.js` |
-| rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
-| swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
-
-A message specification may set any of these keys to use a different name for
-that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain
-file name (no directories). Java requires a public class's file to be named
-after the class, so the Java generator names the test and relay classes after
-their files.
-
-`--generate_tests` writes the unit test file, and `--generate_relay` writes the
-relay: a small program that reads a serialized message from a file, checks
-every member against shared test values, and writes it back out. It checks the
-members inside nested messages too, so wiregen reads each nested type's
-specification from `<type>.json` in the same directory as the specification
-it is given (`--generate_relay` fails if one is missing). The
-cross-language ring test (`src/test/generated_tests/ring`) chains the relays of
-every language. Naming a test or relay file in a specification does not by itself
-generate that file; only the flags do. proto3 has no relay; its test file is a
-text-format message holding the shared test values, headed by the bytes protoc
-must encode it to (`src/test/generated_tests/proto3_roundtrip.cmake` checks
-this).
-
-The lang file also lists the includes (imports) its generated code always needs,
-such as the language's runtime. They come first in the generated file, followed
-by any `includes` in the specification that are not already listed. A
-specification needs `includes` only for something of its own; a nested
-message's header or module is imported without it (see Nested messages).
-
-| Language | Lang file `includes` |
-|----------|----------------------|
-| c        | `"cstream.h"` |
-| c++      | `"streamable.h"`, `<stdint.h>` |
-| swift    | `Foundation` |
-
-The C#, Go, Java, JavaScript and Python generators add the imports (C# `using`
-lines) their code uses themselves.
-The Rust generator needs no imports beyond `use super::<module>::<Type>;` for
-each nested message, which it adds itself, and ignores a specification's
-`includes`.
-
-# [Appendix] Credits
+## Credits
 
 This software is dedicated to all of the former racing Greyhounds who didn't
 find a home after their racing "career" ended.  If you are considering getting 

@@ -162,6 +162,20 @@ add_test(NAME wiregen_cli:BannerThenGenerate
 set_tests_properties(wiregen_cli:BannerThenGenerate PROPERTIES
     PASS_REGULAR_EXPRESSION "\\| wiregen ${PROJECT_VERSION}.*namespace other")
 
+# The JSON Schemas in schema/ accept every spec and lang file in the repo and
+# reject what wiregen rejects (scripts/check_schemas.py). Skipped without
+# Python 3 or its jsonschema module.
+find_program(SKYWIRE_PYTHON3 NAMES python3 python)
+if(SKYWIRE_PYTHON3)
+    add_test(NAME skywire_schema:Check
+        COMMAND ${SKYWIRE_PYTHON3} ${PROJECT_SOURCE_DIR}/scripts/check_schemas.py --wiregen $<TARGET_FILE:wiregen>)
+else()
+    add_test(NAME skywire_schema:Check
+        COMMAND ${CMAKE_COMMAND} -E echo "JSONSCHEMA_NOT_FOUND: no Python 3 interpreter on PATH; skipping")
+endif()
+set_tests_properties(skywire_schema:Check PROPERTIES
+    SKIP_REGULAR_EXPRESSION "JSONSCHEMA_NOT_FOUND")
+
 add_test(NAME wiregen_cli:Help
     COMMAND wiregen --help)
 set_tests_properties(wiregen_cli:Help PROPERTIES

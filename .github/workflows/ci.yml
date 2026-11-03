@@ -2,8 +2,11 @@
 #
 # linux-all-languages, macos and windows have every language toolchain and
 # fail if ctest skips anything, so a broken toolchain setup can't pass
-# quietly. linux-sanitize runs whatever the runner image has and allows skips.
-# coverage reports test coverage (scripts/coverage.py) and never fails on it.
+# quietly; the JSON Schema check (skywire_schema:Check) runs on Linux only,
+# since it doesn't depend on the platform. linux-sanitize runs whatever the
+# runner image has and allows skips. coverage reports test coverage
+# (scripts/coverage.py) and never fails on it. docs builds the documentation
+# site and fails on any warning, such as a broken link.
 #
 # Third-party actions are pinned by commit; the comment gives the release.
 
@@ -47,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends $APT_PACKAGES
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES python3-jsonschema
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -200,7 +203,7 @@ jobs:
         run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
       - name: No test skipped
         if: success() || failure()
-        run: python3 scripts/check_ctest_skips.py build/ctest.xml
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
 
   windows:
     name: Windows (MSVC, VS 2026)
@@ -256,10 +259,24 @@ jobs:
 
       - name: No test skipped
         if: success() || failure()
-        run: python scripts/check_ctest_skips.py build/ctest.xml
+        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.vcpkg.outputs.cache-hit != 'true'
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ steps.vcpkg.outputs.cache-key }}
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the site
+        env:
+          NO_MKDOCS_2_WARNING: '1'
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -r docs/requirements.txt
+          .venv/bin/mkdocs build --strict
