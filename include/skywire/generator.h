@@ -50,6 +50,15 @@ public:
     static bool is_bitfield(const member_desc_t& member) { return std::get<member_bits>(member) != 0; }
     virtual results_t get_results() const { return results_; }  //copy???
 
+    // Whether to also generate the JSON and XML text forms (docs/text-formats.md).
+    void set_text_formats(bool json, bool xml)
+    {
+        generate_json_ = json;
+        generate_xml_ = xml;
+    }
+    bool wants_json() const { return generate_json_; }
+    bool wants_xml() const { return generate_xml_; }
+
     // The specs of the nested message types this message uses (and those
     // they use), by type name, for generators that look inside nested
     // members: the relays.
@@ -62,6 +71,8 @@ protected:
     std::stringstream ss_;
     int errorcode_ = 0;
     std::map< uint32_t, member_desc_t> ordered_members_;
+    bool generate_json_ = false;
+    bool generate_xml_ = false;
 
     bool insert_indents(unsigned int indents = 0);
     bool gen_one_line(const std::string& key, unsigned int indents = 0);
@@ -100,6 +111,11 @@ protected:
     // values, bitfields packed into their units. False, leaving out
     // unspecified, if a member has no test value (a nested message).
     bool expected_wire(std::vector<uint8_t>& out);
+
+    // The expected JSON and XML text forms of this message holding the shared
+    // test values. False if a member has no test value (a nested message).
+    bool expected_json(std::string& out);
+    bool expected_xml(std::string& out);
 
     // For a bitfield narrower than its type: a value of the type with a bit
     // set above the field (hex, e.g. "0x25"), which its setter must cut back

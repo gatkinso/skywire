@@ -56,6 +56,17 @@ text-format message holding the shared test values, headed by the bytes protoc
 must encode it to (`src/test/generated_tests/proto3_roundtrip.cmake` checks
 this).
 
+## Text forms
+
+With `--generate_json` or `--generate_xml` the C++ generator uses the
+`to_json_*`, `from_json_*`, `to_xml_*` and `from_xml_*` templates: for each
+function a `_str` that begins it, a `_end_str` that ends it, and one
+`_native_mem_str`, `_string_mem_str` and `_user_mem_str` per member kind
+(the `from_` ones also a `_bits_mem_str`, with `__BITS__` for the bitfield's
+width), and `text_include_str` for the runtime header. Without the options
+they are not used, so a lang file without them still works. See
+[JSON and XML](text-formats.md).
+
 ## Includes
 
 The lang file also lists the includes (imports) its generated code always needs,

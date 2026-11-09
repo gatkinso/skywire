@@ -11,6 +11,8 @@ crashes, leaks or misbehaves.
 | `fuzz_cpp_sw` | bytes, to the generated C++ `deserialize` (SW) | The same, for C++ |
 | `fuzz_c_cpp_diff` | bytes, to both | Both succeed or both fail; every member equal (floats bit for bit); both serialize to the same bytes |
 | `fuzz_cpp_pz` | bytes, to the generated C++ protobuf decoder (PZ) | Bad input fails and leaves the stream alone; a decoded message re-encodes canonically and round-trips through SW |
+| `fuzz_cpp_json` | text, to the generated C++ `from_json` | Bad input fails and leaves the message alone; a decoded message's JSON is canonical (reads back to the same text), and its XML and SW forms carry it unchanged |
+| `fuzz_cpp_xml` | text, to the generated C++ `from_xml` | The same, for XML |
 | `fuzz_spec` | a message spec's JSON | wiregen generates it (code and tests) for every language without crashing, and no generator throws with the shipped lang files |
 | `fuzz_lang` | a lang file's JSON | wiregen generates the ring spec with it without crashing; a bad lang file is reported, not fatal |
 
@@ -64,12 +66,19 @@ A single target can also be run by hand, as any libFuzzer program:
   protobuf, and hand-made damage in [`corpus/fuzz_cpp_pz/`](corpus/fuzz_cpp_pz): a
   truncated varint, a bad length, a wrong wire type, an oversized string,
   unknown and repeated fields, an overlong varint.
+- `fuzz_cpp_json`, `fuzz_cpp_xml`: the ring message as JSON and XML
+  ([`corpus/text/`](corpus/text)), and in
+  [`corpus/fuzz_cpp_json/`](corpus/fuzz_cpp_json) and
+  [`corpus/fuzz_cpp_xml/`](corpus/fuzz_cpp_xml) escapes, NaN and the
+  infinities, hex strings, CDATA, a DOCTYPE, repeated and unknown members,
+  deep nesting, bad UTF-8 and out-of-range values.
 - `fuzz_spec`: every spec in the tree (`src/test/generated_tests`,
   `examples/specs`, `cfg`).
 - `fuzz_lang`: every lang file in `lang/`.
 
-[`json.dict`](json.dict) gives the two wiregen targets JSON syntax and the
-spec and lang-file keywords.
+[`json.dict`](json.dict) gives the two wiregen targets and `fuzz_cpp_json`
+JSON syntax and the spec and lang-file keywords; [`xml.dict`](xml.dict) gives
+`fuzz_cpp_xml` XML syntax and the ring message's element names.
 
 ## CI
 

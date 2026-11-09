@@ -49,6 +49,7 @@ protected:
     virtual bool hdr_deserialize(int& errorcode);
     virtual bool hdr_serialize_pb(int& errorcode);
     virtual bool hdr_deserialize_pb(int& errorcode);
+    virtual bool hdr_text(int& errorcode);
     virtual bool hdr_size(int& errorcode);
     virtual bool hdr_equals(int& errorcode);
     virtual bool hdr_members(int& errorcode);
@@ -61,6 +62,9 @@ protected:
     bool members_sw(const std::string& direction, int& errorcode);
     void write_bitfield(uint32_t tag, const member_desc_t& member);
     void read_bitfield(uint32_t tag, const member_desc_t& member);
+    // One member's line of to_json, from_json, to_xml or from_xml.
+    std::string text_member(const std::string& function, const member_desc_t& member);
+    bool check_text_names(int& errorcode);
     std::string pb_subst(std::string template_str, uint32_t tag, const member_desc_t& member);
 };
 

@@ -40,7 +40,8 @@ set(UNIT_TESTS
                 specification_unit_test.cpp
                 stream_unit_test.cpp
                 pz_stream_unit_test.cpp
-                test_values_unit_test.cpp)
+                test_values_unit_test.cpp
+                text_unit_test.cpp)
 
 set(UNIT_TEST_JSON specification_unit_test.json)
 set(INVALID_UNIT_TEST_JSON invalid_specification_unit_test.json)
@@ -161,6 +162,37 @@ add_test(NAME wiregen_cli:BannerThenGenerate
     COMMAND wiregen --banner --language c++ --namespace other --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:BannerThenGenerate PROPERTIES
     PASS_REGULAR_EXPRESSION "\\| wiregen ${PROJECT_VERSION}.*namespace other")
+
+# --generate_json and --generate_xml are flags: each adds its own methods.
+add_test(NAME wiregen_cli:GenerateJson
+    COMMAND wiregen --language c++ --generate_json --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateJson PROPERTIES
+    PASS_REGULAR_EXPRESSION "std::string to_json\\(\\) const"
+    FAIL_REGULAR_EXPRESSION "to_xml")
+add_test(NAME wiregen_cli:GenerateXml
+    COMMAND wiregen --language c++ --generate_xml --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateXml PROPERTIES
+    PASS_REGULAR_EXPRESSION "std::string to_xml\\(\\) const"
+    FAIL_REGULAR_EXPRESSION "to_json")
+add_test(NAME wiregen_cli:GenerateJsonAndXml
+    COMMAND wiregen --language c++ --generate_json --generate_xml --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateJsonAndXml PROPERTIES
+    PASS_REGULAR_EXPRESSION "to_json\\(\\) const.*to_xml\\(\\) const")
+add_test(NAME wiregen_cli:NoTextByDefault
+    COMMAND wiregen --language c++ --generate_tests --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:NoTextByDefault PROPERTIES
+    PASS_REGULAR_EXPRESSION "class ClassyMcClassface"
+    FAIL_REGULAR_EXPRESSION "text\\.h|to_json|to_xml|Json|Xml")
+add_test(NAME wiregen_cli:GenerateJsonUnsupported
+    COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateJsonUnsupported PROPERTIES
+    PASS_REGULAR_EXPRESSION "--generate_json is not yet supported for go")
+add_test(NAME wiregen_cli:GenerateJsonUnsupportedFails
+    COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
+add_test(NAME wiregen_cli:GenerateXmlValueFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --generate_xml yes)
+set_tests_properties(wiregen_cli:GenerateJsonUnsupportedFails wiregen_cli:GenerateXmlValueFails PROPERTIES
+    WILL_FAIL TRUE)
 
 # The JSON Schemas in schema/ accept every spec and lang file in the repo and
 # reject what wiregen rejects (scripts/check_schemas.py). Skipped without

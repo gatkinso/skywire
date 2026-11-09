@@ -83,6 +83,8 @@ foreach(WG_CPP ${WG_CPP_FILES})
                 --outdir ${WG_CPP_DIR}
                 --language c++
                 --generate_tests
+                --generate_json
+                --generate_xml
                 --write_to_file)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
         ${WG_CPP_DIR}/${WG_CPP}.h)

@@ -16,7 +16,7 @@
 #
 #    skywire::wiregen      the code generator
 #    skywire::c_runtime    cstream.h for generated C (header-only)
-#    skywire::cpp_runtime  stream.h for generated C++ (header-only; needs protozero)
+#    skywire::cpp_runtime  stream.h (and text.h) for generated C++ (header-only; needs protozero)
 #    skywire_generate()    runs wiregen at build time; see skywireGenerate.cmake
 #
 #  and SKYWIRE_INCLUDE_DIR, SKYWIRE_RUNTIME_DIR (swift/SWStream.swift) and

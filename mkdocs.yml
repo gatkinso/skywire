@@ -58,6 +58,7 @@ nav:
       - Generated code: generated-code.md
       - Languages: languages.md
       - Protobuf (PZ) mode: protobuf.md
+      - JSON and XML: text-formats.md
       - Lang files: lang-files.md
   - Setup:
       - Installing: install.md

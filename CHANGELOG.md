@@ -8,6 +8,15 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 ## [Unreleased]
 
 ### Added
+- JSON and XML text forms for generated C++ messages: `--generate_json` adds
+  `to_json` and `from_json`, `--generate_xml` adds `to_xml` and `from_xml`
+  (and `skywire_generate()` takes `JSON` and `XML`). The format, which every
+  language will write byte for byte, is in `docs/text-formats.md`. The
+  runtime is the header-only, standard-library-only `lang/cpp/text.h`,
+  installed with `stream.h`. Generated tests check the exact text, round
+  trips and rejection of bad input; `fuzz_cpp_json` and `fuzz_cpp_xml` fuzz
+  the readers. Without the options the generated code is unchanged; the other
+  languages refuse them for now.
 - A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
   class per message, for .NET Framework 4.6.2+, Unity and .NET, with
   generated tests and the `skywire_generated_tests:CSharpRoundTrip` ctest

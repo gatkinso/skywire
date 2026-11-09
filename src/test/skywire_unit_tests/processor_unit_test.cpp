@@ -951,3 +951,97 @@ TEST_F(ProcessorNestedRelayTest, UnwritableOutputDirectory)
         output_str_map, (dir / "no_such_dir").string(), errorcode, false, true));
     ASSERT_NE(errorcode & SW_FILEWRITEERROR, 0u);
 }
+
+// --generate_json and --generate_xml: each adds its own methods (and
+// generated tests), and neither changes the output when not given.
+namespace
+{
+
+std::string read_lang(const std::string& relative)
+{
+    std::ifstream in(std::string(SKYWIRE_LANG_DIR) + "/" + relative);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+const char* const text_spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},
+    "members":{"1":{"type":"int16_t","name":"a"},"2":{"type":"string","name":"s","length":4}}})";
+
+bool generate_text(const std::string& spec, const std::string& lang, bool json, bool xml, results_t& out, int& errorcode)
+{
+    Processor p;
+    p.set_generate_json(json);
+    p.set_generate_xml(xml);
+    return p.process_string(spec, read_lang(lang), out, "", errorcode, true, false);
+}
+
+bool has(const std::string& text, const std::string& what)
+{
+    return text.find(what) != std::string::npos;
+}
+
+}
+
+TEST(ProcessorTextFormatsTest, OffByDefault)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, false, out, errorcode));
+    EXPECT_FALSE(has(out["header"], "text.h"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+}
+
+TEST(ProcessorTextFormatsTest, JsonOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", true, false, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_json() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_json(std::string_view text)"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    EXPECT_TRUE(has(out["unittest"], R"(R"sw({"a":-12345,"s":"skyw"})sw")"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+}
+
+TEST(ProcessorTextFormatsTest, XmlOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_xml() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_xml(std::string_view text)"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_TRUE(has(out["unittest"], "R\"sw(<Texty><a>-12345</a><s>skyw</s></Texty>)sw\""));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+}
+
+TEST(ProcessorTextFormatsTest, MemberNameClash)
+{
+    results_t out;
+    int errorcode = 0;
+    const char* spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"to_xml"}}})";
+    EXPECT_TRUE(generate_text(spec, "cpp/lang.cpp.json", true, false, out, errorcode));
+    out.clear();
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(spec, "cpp/lang.cpp.json", false, true, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// Other languages refuse the flags until they have the text forms.
+TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
+{
+    results_t out;
+    int errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "go/lang.go.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "c/lang.c.json", false, true, out, errorcode));
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(text_spec, "go/lang.go.json", false, false, out, errorcode));
+}

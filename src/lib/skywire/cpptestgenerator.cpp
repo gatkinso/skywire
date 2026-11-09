@@ -52,6 +52,10 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_pz_wire(errorcode);
     test_pz_empty(errorcode);
     test_pz_short_buffer(errorcode);
+    if (wants_json())
+        test_text("json", errorcode);
+    if (wants_xml())
+        test_text("xml", errorcode);
 
     header_string.append(ss_.str());
 
@@ -175,6 +179,151 @@ bool CppTestGenerator::test_equality(int& errorcode)
     ss_ << "    ASSERT_TRUE(success);\n\n";
     ss_ << "    success = out.deserialize(stream);\n";
     ss_ << "    ASSERT_TRUE(success);\n\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+namespace
+{
+
+// A value just outside what a member of type (or a bitfield of bits bits)
+// holds, as JSON or XML number text; float and double overflow.
+std::string out_of_range(const std::string& type, unsigned int bits)
+{
+    if (bits != 0)
+    {
+        const bool is_signed = bitfields::is_signed(type);
+        const unsigned int magnitude_bits = is_signed ? bits - 1 : bits;
+        if (magnitude_bits == 64)
+            return "18446744073709551616";
+        return std::to_string(uint64_t(1) << magnitude_bits);
+    }
+
+    static const std::map<std::string, std::string> values = {
+        { "char", "256" },
+        { "unsigned char", "256" },
+        { "uint8_t", "256" },
+        { "int8_t", "128" },
+        { "uint16_t", "65536" },
+        { "int16_t", "32768" },
+        { "uint32_t", "4294967296" },
+        { "int32_t", "2147483648" },
+        { "uint64_t", "18446744073709551616" },
+        { "int64_t", "9223372036854775808" },
+        { "float", "1e39" },
+        { "double", "1e309" },
+    };
+    auto it = values.find(type);
+    return it == values.end() ? "" : it->second;
+}
+
+// text as a C++ raw string literal.
+std::string raw(const std::string& text)
+{
+    return "R\"sw(" + text + ")sw\"";
+}
+
+}
+
+// The text form's tests: the exact text (the same in every language, from
+// test_values), a round trip, missing members reading as zero, and malformed
+// or out-of-range input failing without changing the message.
+bool CppTestGenerator::test_text(const std::string& format, int& errorcode)
+{
+    const std::string namespac = msg_spec_.get_value_string("namespace");
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string qualified = namespac + "::" + classname;
+    const std::string testname = classname + "Test";
+    const bool json = format == "json";
+    const std::string Format = json ? "Json" : "Xml";
+    const std::string to = "to_" + format + "()";
+    const std::string from = "from_" + format;
+
+    std::string expected;
+    const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+    ss_ << "TEST(" << testname << ", " << Format << ")\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    const std::string text = in." << to << ";\n";
+    if (have_expected)
+    {
+        ss_ << "    ASSERT_EQ(" << raw(expected) << ", text);\n";
+    }
+    ss_ << "    ASSERT_TRUE(out." << from << "(text));\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "    ASSERT_EQ(text, out." << to << ");\n";
+    ss_ << "}\n\n";
+
+    // An empty object or element is the all-zero message.
+    ss_ << "TEST(" << testname << ", " << Format << "EmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_TRUE(out." << from << "(" << raw(json ? "{}" : "<" + classname + "/>") << "));\n";
+    ss_ << "    ASSERT_EQ(" << qualified << "(), out);\n";
+    ss_ << "}\n\n";
+
+    // Each of these fails, leaving the message as it was.
+    std::vector<std::string> bad;
+    if (json)
+    {
+        bad = { "", "[]", "{", "{\"x\":1}x", "{\"x\":1,}" };
+    }
+    else
+    {
+        bad = { "", "<" + classname + ">", "<Not" + classname + "/>", "<!DOCTYPE " + classname + "><" + classname + "/>",
+                "<" + classname + ">&unknown;</" + classname + ">", "<" + classname + ">text</" + classname + ">" };
+    }
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+        std::vector<std::string> values;
+
+        if (is_string_type(type))
+        {
+            const std::string too_long(std::get<member_length>(member.second) + 1, 'x');
+            values.push_back(json ? "\"" + too_long + "\"" : too_long);
+        }
+        else if (is_user_type(type))
+        {
+            values.push_back(json ? "1" : "1");
+        }
+        else
+        {
+            values.push_back(out_of_range(type, std::get<member_bits>(member.second)));
+            values.push_back(json ? "true" : "<x/>");
+            if (type != "float" && type != "double")
+                values.push_back("1.5");
+        }
+
+        for (const auto& value : values)
+        {
+            if (json)
+                bad.push_back("{\"" + name + "\":" + value + "}");
+            else
+                bad.push_back("<" + classname + "><" + name + ">" + value + "</" + name + "></" + classname + ">");
+        }
+    }
+
+    ss_ << "TEST(" << testname << ", " << Format << "Rejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    for (const auto& text : bad)
+    {
+        ss_ << "    EXPECT_FALSE(out." << from << "(" << raw(text) << ")) << " << raw(text) << ";\n";
+    }
     ss_ << "    ASSERT_EQ(in, out);\n";
     ss_ << "}\n\n";
 

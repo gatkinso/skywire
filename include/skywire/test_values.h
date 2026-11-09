@@ -52,6 +52,14 @@ bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::
 // or a quoted, escaped string. Empty for types with no test value.
 std::string textproto_value(const std::string& type, unsigned int length, unsigned int bits = 0);
 
+// The test value for one member as it appears in the JSON or XML text form
+// (docs/text-formats.md): JSON quotes 64-bit integers and strings, XML
+// escapes strings or, if they hold other than printable ASCII, gives them in
+// hex (with hex set true). Empty for types with no test value. A bitfield
+// member (bits != 0) uses bits_value.
+std::string json_value(const std::string& type, unsigned int length, unsigned int bits = 0);
+std::string xml_value(const std::string& type, unsigned int length, bool& hex, unsigned int bits = 0);
+
 // The test value of a bitfield member of bits bits, as the type's bit
 // pattern: alternating 0101... for unsigned types, so both ends of each
 // field are exercised, and a negative value for signed ones.

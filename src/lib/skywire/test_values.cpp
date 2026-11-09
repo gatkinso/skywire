@@ -240,6 +240,105 @@ bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::
     return true;
 }
 
+namespace
+{
+
+// The number as text: the literals are already in the canonical form (the
+// shortest that reads back, JavaScript's layout), so they are used as is.
+std::string number_value(const std::string& type, unsigned int bits)
+{
+    if (bits != 0)
+    {
+        return literal(type) ? literal_bits(type, bits) : "";
+    }
+    const char* value = literal(type);
+    return value ? value : "";
+}
+
+// The string test value without its trailing NULs.
+std::string used_string(unsigned int length)
+{
+    std::string value = string_test_value(length);
+    value.erase(value.find_last_not_of('\0') + 1);
+    return value;
+}
+
+}
+
+std::string json_value(const std::string& type, unsigned int length, unsigned int bits)
+{
+    if (type != "string")
+    {
+        const std::string value = number_value(type, bits);
+        const bool quoted = type == "int64_t" || type == "uint64_t";
+        return value.empty() || false == quoted ? value : "\"" + value + "\"";
+    }
+
+    std::string quoted = "\"";
+    for (unsigned char c : used_string(length))
+    {
+        if (c == '"' || c == '\\')
+        {
+            quoted += '\\';
+            quoted += static_cast<char>(c);
+        }
+        else if (c < 0x20 || c > 0x7e)
+        {
+            char escape[8];
+            std::snprintf(escape, sizeof(escape), "\\u%04x", c);
+            quoted += escape;
+        }
+        else
+        {
+            quoted += static_cast<char>(c);
+        }
+    }
+    quoted += "\"";
+    return quoted;
+}
+
+std::string xml_value(const std::string& type, unsigned int length, bool& hex, unsigned int bits)
+{
+    hex = false;
+    if (type != "string")
+    {
+        return number_value(type, bits);
+    }
+
+    const std::string value = used_string(length);
+    for (unsigned char c : value)
+    {
+        if (c < 0x20 || c > 0x7e)
+        {
+            hex = true;
+        }
+    }
+
+    std::string text;
+    for (unsigned char c : value)
+    {
+        if (hex)
+        {
+            char digits[4];
+            std::snprintf(digits, sizeof(digits), "%02x", c);
+            text += digits;
+        }
+        else if (c == '<')
+            text += "&lt;";
+        else if (c == '>')
+            text += "&gt;";
+        else if (c == '&')
+            text += "&amp;";
+        else if (c == '"')
+            text += "&quot;";
+        else if (c == '\'')
+            text += "&apos;";
+        else
+            text += static_cast<char>(c);
+    }
+    return text;
+}
+
 std::string textproto_value(const std::string& type, unsigned int length, unsigned int bits)
 {
     if (bits != 0)

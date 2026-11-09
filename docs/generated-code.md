@@ -115,6 +115,9 @@ namespace SomeNamespace {
 }
 ```
 
+With `--generate_json` or `--generate_xml` the class also has `to_json`,
+`from_json`, `to_xml` and `from_xml` (see [JSON and XML](text-formats.md)).
+
 The PZ functions are the protobuf encoding (see [Protobuf (PZ) mode](protobuf.md)); the
 `*_sw` functions write and read memory directly (see [Serializing in place](#serializing-in-place)).
 The runtime, `skyloupe::Stream` and friends, is the header-only `lang/cpp`

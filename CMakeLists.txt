@@ -212,6 +212,7 @@ install(FILES lang/c/cstream.h
               lang/c/sw_endian.h
               lang/cpp/stream.h
               lang/cpp/streamable.h
+              lang/cpp/text.h
         DESTINATION ${SKYWIRE_INCLUDE_INSTALL_DIR})
 install(FILES lang/swift/SWStream.swift DESTINATION ${SKYWIRE_RUNTIME_INSTALL_DIR}/swift)
 install(FILES schema/skywire-spec.schema.json

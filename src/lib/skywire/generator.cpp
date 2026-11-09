@@ -232,6 +232,43 @@ bool Generator::expected_wire(std::vector<uint8_t>& out)
     return true;
 }
 
+bool Generator::expected_json(std::string& out)
+{
+    out = "{";
+    for (auto& member : ordered_members_)
+    {
+        const std::string value = test_values::json_value(std::get<member_type>(member.second), std::get<member_length>(member.second),
+                                                          std::get<member_bits>(member.second));
+        if (value.empty())
+        {
+            return false;
+        }
+        out += (out.size() > 1 ? ",\"" : "\"") + std::get<member_name>(member.second) + "\":" + value;
+    }
+    out += "}";
+    return true;
+}
+
+bool Generator::expected_xml(std::string& out)
+{
+    const std::string classname = msg_spec_.get_value_string("classname");
+    out = "<" + classname + ">";
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        bool hex = false;
+        const std::string value = test_values::xml_value(std::get<member_type>(member.second), std::get<member_length>(member.second),
+                                                         hex, std::get<member_bits>(member.second));
+        if (value.empty() && std::get<member_type>(member.second) != "string")
+        {
+            return false;
+        }
+        out += "<" + name + (hex ? " encoding=\"hex\">" : ">") + value + "</" + name + ">";
+    }
+    out += "</" + classname + ">";
+    return true;
+}
+
 bool Generator::is_native_type(const std::string& type)
 {
     if (native_types_.end() == native_types_.find(type))
