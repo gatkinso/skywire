@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends $APT_PACKAGES python3-jsonschema
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES python3-jsonschema python3-pymongo
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -203,7 +203,7 @@ jobs:
         run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
       - name: No test skipped
         if: success() || failure()
-        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInterop$'
 
   windows:
     name: Windows (MSVC, VS 2026)
@@ -259,7 +259,7 @@ jobs:
 
       - name: No test skipped
         if: success() || failure()
-        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
+        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInterop$'
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.vcpkg.outputs.cache-hit != 'true'

@@ -115,8 +115,9 @@ namespace SomeNamespace {
 }
 ```
 
-With `--generate_json` or `--generate_xml` the class also has `to_json`,
-`from_json`, `to_xml` and `from_xml` (see [JSON and XML](text-formats.md)).
+With `--generate_json`, `--generate_xml` or `--generate_bson` the class also
+has `to_json` and `from_json`, `to_xml` and `from_xml`, or `to_bson` and
+`from_bson` (see [JSON, XML and BSON](text-formats.md)).
 
 The PZ functions are the protobuf encoding (see [Protobuf (PZ) mode](protobuf.md)); the
 `*_sw` functions write and read memory directly (see [Serializing in place](#serializing-in-place)).

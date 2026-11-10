@@ -56,16 +56,17 @@ text-format message holding the shared test values, headed by the bytes protoc
 must encode it to (`src/test/generated_tests/proto3_roundtrip.cmake` checks
 this).
 
-## Text forms
+## JSON, XML and BSON
 
-With `--generate_json` or `--generate_xml` the C++ generator uses the
-`to_json_*`, `from_json_*`, `to_xml_*` and `from_xml_*` templates: for each
-function a `_str` that begins it, a `_end_str` that ends it, and one
-`_native_mem_str`, `_string_mem_str` and `_user_mem_str` per member kind
-(the `from_` ones also a `_bits_mem_str`, with `__BITS__` for the bitfield's
-width), and `text_include_str` for the runtime header. Without the options
-they are not used, so a lang file without them still works. See
-[JSON and XML](text-formats.md).
+With `--generate_json`, `--generate_xml` or `--generate_bson` the C++
+generator uses the `to_json_*`, `from_json_*`, `to_xml_*`, `from_xml_*`,
+`to_bson_*` and `from_bson_*` templates: for each function a `_str` that
+begins it, a `_end_str` that ends it, and one `_native_mem_str`,
+`_string_mem_str` and `_user_mem_str` per member kind (the `from_` ones also a
+`_bits_mem_str`, with `__BITS__` for the bitfield's width), and
+`text_include_str` and `bson_include_str` for the runtime headers. Without the
+options they are not used, so a lang file without them still works. See
+[JSON, XML and BSON](text-formats.md).
 
 ## Includes
 

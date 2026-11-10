@@ -40,9 +40,10 @@ public:
     void set_language(const std::string& language) { expected_language_ = language; }
     // When set, replaces the specification's namespace.
     void set_namespace(const std::string& name_space) { namespace_ = name_space; }
-    // Whether messages also get their JSON and XML text forms.
+    // Whether messages also get their JSON, XML and BSON forms.
     void set_generate_json(bool on) { generate_json_ = on; }
     void set_generate_xml(bool on) { generate_xml_ = on; }
+    void set_generate_bson(bool on) { generate_bson_ = on; }
 
 private:
     Specification msg_spec_;
@@ -53,6 +54,7 @@ private:
     std::string namespace_;
     bool generate_json_ = false;
     bool generate_xml_ = false;
+    bool generate_bson_ = false;
     // The message spec's directory, where a relay finds nested messages'
     // specs ("<type>.json"); empty for process_string.
     std::string spec_dir_;

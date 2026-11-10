@@ -18,6 +18,7 @@ add_subdirectory(bin)
 if(BUILD_TESTING)
     add_subdirectory(test/skywire_unit_tests)
     add_subdirectory(test/generated_tests)
+    add_subdirectory(test/golden)
     add_subdirectory(test/install)
 endif()
 # The fuzz targets need no GoogleTest; a fuzzing build may skip the tests.

@@ -110,6 +110,10 @@ bool CppGenerator::hdr_includes(int& errorcode)
     {
         includes.push_back(lang_spec_.get_value_string("text_include_str"));
     }
+    if (wants_bson())
+    {
+        includes.push_back(lang_spec_.get_value_string("bson_include_str"));
+    }
 
     for (auto& item : with_user_headers(includes))
     {
@@ -478,6 +482,8 @@ bool CppGenerator::check_text_names(int& errorcode)
         reserved.insert(reserved.end(), { "to_json", "from_json" });
     if (wants_xml())
         reserved.insert(reserved.end(), { "to_xml", "from_xml" });
+    if (wants_bson())
+        reserved.insert(reserved.end(), { "to_bson", "from_bson" });
 
     bool valid = true;
     for (auto& member : ordered_members_)
@@ -514,12 +520,12 @@ std::string CppGenerator::text_member(const std::string& function, const member_
     return template_str;
 }
 
-// to_json/from_json and to_xml/from_xml (docs/text-formats.md), each only when
-// asked for. Members go in tag order; reading takes them in any order, leaves
+// to_json/from_json, to_xml/from_xml and to_bson/from_bson
+// (docs/text-formats.md), each only when asked for. Members go in tag order; reading takes them in any order, leaves
 // missing ones zero, ignores unknown ones and on failure changes nothing.
 bool CppGenerator::hdr_text(int& errorcode)
 {
-    if (false == wants_json() && false == wants_xml())
+    if (false == wants_json() && false == wants_xml() && false == wants_bson())
     {
         return true;
     }
@@ -537,6 +543,8 @@ bool CppGenerator::hdr_text(int& errorcode)
         formats.push_back("json");
     if (wants_xml())
         formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
 
     for (const auto& format : formats)
     {

@@ -952,8 +952,8 @@ TEST_F(ProcessorNestedRelayTest, UnwritableOutputDirectory)
     ASSERT_NE(errorcode & SW_FILEWRITEERROR, 0u);
 }
 
-// --generate_json and --generate_xml: each adds its own methods (and
-// generated tests), and neither changes the output when not given.
+// --generate_json, --generate_xml and --generate_bson: each adds its own
+// methods (and generated tests), and none changes the output when not given.
 namespace
 {
 
@@ -968,11 +968,13 @@ std::string read_lang(const std::string& relative)
 const char* const text_spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},
     "members":{"1":{"type":"int16_t","name":"a"},"2":{"type":"string","name":"s","length":4}}})";
 
-bool generate_text(const std::string& spec, const std::string& lang, bool json, bool xml, results_t& out, int& errorcode)
+bool generate_text(const std::string& spec, const std::string& lang, bool json, bool xml, results_t& out, int& errorcode,
+                   bool bson = false)
 {
     Processor p;
     p.set_generate_json(json);
     p.set_generate_xml(xml);
+    p.set_generate_bson(bson);
     return p.process_string(spec, read_lang(lang), out, "", errorcode, true, false);
 }
 
@@ -993,6 +995,8 @@ TEST(ProcessorTextFormatsTest, OffByDefault)
     EXPECT_FALSE(has(out["header"], "_xml"));
     EXPECT_FALSE(has(out["unittest"], "Json"));
     EXPECT_FALSE(has(out["unittest"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "bson"));
+    EXPECT_FALSE(has(out["unittest"], "Bson"));
 }
 
 TEST(ProcessorTextFormatsTest, JsonOnly)
@@ -1021,6 +1025,25 @@ TEST(ProcessorTextFormatsTest, XmlOnly)
     EXPECT_FALSE(has(out["unittest"], "Json"));
 }
 
+TEST(ProcessorTextFormatsTest, BsonOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, false, out, errorcode, true));
+    EXPECT_TRUE(has(out["header"], "#include \"bson.h\""));
+    EXPECT_FALSE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_bson() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_bson(std::string_view bytes)"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    // {"a": int32 -12345, "s": string "skyw"}, 24 bytes.
+    EXPECT_TRUE(has(out["unittest"], "0x18, 0x00, 0x00, 0x00, 0x10, 0x61, 0x00, 0xc7,\n"
+                                     "        0xcf, 0xff, 0xff, 0x02, 0x73, 0x00, 0x05, 0x00,\n"
+                                     "        0x00, 0x00, 0x73, 0x6b, 0x79, 0x77, 0x00, 0x00,"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+}
+
 TEST(ProcessorTextFormatsTest, MemberNameClash)
 {
     results_t out;
@@ -1030,6 +1053,15 @@ TEST(ProcessorTextFormatsTest, MemberNameClash)
     out.clear();
     errorcode = 0;
     EXPECT_FALSE(generate_text(spec, "cpp/lang.cpp.json", false, true, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* bson_spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"from_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(bson_spec, "cpp/lang.cpp.json", true, true, out, errorcode));
+    out.clear();
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(bson_spec, "cpp/lang.cpp.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }
 
@@ -1042,6 +1074,9 @@ TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "c/lang.c.json", false, true, out, errorcode));
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_TRUE(generate_text(text_spec, "go/lang.go.json", false, false, out, errorcode));
 }

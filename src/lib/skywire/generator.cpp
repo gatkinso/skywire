@@ -269,6 +269,21 @@ bool Generator::expected_xml(std::string& out)
     return true;
 }
 
+bool Generator::expected_bson(std::vector<uint8_t>& out)
+{
+    std::vector<uint8_t> elements;
+    for (auto& member : ordered_members_)
+    {
+        if (false == test_values::encode_bson(std::get<member_type>(member.second), std::get<member_name>(member.second),
+                                              std::get<member_length>(member.second), elements, std::get<member_bits>(member.second)))
+        {
+            return false;
+        }
+    }
+    out = test_values::bson_document(elements);
+    return true;
+}
+
 bool Generator::is_native_type(const std::string& type)
 {
     if (native_types_.end() == native_types_.find(type))

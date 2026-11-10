@@ -46,16 +46,16 @@ foreach(lang c cpp)
         VERBATIM)
 endforeach()
 
-# The text targets use the ring message's C++ with --generate_json and
-# --generate_xml, written to fuzz/cpp_text.
+# The text and BSON targets use the ring message's C++ with --generate_json,
+# --generate_xml and --generate_bson, written to fuzz/cpp_text.
 set(cpp_text_outputs ${FUZZ_DIR}/cpp_text/RingyMcRingface.h ${FUZZ_DIR}/cpp_text/RingyInner.h)
 file(MAKE_DIRECTORY ${FUZZ_DIR}/cpp_text)
 add_custom_command(
     OUTPUT  ${cpp_text_outputs}
     DEPENDS ${RING_SPEC} ${RING_INNER_SPEC} ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json wiregen
-    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_INNER_SPEC} --generate_json --generate_xml
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_INNER_SPEC} --generate_json --generate_xml --generate_bson
             --outdir ${FUZZ_DIR}/cpp_text --language c++ --write_to_file
-    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_SPEC} --generate_json --generate_xml
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_SPEC} --generate_json --generate_xml --generate_bson
             --outdir ${FUZZ_DIR}/cpp_text --language c++ --write_to_file
     VERBATIM)
 add_custom_target(fuzz_ring_cpp_text DEPENDS ${cpp_text_outputs})
@@ -132,12 +132,16 @@ add_dependencies(fuzz_c_cpp_diff fuzz_ring_cpp)
 skywire_fuzz(fuzz_cpp_pz SEEDS ${PROJECT_SOURCE_DIR}/examples/Telemetry.pb)
 add_dependencies(fuzz_cpp_pz fuzz_ring_cpp)
 
-# The text targets: the ring message as JSON and XML, and corpus/<target>.
+# The text and BSON targets: the ring message as JSON, XML and BSON, and
+# corpus/<target>.
 skywire_fuzz(fuzz_cpp_json SEEDS ${CORPUS_DIR}/text/ring.json DICT ${CMAKE_CURRENT_SOURCE_DIR}/json.dict)
 add_dependencies(fuzz_cpp_json fuzz_ring_cpp_text)
 
 skywire_fuzz(fuzz_cpp_xml SEEDS ${CORPUS_DIR}/text/ring.xml DICT ${CMAKE_CURRENT_SOURCE_DIR}/xml.dict)
 add_dependencies(fuzz_cpp_xml fuzz_ring_cpp_text)
+
+skywire_fuzz(fuzz_cpp_bson SEEDS ${CORPUS_DIR}/text/ring.bson)
+add_dependencies(fuzz_cpp_bson fuzz_ring_cpp_text)
 
 # The wiregen targets: every spec and lang file in the tree is a seed.
 file(GLOB spec_seeds

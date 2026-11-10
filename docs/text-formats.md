@@ -1,20 +1,20 @@
-# JSON and XML
+# JSON, XML and BSON
 
 Besides the binary wire format, a message can be written as, and read from,
-JSON or XML text: for logs, test fixtures, configuration, or a web service.
-Each is asked for separately:
+JSON or XML text, for logs, test fixtures, configuration, or a web service,
+and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 
-    wiregen --language c++ --generate_json --generate_xml --input_file Telemetry.json --outdir out --write_to_file
+    wiregen --language c++ --generate_json --generate_xml --generate_bson --input_file Telemetry.json --outdir out --write_to_file
 
 `--generate_json` adds `to_json` and `from_json`, `--generate_xml` adds
-`to_xml` and `from_xml`. Without them nothing changes: the generated code is
-exactly what it was. With `--generate_tests` the generated tests also check
-the text forms.
+`to_xml` and `from_xml`, `--generate_bson` adds `to_bson` and `from_bson`.
+Without them nothing changes: the generated code is exactly what it was. With
+`--generate_tests` the generated tests also check these forms.
 
-The text forms are C++ only for now; the other languages refuse the options
-until they have them. Every language will write the same text for the same
-message, byte for byte, as they already put the same bytes on the wire, so
-this page is their specification.
+They are C++ only for now; the other languages refuse the options until they
+have them. Every language will write the same text and the same BSON for the
+same message, byte for byte, as they already put the same bytes on the wire,
+so this page is their specification.
 
 ## JSON
 
@@ -76,10 +76,49 @@ is no XML declaration and no whitespace between elements.
 | Numbers | The same text as in JSON, but 64-bit integers, `NaN` and the infinities are not quoted. |
 | `string` | Its bytes up to the trailing NULs, with `<`, `>`, `&`, `"` and `'` as `&lt;`, `&gt;`, `&amp;`, `&quot;` and `&apos;`. XML cannot hold most control characters, so if any byte is outside 0x20 to 0x7E, the element instead holds every byte in hex and says so: `<callsign encoding="hex">4e31320001</callsign>`. |
 
+## BSON
+
+BSON is MongoDB's binary JSON ([bsonspec.org](https://bsonspec.org), version
+1.1). The same message, as `to_bson()` writes it, shown as its elements:
+
+```text
+188-byte document
+  device_id     int64   42
+  timestamp_us  int64   1700000000000000
+  mode          int32   3
+  status        int32   1
+  armed         int32   1
+  callsign      string  "N123AB"
+  position      document
+    latitude    double  47.5
+    longitude   double  -122.25
+    altitude_m  double  120.5
+  battery_mv    int32   3700
+```
+
+A document, with one element per member, named as in the specification, in
+tag order. Every number is little-endian, as BSON requires, whatever the
+member's wire byte order.
+
+| Member | In BSON |
+|---|---|
+| `char`, `int8_t`, `uint8_t`, `unsigned char`, `int16_t`, `uint16_t`, `int32_t`, and bitfields of those types | int32. A `char` is written as signed, as in JSON. |
+| `uint32_t`, `int64_t`, and bitfields of those types | int64, since int32 cannot hold every `uint32_t`. |
+| `uint64_t` and its bitfields | int64 up to 2^63-1. A larger value is a Decimal128 holding the integer (exponent 0), so no BSON reader sees it as negative. |
+| `float`, `double` | double. A `float` is widened exactly. Every NaN is written as the same quiet NaN (`0x7FF8000000000000`), so every language writes the same bytes; -0 keeps its sign. |
+| `string` (`char[N]`) | Its bytes up to the trailing NULs: a string if they are UTF-8 holding no NUL, otherwise binary (subtype 0). |
+| a nested message | An embedded document, the same way. |
+
+Most readers, MongoDB's tools included, see the values as written: a
+`uint64_t` of 2^64-1 is the Decimal128 `18446744073709551615`, not -1. The
+generated tests check the exact bytes; `skywire_generated_tests:BsonInterop`
+checks them against pymongo's BSON library, both ways.
+
 ## Reading
 
-`from_json` and `from_xml` read the text forms, and more besides, so text
-written by hand or by another JSON or XML library is accepted:
+`from_json`, `from_xml` and `from_bson` read these forms, and more besides,
+so what is written by hand or by another JSON, XML or BSON library is
+accepted:
 
 - Whitespace is allowed anywhere JSON or XML allows it, and members may come
   in any order.
@@ -98,6 +137,12 @@ written by hand or by another JSON or XML library is accepted:
   U+0000 to U+00FF (one byte each), whether escaped (`é`) or not (`é`);
   a shorter one is zero-padded. In XML, `encoding="hex"` gives the bytes in
   hex, in either case.
+- In BSON an integer member takes an int32, int64, Decimal128 or double, and
+  a `float` or `double` an int32, int64 or double, under the same rules: a
+  whole number in range for an integer (a negative one is never read into a
+  `uint64_t` as its bits), and a number too large for a `float` fails. A
+  `string` takes a string or binary of subtype 0. Unknown elements of any
+  type in the specification are skipped.
 - In XML the root element must be named after the class. Comments,
   processing instructions, CDATA sections, the five predefined entities and
   character references are understood; namespaces are not, and attributes
@@ -107,8 +152,13 @@ written by hand or by another JSON or XML library is accepted:
 Anything else fails: text that is not JSON or not well-formed XML, a number
 out of range or not whole, a string too long, a value of the wrong kind
 (`true`, `null`, an array, an element holding elements where a number
-belongs, text where a nested message belongs), text that is not UTF-8. **On
-failure the message is left unchanged.**
+belongs, text where a nested message belongs), text that is not UTF-8. In
+BSON: a document whose length is not the bytes it has, bytes after it, a
+missing terminator, a string or binary whose length runs past its document, a
+string without its NUL or not UTF-8, an element type BSON does not define
+(its length is unknown), a boolean other than 0 or 1, and a Decimal128 that is
+infinite, NaN, not canonical or not whole, read into an integer. **On failure
+the message is left unchanged.**
 
 For safety, nesting deeper than 128 levels (counting unknown members) fails,
 and an XML document type declaration (`<!DOCTYPE`) fails, so there are no
@@ -122,6 +172,8 @@ external or user-defined entities to expand.
 | `bool from_json(std::string_view text)` | Reads JSON text; false on failure, leaving the message unchanged. |
 | `std::string to_xml() const` | The XML text. |
 | `bool from_xml(std::string_view text)` | Reads XML text; false on failure, leaving the message unchanged. |
+| `std::string to_bson() const` | The BSON document's bytes. |
+| `bool from_bson(std::string_view bytes)` | Reads one BSON document, exactly `bytes`; false on failure, leaving the message unchanged. |
 
 ```cpp
 telemetry::Telemetry msg;
@@ -132,13 +184,27 @@ telemetry::Telemetry copy;
 if (false == copy.from_json(json)) { /* not a Telemetry */ }
 ```
 
-The runtime is the header-only `lang/cpp/text.h` (installed with `stream.h`),
-which uses only the standard library; it is included only when a text form is
-asked for. A message's `to_json(skyloupe::text::JsonWriter&)`,
+The runtime is the header-only `lang/cpp/text.h` and `lang/cpp/bson.h`
+(installed with `stream.h`), which use only the standard library; they are
+included only when asked for. A message's
+`to_json(skyloupe::text::JsonWriter&)`,
 `from_json(const skyloupe::text::JsonValue&)`,
-`to_xml(skyloupe::text::XmlWriter&, std::string_view element)` and
-`from_xml(const skyloupe::text::XmlNode&)` are what nested messages use, and
-can put a message inside a larger document of your own.
+`to_xml(skyloupe::text::XmlWriter&, std::string_view element)`,
+`from_xml(const skyloupe::text::XmlNode&)`,
+`to_bson(skyloupe::bson::Writer&)` and
+`from_bson(const skyloupe::bson::Document&)` are what nested messages use, and
+can put a message inside a larger document of your own:
 
-A member cannot be named `to_json` or `from_json` with `--generate_json`, or
-`to_xml` or `from_xml` with `--generate_xml`.
+```cpp
+skyloupe::bson::Writer w;
+w.begin_document();
+w.value("received_at", int64_t(1700000000));
+w.document("telemetry");
+msg.to_bson(w);
+w.end_document();
+std::string record = w.take();
+```
+
+A member cannot be named `to_json` or `from_json` with `--generate_json`,
+`to_xml` or `from_xml` with `--generate_xml`, or `to_bson` or `from_bson`
+with `--generate_bson`.

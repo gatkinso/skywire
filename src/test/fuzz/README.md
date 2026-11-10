@@ -11,8 +11,9 @@ crashes, leaks or misbehaves.
 | `fuzz_cpp_sw` | bytes, to the generated C++ `deserialize` (SW) | The same, for C++ |
 | `fuzz_c_cpp_diff` | bytes, to both | Both succeed or both fail; every member equal (floats bit for bit); both serialize to the same bytes |
 | `fuzz_cpp_pz` | bytes, to the generated C++ protobuf decoder (PZ) | Bad input fails and leaves the stream alone; a decoded message re-encodes canonically and round-trips through SW |
-| `fuzz_cpp_json` | text, to the generated C++ `from_json` | Bad input fails and leaves the message alone; a decoded message's JSON is canonical (reads back to the same text), and its XML and SW forms carry it unchanged |
+| `fuzz_cpp_json` | text, to the generated C++ `from_json` | Bad input fails and leaves the message alone; a decoded message's JSON and BSON are canonical (read back to the same JSON and BSON), and its XML and SW forms carry it unchanged |
 | `fuzz_cpp_xml` | text, to the generated C++ `from_xml` | The same, for XML |
+| `fuzz_cpp_bson` | bytes, to the generated C++ `from_bson` | The same, for BSON |
 | `fuzz_spec` | a message spec's JSON | wiregen generates it (code and tests) for every language without crashing, and no generator throws with the shipped lang files |
 | `fuzz_lang` | a lang file's JSON | wiregen generates the ring spec with it without crashing; a bad lang file is reported, not fatal |
 
@@ -72,6 +73,11 @@ A single target can also be run by hand, as any libFuzzer program:
   [`corpus/fuzz_cpp_xml/`](corpus/fuzz_cpp_xml) escapes, NaN and the
   infinities, hex strings, CDATA, a DOCTYPE, repeated and unknown members,
   deep nesting, bad UTF-8 and out-of-range values.
+- `fuzz_cpp_bson`: the ring message as BSON ([`corpus/text/`](corpus/text)),
+  and in [`corpus/fuzz_cpp_bson/`](corpus/fuzz_cpp_bson) uint64 values as
+  Decimal128, a binary string, NaN, Decimal128 with exponents, a negative
+  int64 for a `uint64_t`, unknown elements of many types, a truncated document
+  and deep nesting.
 - `fuzz_spec`: every spec in the tree (`src/test/generated_tests`,
   `examples/specs`, `cfg`).
 - `fuzz_lang`: every lang file in `lang/`.

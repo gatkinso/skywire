@@ -441,19 +441,20 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
         return success;
     }
 
-    // The text forms are C++ only for now; other languages refuse them
-    // rather than quietly leave them out.
-    if ((generate_json_ || generate_xml_) && lang != cpp_str_)
+    // The text and BSON forms are C++ only for now; other languages refuse
+    // them rather than quietly leave them out.
+    if ((generate_json_ || generate_xml_ || generate_bson_) && lang != cpp_str_)
     {
         errorcode |= SW_ERROR;
-        std::cerr << (generate_json_ ? "--generate_json" : "--generate_xml") << " is not yet supported for " << lang << std::endl;
+        std::cerr << (generate_json_ ? "--generate_json" : generate_xml_ ? "--generate_xml" : "--generate_bson")
+                  << " is not yet supported for " << lang << std::endl;
         return success;
     }
 
-    genny->set_text_formats(generate_json_, generate_xml_);
+    genny->set_text_formats(generate_json_, generate_xml_, generate_bson_);
     if (test_genny)
     {
-        test_genny->set_text_formats(generate_json_, generate_xml_);
+        test_genny->set_text_formats(generate_json_, generate_xml_, generate_bson_);
     }
 
     // A relay checks the values inside nested messages, so it needs their specs.

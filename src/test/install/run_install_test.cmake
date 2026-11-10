@@ -46,6 +46,8 @@ foreach(file
         include/skywire/sw_endian.h
         include/skywire/stream.h
         include/skywire/streamable.h
+        include/skywire/text.h
+        include/skywire/bson.h
         share/skywire/runtime/swift/SWStream.swift
         share/skywire/lang/lang.c.json
         share/skywire/lang/lang.cpp.json

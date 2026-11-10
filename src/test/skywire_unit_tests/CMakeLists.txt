@@ -26,6 +26,7 @@ set(WIREGEN_CPP_FILES)
 
 set(UNIT_TESTS
                 bitfields_unit_test.cpp
+                bson_unit_test.cpp
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 csharpgenerator_unit_test.cpp
@@ -163,7 +164,8 @@ add_test(NAME wiregen_cli:BannerThenGenerate
 set_tests_properties(wiregen_cli:BannerThenGenerate PROPERTIES
     PASS_REGULAR_EXPRESSION "\\| wiregen ${PROJECT_VERSION}.*namespace other")
 
-# --generate_json and --generate_xml are flags: each adds its own methods.
+# --generate_json, --generate_xml and --generate_bson are flags: each adds its
+# own methods.
 add_test(NAME wiregen_cli:GenerateJson
     COMMAND wiregen --language c++ --generate_json --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJson PROPERTIES
@@ -178,11 +180,20 @@ add_test(NAME wiregen_cli:GenerateJsonAndXml
     COMMAND wiregen --language c++ --generate_json --generate_xml --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJsonAndXml PROPERTIES
     PASS_REGULAR_EXPRESSION "to_json\\(\\) const.*to_xml\\(\\) const")
+add_test(NAME wiregen_cli:GenerateBson
+    COMMAND wiregen --language c++ --generate_bson --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateBson PROPERTIES
+    PASS_REGULAR_EXPRESSION "std::string to_bson\\(\\) const"
+    FAIL_REGULAR_EXPRESSION "to_json|to_xml")
+add_test(NAME wiregen_cli:GenerateBsonUnsupported
+    COMMAND wiregen --language python3 --generate_bson --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateBsonUnsupported PROPERTIES
+    PASS_REGULAR_EXPRESSION "--generate_bson is not yet supported for python3")
 add_test(NAME wiregen_cli:NoTextByDefault
     COMMAND wiregen --language c++ --generate_tests --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:NoTextByDefault PROPERTIES
     PASS_REGULAR_EXPRESSION "class ClassyMcClassface"
-    FAIL_REGULAR_EXPRESSION "text\\.h|to_json|to_xml|Json|Xml")
+    FAIL_REGULAR_EXPRESSION "text\\.h|bson\\.h|to_json|to_xml|to_bson|Json|Xml|Bson")
 add_test(NAME wiregen_cli:GenerateJsonUnsupported
     COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJsonUnsupported PROPERTIES
@@ -191,7 +202,10 @@ add_test(NAME wiregen_cli:GenerateJsonUnsupportedFails
     COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
 add_test(NAME wiregen_cli:GenerateXmlValueFails
     COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --generate_xml yes)
-set_tests_properties(wiregen_cli:GenerateJsonUnsupportedFails wiregen_cli:GenerateXmlValueFails PROPERTIES
+add_test(NAME wiregen_cli:GenerateBsonUnsupportedFails
+    COMMAND wiregen --language swift --generate_bson --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateJsonUnsupportedFails wiregen_cli:GenerateXmlValueFails
+                     wiregen_cli:GenerateBsonUnsupportedFails PROPERTIES
     WILL_FAIL TRUE)
 
 # The JSON Schemas in schema/ accept every spec and lang file in the repo and

@@ -85,6 +85,7 @@ foreach(WG_CPP ${WG_CPP_FILES})
                 --generate_tests
                 --generate_json
                 --generate_xml
+                --generate_bson
                 --write_to_file)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
         ${WG_CPP_DIR}/${WG_CPP}.h)
@@ -133,6 +134,26 @@ target_link_libraries(${TARGETNAME} skywire GTest::GTest GTest::Main ${PLATFORM_
 gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
 add_dependencies(${TARGETNAME} specification skywire wiregen)
+
+# The generated BSON against pymongo's bson module, both ways
+# (bson_interop.py). Skipped without Python 3 or pymongo.
+add_executable(bson_interop bson_interop.cpp ${WG_CPP_DIR}/ClassyMcClassface.h)
+if(IS_BIG_ENDIAN)
+    target_compile_definitions(bson_interop PRIVATE SW_BIG_ENDIAN=1 SW_LITTLE_ENDIAN=0)
+else()
+    target_compile_definitions(bson_interop PRIVATE SW_BIG_ENDIAN=0 SW_LITTLE_ENDIAN=1)
+endif()
+find_program(SKYWIRE_PYTHON3 NAMES python3 python)
+if(SKYWIRE_PYTHON3)
+    add_test(NAME skywire_generated_tests:BsonInterop
+        COMMAND ${SKYWIRE_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/bson_interop.py
+                $<TARGET_FILE:bson_interop> ${CMAKE_CURRENT_BINARY_DIR}/bson_interop)
+else()
+    add_test(NAME skywire_generated_tests:BsonInterop
+        COMMAND ${CMAKE_COMMAND} -E echo "PYMONGO_NOT_FOUND: no Python 3 interpreter on PATH; skipping")
+endif()
+set_tests_properties(skywire_generated_tests:BsonInterop PROPERTIES
+    SKIP_REGULAR_EXPRESSION "PYMONGO_NOT_FOUND")
 
 # Swift generated round-trip test. The Swift toolchain is detected when the
 # test runs (see swift_roundtrip.cmake); without swiftc the test reports Skipped.

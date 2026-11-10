@@ -33,7 +33,7 @@ The package provides:
 |---|---|
 | `skywire::wiregen` | The generator, for your own `add_custom_command` |
 | `skywire::c_runtime` | The header-only runtime for generated C (`cstream.h`) |
-| `skywire::cpp_runtime` | The header-only runtime for generated C++ (`stream.h`, `streamable.h`, and `text.h` for the text forms), with protozero's include directory and C++17 |
+| `skywire::cpp_runtime` | The header-only runtime for generated C++ (`stream.h`, `streamable.h`, and `text.h` and `bson.h` for JSON, XML and BSON), with protozero's include directory and C++17 |
 | `skywire_generate()` | Generates C or C++ at build time |
 | `SKYWIRE_INCLUDE_DIR`, `SKYWIRE_RUNTIME_DIR`, `SKYWIRE_LANG_DIR` | The installed headers, the Swift runtime and the lang files |
 
@@ -43,14 +43,14 @@ The package provides:
                      [OUT_DIR <dir>]
                      [OUT_VAR <variable>]
                      [NAMESPACE <namespace>]
-                     [JSON] [XML])
+                     [JSON] [XML] [BSON])
 
 `skywire_generate()` runs wiregen on each specification whenever it (or
 another in `SPECS`) changes. Its output goes to `OUT_DIR`, by default
 `skywire_c` or `skywire_cpp` in the current binary directory. With `TARGET` the
 generated sources are added to that target, which also gets `OUT_DIR` on its
 include path and links the language's runtime. `OUT_VAR` receives the generated
-file names. `JSON` and `XML` add the [JSON and XML text forms](text-formats.md)
+file names. `JSON`, `XML` and `BSON` add the [JSON, XML and BSON forms](text-formats.md)
 (C++ only for now). Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs

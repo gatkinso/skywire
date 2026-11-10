@@ -24,5 +24,5 @@ extern "C" int LLVMFuzzerInitialize(int*, char***)
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    return fuzz_text::one_input<true>(data, size);
+    return fuzz_text::one_input<fuzz_text::Xml>(data, size);
 }

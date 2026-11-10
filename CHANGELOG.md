@@ -17,6 +17,18 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   trips and rejection of bad input; `fuzz_cpp_json` and `fuzz_cpp_xml` fuzz
   the readers. Without the options the generated code is unchanged; the other
   languages refuse them for now.
+- BSON for generated C++ messages: `--generate_bson` adds `to_bson` and
+  `from_bson` (and `skywire_generate()` takes `BSON`). Elements are in tag
+  order, named after the members; integers are int32 or int64, a `uint64_t`
+  above 2^63-1 a Decimal128, strings a string or (if not UTF-8) binary; the
+  mapping is in `docs/text-formats.md`. The runtime is the header-only,
+  standard-library-only `lang/cpp/bson.h`, installed with `stream.h`.
+  Generated tests check the exact bytes, round trips and rejection of bad
+  documents; `skywire_generated_tests:BsonInterop` checks the bytes against
+  pymongo, and `fuzz_cpp_bson` fuzzes the reader.
+- Golden files: `skywire_golden:<language>` compares wiregen's output for
+  every language, byte for byte, with `src/test/golden`;
+  `skywire_update_golden` rewrites them after a deliberate change.
 - A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
   class per message, for .NET Framework 4.6.2+, Unity and .NET, with
   generated tests and the `skywire_generated_tests:CSharpRoundTrip` ctest

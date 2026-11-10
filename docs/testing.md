@@ -26,6 +26,8 @@ Every test name starts with its group:
 | `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust, C# and JavaScript code, each with its generated unit tests |
 | `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
 | `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
+| `skywire_generated_tests:BsonInterop` | The generated C++ BSON against pymongo's BSON library, both ways |
+| `skywire_golden:<language>` | wiregen's output, byte for byte, against the files in `src/test/golden` |
 | `skywire_ring:Serial` | One message through every language in turn |
 | `skywire_example:*` | The [example programs](#examples); only with `SKYWIRE_EXAMPLES` |
 | `skywire_install:Consumer` | The install and its CMake package (see [Using skywire](using.md)) |
@@ -68,6 +70,23 @@ was installed, and builds and runs the C and C++ examples from a separate
 project that uses the install (see [Using skywire](using.md)), with the CMake package and with
 `skywire.pc`. It also checks that a project requiring the `cpp` component
 without protozero fails with a clear message.
+
+`skywire_generated_tests:BsonInterop` has pymongo decode the generated C++
+BSON of a message with a member of every type, at the shared test values and
+at their limits (Decimal128, binary strings, NaN, -0), check every value and
+type, and encode it back to the same bytes; then the generated code reads
+documents pymongo wrote, with pymongo's choice of types and unknown elements
+of every type, and rejects out-of-range ones. It needs Python's `pymongo`
+module (`pip install pymongo`, or `python3-pymongo` on Debian and Ubuntu)
+and reports Skipped without it. CI runs it on Linux.
+
+`skywire_golden:<language>` generates `ClassyMcClassface` (a member of every
+type) and `Telemetry` (bitfields, a string, a nested message) with their tests
+and relays, and no optional output such as `--generate_json`, and compares
+every file with `src/test/golden/<language>`. It catches any change to code
+users already generate, down to a blank line. When a change is meant, build the
+`skywire_update_golden` target, which rewrites `src/test/golden` from the
+current wiregen, and commit the result with the change.
 
 `skywire_schema:Check` runs `scripts/check_schemas.py`. It needs Python's
 `jsonschema` module (`pip install jsonschema`, or `python3-jsonschema` on

@@ -60,6 +60,27 @@ std::string textproto_value(const std::string& type, unsigned int length, unsign
 std::string json_value(const std::string& type, unsigned int length, unsigned int bits = 0);
 std::string xml_value(const std::string& type, unsigned int length, bool& hex, unsigned int bits = 0);
 
+// Appends the BSON element (docs/text-formats.md) for one member named name
+// holding its test value: int32 up to 32-bit and uint16_t types, int64 for
+// uint32_t and int64_t, int64 or (above 2^63-1) Decimal128 for uint64_t,
+// double for float and double, string (or binary, if not UTF-8 or holding a
+// NUL) for strings. False for types with no test value. A bitfield member
+// (bits != 0) uses bits_value.
+bool encode_bson(const std::string& type, const std::string& name, unsigned int length, std::vector<uint8_t>& out, unsigned int bits = 0);
+
+// Appends a BSON element of each kind, for building documents in tests.
+void bson_int32(const std::string& name, int32_t value, std::vector<uint8_t>& out);
+void bson_int64(const std::string& name, int64_t value, std::vector<uint8_t>& out);
+void bson_double(const std::string& name, double value, std::vector<uint8_t>& out);
+// Decimal128 holding the integer magnitude high:low (a 128-bit coefficient,
+// exponent 0), negative if negative.
+void bson_decimal128(const std::string& name, uint64_t high, uint64_t low, bool negative, std::vector<uint8_t>& out);
+void bson_string(const std::string& name, const std::string& value, std::vector<uint8_t>& out);
+void bson_binary(const std::string& name, const std::string& value, std::vector<uint8_t>& out);
+void bson_bool(const std::string& name, bool value, std::vector<uint8_t>& out);
+// Wraps elements as a document: length, elements, terminating NUL.
+std::vector<uint8_t> bson_document(const std::vector<uint8_t>& elements);
+
 // The test value of a bitfield member of bits bits, as the type's bit
 // pattern: alternating 0101... for unsigned types, so both ends of each
 // field are exercised, and a negative value for signed ones.

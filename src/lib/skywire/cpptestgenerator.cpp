@@ -56,6 +56,8 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
         test_text("json", errorcode);
     if (wants_xml())
         test_text("xml", errorcode);
+    if (wants_bson())
+        test_bson(errorcode);
 
     header_string.append(ss_.str());
 
@@ -324,6 +326,250 @@ bool CppTestGenerator::test_text(const std::string& format, int& errorcode)
     {
         ss_ << "    EXPECT_FALSE(out." << from << "(" << raw(text) << ")) << " << raw(text) << ";\n";
     }
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+namespace
+{
+
+// bytes as the body of a C++ array or vector initializer, eight to a line.
+std::string byte_list(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    std::string out;
+    for (size_t i = 0; i < bytes.size(); i++)
+    {
+        out += (i % 8 == 0) ? "\n" + indent : " ";
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", bytes[i]);
+        out += hex;
+    }
+    return out;
+}
+
+// An element holding a whole number just outside what a member of type (or
+// a bitfield of bits bits) holds, in the narrowest BSON type that has it;
+// for a float, a double too large for it. False if there is none (double).
+bool bson_out_of_range(const std::string& type, unsigned int bits, const std::string& name, std::vector<uint8_t>& out)
+{
+    uint64_t high = 0, low = 0;
+    if (bits != 0)
+    {
+        const unsigned int magnitude_bits = bitfields::is_signed(type) ? bits - 1 : bits;
+        if (magnitude_bits == 64)
+            high = 1;
+        else
+            low = uint64_t(1) << magnitude_bits;
+    }
+    else if (type == "float")
+    {
+        test_values::bson_double(name, 1e39, out);
+        return true;
+    }
+    else
+    {
+        static const std::map<std::string, uint64_t> values = {
+            { "char", 256 },          { "unsigned char", 256 },    { "uint8_t", 256 },
+            { "int8_t", 128 },        { "uint16_t", 65536 },       { "int16_t", 32768 },
+            { "uint32_t", 4294967296ull }, { "int32_t", 2147483648ull }, { "int64_t", 9223372036854775808ull },
+        };
+        auto it = values.find(type);
+        if (type == "uint64_t")
+            high = 1;
+        else if (it != values.end())
+            low = it->second;
+        else
+            return false;
+    }
+
+    if (high != 0 || low > 0x7FFFFFFFFFFFFFFFull)
+        test_values::bson_decimal128(name, high, low, false, out);
+    else if (low > 0x7FFFFFFFull)
+        test_values::bson_int64(name, static_cast<int64_t>(low), out);
+    else
+        test_values::bson_int32(name, static_cast<int32_t>(low), out);
+    return true;
+}
+
+}
+
+// The BSON tests: the exact bytes (the same in every language, from
+// test_values), a round trip, an empty document reading as zero, uint64_t
+// values above 2^63-1 as Decimal128, and malformed or out-of-range documents
+// failing without changing the message.
+bool CppTestGenerator::test_bson(int& errorcode)
+{
+    const std::string namespac = msg_spec_.get_value_string("namespace");
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string qualified = namespac + "::" + classname;
+    const std::string testname = classname + "Test";
+
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "TEST(" << testname << ", Bson)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    const std::string bytes = in.to_bson();\n";
+    if (have_expected)
+    {
+        ss_ << "    static const uint8_t want[] = {" << byte_list(expected, "        ") << "\n    };\n";
+        ss_ << "    ASSERT_EQ(std::string(reinterpret_cast<const char*>(want), sizeof(want)), bytes);\n";
+    }
+    ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "    ASSERT_EQ(bytes, out.to_bson());\n";
+    ss_ << "}\n\n";
+
+    ss_ << "TEST(" << testname << ", BsonEmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_TRUE(out.from_bson(std::string(\"\\x05\\0\\0\\0\\0\", 5)));\n";
+    ss_ << "    ASSERT_EQ(" << qualified << "(), out);\n";
+    ss_ << "}\n\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+
+        ss_ << "TEST(" << testname << ", BsonLargeUint64_" << name << ")\n";
+        ss_ << "{\n";
+        ss_ << "    " << qualified << " in, out;\n";
+        ss_ << "    static const uint8_t big[] = {" << byte_list(big, "        ") << "\n    };\n";
+        ss_ << "    static const uint8_t edge[] = {" << byte_list(edge, "        ") << "\n    };\n";
+        ss_ << "    in.Set_" << name << "(UINT64_C(18446744073709551615));\n";
+        ss_ << "    std::string bytes = in.to_bson();\n";
+        ss_ << "    ASSERT_NE(std::string::npos, bytes.find(std::string(reinterpret_cast<const char*>(big), sizeof(big))));\n";
+        ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+        ss_ << "    ASSERT_EQ(in, out);\n";
+        ss_ << "    in.Set_" << name << "(UINT64_C(9223372036854775807));\n";
+        ss_ << "    bytes = in.to_bson();\n";
+        ss_ << "    ASSERT_NE(std::string::npos, bytes.find(std::string(reinterpret_cast<const char*>(edge), sizeof(edge))));\n";
+        ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+        ss_ << "    ASSERT_EQ(in, out);\n";
+        ss_ << "}\n\n";
+    }
+
+    // Documents that fail, leaving the message as it was.
+    std::vector<std::vector<uint8_t>> bad;
+    bad.push_back({});
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00 });              // cut short
+    bad.push_back({ 0x06, 0x00, 0x00, 0x00, 0x00 });        // length beyond the bytes
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00, 0x01 });        // no terminating NUL
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00, 0x00, 0x00 });  // a byte after the document
+    {
+        std::vector<uint8_t> e = { 0x14, 'x', 0x00 };     // an unknown element type
+        bad.push_back(test_values::bson_document(e));
+    }
+    {
+        std::vector<uint8_t> e;
+        test_values::bson_int32("\xff", 1, e);            // a name that is not UTF-8
+        bad.push_back(test_values::bson_document(e));
+    }
+    {
+        // Unknown documents nested deeper than the limit.
+        std::vector<uint8_t> inner = test_values::bson_document({});
+        for (int i = 0; i < 128; i++)
+        {
+            std::vector<uint8_t> e = { 0x03, 'x', 0x00 };
+            e.insert(e.end(), inner.begin(), inner.end());
+            inner = test_values::bson_document(e);
+        }
+        bad.push_back(inner);
+    }
+
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+        std::vector<std::vector<uint8_t>> elements;
+        std::vector<uint8_t> e;
+
+        if (is_string_type(type))
+        {
+            const std::string too_long(std::get<member_length>(member.second) + 1, 'x');
+            test_values::bson_string(name, too_long, e);
+            elements.push_back(e);
+            e.clear();
+            test_values::bson_binary(name, too_long, e);
+            elements.push_back(e);
+            e.clear();
+            test_values::bson_string(name, "\xff", e);
+            elements.push_back(e);
+            e.clear();
+        }
+        else if (is_user_type(type))
+        {
+            test_values::bson_int32(name, 1, e);
+            elements.push_back(e);
+            e.clear();
+        }
+        else
+        {
+            if (bson_out_of_range(type, std::get<member_bits>(member.second), name, e))
+            {
+                elements.push_back(e);
+                e.clear();
+            }
+            if (type != "float" && type != "double")
+            {
+                test_values::bson_double(name, 1.5, e);
+                elements.push_back(e);
+                e.clear();
+            }
+            if (type == "uint64_t")
+            {
+                test_values::bson_int64(name, -1, e);
+                elements.push_back(e);
+                e.clear();
+            }
+        }
+        test_values::bson_bool(name, true, e);
+        elements.push_back(e);
+
+        for (const auto& element : elements)
+        {
+            bad.push_back(test_values::bson_document(element));
+        }
+    }
+
+    ss_ << "TEST(" << testname << ", BsonRejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    const std::string good = in.to_bson();\n";
+    ss_ << "    std::string longer = good;\n";
+    ss_ << "    longer[0] = static_cast<char>(longer[0] + 1);\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(good.substr(0, good.size() - 1)));\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(good + '\\0'));\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(longer));\n";
+    ss_ << "    static const std::vector<std::vector<uint8_t>> bad = {\n";
+    for (const auto& doc : bad)
+    {
+        ss_ << "        {" << byte_list(doc, "            ") << (doc.empty() ? "},\n" : "\n        },\n");
+    }
+    ss_ << "    };\n";
+    ss_ << "    for (size_t i = 0; i < bad.size(); i++)\n";
+    ss_ << "    {\n";
+    ss_ << "        EXPECT_FALSE(out.from_bson(std::string(bad[i].begin(), bad[i].end()))) << \"document \" << i;\n";
+    ss_ << "    }\n";
     ss_ << "    ASSERT_EQ(in, out);\n";
     ss_ << "}\n\n";
 
