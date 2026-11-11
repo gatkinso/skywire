@@ -340,89 +340,89 @@ private:
         const size_t at = p;
         switch (e.type)
         {
-        case type_double:
-            if (false == fixed(p, end, 8))
-                return false;
+            case type_double:
+                if (false == fixed(p, end, 8))
+                    return false;
+                {
+                    const uint64_t bits = get(s_, at, 8);
+                    std::memcpy(&e.number, &bits, sizeof(bits));
+                }
+                return true;
+            case type_string:
+            case type_javascript:
+            case type_symbol:
+                return string(p, end, e.bytes);
+            case type_document:
+            case type_array:
+                return document(p, end, e.document, depth + 1);
+            case type_binary:
             {
-                const uint64_t bits = get(s_, at, 8);
-                std::memcpy(&e.number, &bits, sizeof(bits));
+                if (end - p < 5)
+                    return false;
+                const int32_t length = get_int32(s_, p);
+                if (length < 0 || static_cast<size_t>(length) > end - p - 5)
+                    return false;
+                e.subtype = static_cast<uint8_t>(s_[p + 4]);
+                e.bytes = s_.substr(p + 5, static_cast<size_t>(length));
+                p += 5 + static_cast<size_t>(length);
+                return true;
             }
-            return true;
-        case type_string:
-        case type_javascript:
-        case type_symbol:
-            return string(p, end, e.bytes);
-        case type_document:
-        case type_array:
-            return document(p, end, e.document, depth + 1);
-        case type_binary:
-        {
-            if (end - p < 5)
+            case type_undefined:
+            case type_null:
+            case type_min_key:
+            case type_max_key:
+                return true;
+            case type_object_id:
+                return fixed(p, end, 12);
+            case type_bool:
+                return fixed(p, end, 1) && static_cast<uint8_t>(s_[at]) <= 1;
+            case type_datetime:
+            case type_timestamp:
+                return fixed(p, end, 8);
+            case type_int32:
+                if (false == fixed(p, end, 4))
+                    return false;
+                e.integer = get_int32(s_, at);
+                return true;
+            case type_int64:
+                if (false == fixed(p, end, 8))
+                    return false;
+                e.integer = static_cast<int64_t>(get(s_, at, 8));
+                return true;
+            case type_decimal128:
+                if (false == fixed(p, end, 16))
+                    return false;
+                e.decimal_low = get(s_, at, 8);
+                e.decimal_high = get(s_, at + 8, 8);
+                return true;
+            case type_regex:
+            {
+                std::string_view pattern, options;
+                return cstring(p, end, pattern) && cstring(p, end, options);
+            }
+            case type_db_pointer:
+            {
+                std::string_view collection;
+                return string(p, end, collection) && fixed(p, end, 12);
+            }
+            case type_code_with_scope:
+            {
+                // int32 total length, then a string and a document filling it.
+                if (end - p < 4)
+                    return false;
+                const int32_t length = get_int32(s_, p);
+                if (length < 4 || static_cast<size_t>(length) > end - p)
+                    return false;
+                const size_t stop = p + static_cast<size_t>(length);
+                p += 4;
+                std::string_view code;
+                Document scope;
+                return string(p, stop, code) && document(p, stop, scope, depth + 1) && p == stop;
+            }
+            default:
+                // An unknown type: its length is unknown, so nothing after it can
+                // be read.
                 return false;
-            const int32_t length = get_int32(s_, p);
-            if (length < 0 || static_cast<size_t>(length) > end - p - 5)
-                return false;
-            e.subtype = static_cast<uint8_t>(s_[p + 4]);
-            e.bytes = s_.substr(p + 5, static_cast<size_t>(length));
-            p += 5 + static_cast<size_t>(length);
-            return true;
-        }
-        case type_undefined:
-        case type_null:
-        case type_min_key:
-        case type_max_key:
-            return true;
-        case type_object_id:
-            return fixed(p, end, 12);
-        case type_bool:
-            return fixed(p, end, 1) && static_cast<uint8_t>(s_[at]) <= 1;
-        case type_datetime:
-        case type_timestamp:
-            return fixed(p, end, 8);
-        case type_int32:
-            if (false == fixed(p, end, 4))
-                return false;
-            e.integer = get_int32(s_, at);
-            return true;
-        case type_int64:
-            if (false == fixed(p, end, 8))
-                return false;
-            e.integer = static_cast<int64_t>(get(s_, at, 8));
-            return true;
-        case type_decimal128:
-            if (false == fixed(p, end, 16))
-                return false;
-            e.decimal_low = get(s_, at, 8);
-            e.decimal_high = get(s_, at + 8, 8);
-            return true;
-        case type_regex:
-        {
-            std::string_view pattern, options;
-            return cstring(p, end, pattern) && cstring(p, end, options);
-        }
-        case type_db_pointer:
-        {
-            std::string_view collection;
-            return string(p, end, collection) && fixed(p, end, 12);
-        }
-        case type_code_with_scope:
-        {
-            // int32 total length, then a string and a document filling it.
-            if (end - p < 4)
-                return false;
-            const int32_t length = get_int32(s_, p);
-            if (length < 4 || static_cast<size_t>(length) > end - p)
-                return false;
-            const size_t stop = p + static_cast<size_t>(length);
-            p += 4;
-            std::string_view code;
-            Document scope;
-            return string(p, stop, code) && document(p, stop, scope, depth + 1) && p == stop;
-        }
-        default:
-            // An unknown type: its length is unknown, so nothing after it can
-            // be read.
-            return false;
         }
     }
 };
@@ -476,7 +476,7 @@ inline bool decimal_integer(uint64_t high, uint64_t low, bool& negative, uint64_
     while (exponent < 0)
     {
         uint32_t limbs[4] = { static_cast<uint32_t>(chi >> 32), static_cast<uint32_t>(chi),
-                              static_cast<uint32_t>(clo >> 32), static_cast<uint32_t>(clo) };
+            static_cast<uint32_t>(clo >> 32), static_cast<uint32_t>(clo) };
         uint64_t rem = 0;
         for (uint32_t& limb : limbs)
         {
@@ -507,6 +507,8 @@ inline bool decimal_integer(uint64_t high, uint64_t low, bool& negative, uint64_
 }
 
 // Parses a whole BSON document: its length must be exactly bytes' length.
+// The Document's names and string/binary values are views into bytes, so
+// bytes must outlive it.
 inline bool parse(std::string_view bytes, Document& doc)
 {
     detail::Parser parser(bytes);

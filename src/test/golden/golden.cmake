@@ -12,12 +12,13 @@
 #  express or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 #
-# Runs wiregen for one language on SPECS with only --generate_tests and
-# --generate_relay, and compares what it writes, byte for byte, with the
-# files in EXPECTED. With UPDATE=ON, replaces EXPECTED with the output.
+# Runs wiregen for one language on SPECS with --generate_tests,
+# --generate_relay and any EXTRA_FLAGS, and compares what it writes, byte for
+# byte, with the files in EXPECTED. With UPDATE=ON, replaces EXPECTED with
+# the output.
 #
 #   cmake -DWIREGEN=... -DLANGUAGE=c -DSPECS="a.json|b.json" -DEXPECTED=dir
-#         -DOUT_DIR=dir [-DUPDATE=ON] -P golden.cmake
+#         -DOUT_DIR=dir [-DEXTRA_FLAGS="--x|--y"] [-DUPDATE=ON] -P golden.cmake
 
 foreach(VAR WIREGEN LANGUAGE SPECS EXPECTED OUT_DIR)
     if(NOT DEFINED ${VAR})
@@ -26,12 +27,13 @@ foreach(VAR WIREGEN LANGUAGE SPECS EXPECTED OUT_DIR)
 endforeach()
 
 string(REPLACE "|" ";" SPECS "${SPECS}")
+string(REPLACE "|" ";" EXTRA_FLAGS "${EXTRA_FLAGS}")
 
 file(REMOVE_RECURSE ${OUT_DIR})
 file(MAKE_DIRECTORY ${OUT_DIR})
 foreach(SPEC IN LISTS SPECS)
     execute_process(
-        COMMAND ${WIREGEN} --language ${LANGUAGE} --generate_tests --generate_relay
+        COMMAND ${WIREGEN} --language ${LANGUAGE} --generate_tests --generate_relay ${EXTRA_FLAGS}
                 --silent --write_to_file --outdir ${OUT_DIR} --input_file ${SPEC}
         RESULT_VARIABLE RESULT
         OUTPUT_VARIABLE OUTPUT
@@ -79,7 +81,7 @@ endforeach()
 
 if(PROBLEMS)
     message(FATAL_ERROR
-        "wiregen's ${LANGUAGE} output is not what src/test/golden/${LANGUAGE} holds:\n"
+        "wiregen's ${LANGUAGE} output is not what ${EXPECTED} holds:\n"
         "${PROBLEMS}"
         "Compare ${OUT_DIR} with ${EXPECTED}. If the change is meant, build the\n"
         "skywire_update_golden target and commit the new files.")

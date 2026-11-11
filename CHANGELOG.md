@@ -27,7 +27,8 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   documents; `skywire_generated_tests:BsonInterop` checks the bytes against
   pymongo, and `fuzz_cpp_bson` fuzzes the reader.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
-  every language, byte for byte, with `src/test/golden`;
+  every language, byte for byte, with `src/test/golden`, and
+  `skywire_golden:cpp_text` the C++ output with the JSON, XML and BSON flags;
   `skywire_update_golden` rewrites them after a deliberate change.
 - A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
   class per message, for .NET Framework 4.6.2+, Unity and .NET, with

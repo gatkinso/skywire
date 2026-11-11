@@ -147,7 +147,7 @@ find_program(SKYWIRE_PYTHON3 NAMES python3 python)
 if(SKYWIRE_PYTHON3)
     add_test(NAME skywire_generated_tests:BsonInterop
         COMMAND ${SKYWIRE_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/bson_interop.py
-                $<TARGET_FILE:bson_interop> ${CMAKE_CURRENT_BINARY_DIR}/bson_interop)
+                $<TARGET_FILE:bson_interop> ${CMAKE_CURRENT_BINARY_DIR}/bson_interop_files)
 else()
     add_test(NAME skywire_generated_tests:BsonInterop
         COMMAND ${CMAKE_COMMAND} -E echo "PYMONGO_NOT_FOUND: no Python 3 interpreter on PATH; skipping")

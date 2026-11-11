@@ -375,10 +375,26 @@ bool bson_string_ok(const std::string& value)
         }
         unsigned int extra;
         uint32_t cp, min;
-        if ((c & 0xE0) == 0xC0) { extra = 1; cp = c & 0x1F; min = 0x80; }
-        else if ((c & 0xF0) == 0xE0) { extra = 2; cp = c & 0x0F; min = 0x800; }
-        else if ((c & 0xF8) == 0xF0) { extra = 3; cp = c & 0x07; min = 0x10000; }
-        else return false;
+        if ((c & 0xE0) == 0xC0)
+        {
+            extra = 1;
+            cp = c & 0x1F;
+            min = 0x80;
+        }
+        else if ((c & 0xF0) == 0xE0)
+        {
+            extra = 2;
+            cp = c & 0x0F;
+            min = 0x800;
+        }
+        else if ((c & 0xF8) == 0xF0)
+        {
+            extra = 3;
+            cp = c & 0x07;
+            min = 0x10000;
+        }
+        else
+            return false;
         if (i + extra >= value.size())
             return false;
         for (unsigned int k = 1; k <= extra; k++)
@@ -453,11 +469,215 @@ void bson_bool(const std::string& name, bool value, std::vector<uint8_t>& out)
 
 std::vector<uint8_t> bson_document(const std::vector<uint8_t>& elements)
 {
-    std::vector<uint8_t> out;
-    append_le(elements.size() + 5, 4, out);
-    out.insert(out.end(), elements.begin(), elements.end());
-    out.push_back(0);
+    // Sized up front and copied into: GCC 13 warns (-Wstringop-overflow,
+    // wrongly) about vector::insert onto the four length bytes.
+    std::vector<uint8_t> out(elements.size() + 5, 0);
+    const uint64_t length = out.size();
+    for (unsigned int i = 0; i < 4; i++)
+    {
+        out[i] = static_cast<uint8_t>(length >> (8 * i));
+    }
+    std::copy(elements.begin(), elements.end(), out.begin() + 4);
     return out;
+}
+
+std::string text_out_of_range(const std::string& type, unsigned int bits)
+{
+    if (bits != 0)
+    {
+        const unsigned int magnitude_bits = bitfields::is_signed(type) ? bits - 1 : bits;
+        if (magnitude_bits == 64)
+            return "18446744073709551616";
+        return std::to_string(uint64_t(1) << magnitude_bits);
+    }
+
+    static const std::map<std::string, std::string> values = {
+        { "char", "256" },
+        { "unsigned char", "256" },
+        { "uint8_t", "256" },
+        { "int8_t", "128" },
+        { "uint16_t", "65536" },
+        { "int16_t", "32768" },
+        { "uint32_t", "4294967296" },
+        { "int32_t", "2147483648" },
+        { "uint64_t", "18446744073709551616" },
+        { "int64_t", "9223372036854775808" },
+        { "float", "1e39" },
+        { "double", "1e309" },
+    };
+    auto it = values.find(type);
+    return it == values.end() ? "" : it->second;
+}
+
+bool bson_out_of_range(const std::string& type, const std::string& name, std::vector<uint8_t>& out, unsigned int bits)
+{
+    uint64_t high = 0, low = 0;
+    if (bits != 0)
+    {
+        const unsigned int magnitude_bits = bitfields::is_signed(type) ? bits - 1 : bits;
+        if (magnitude_bits == 64)
+            high = 1;
+        else
+            low = uint64_t(1) << magnitude_bits;
+    }
+    else if (type == "float")
+    {
+        bson_double(name, 1e39, out);
+        return true;
+    }
+    else
+    {
+        static const std::map<std::string, uint64_t> values = {
+            { "char", 256 },
+            { "unsigned char", 256 },
+            { "uint8_t", 256 },
+            { "int8_t", 128 },
+            { "uint16_t", 65536 },
+            { "int16_t", 32768 },
+            { "uint32_t", 4294967296ull },
+            { "int32_t", 2147483648ull },
+            { "int64_t", 9223372036854775808ull },
+        };
+        auto it = values.find(type);
+        if (type == "uint64_t")
+            high = 1;
+        else if (it != values.end())
+            low = it->second;
+        else
+            return false;
+    }
+
+    if (high != 0 || low > 0x7FFFFFFFFFFFFFFFull)
+        bson_decimal128(name, high, low, false, out);
+    else if (low > 0x7FFFFFFFull)
+        bson_int64(name, static_cast<int64_t>(low), out);
+    else
+        bson_int32(name, static_cast<int32_t>(low), out);
+    return true;
+}
+
+std::vector<std::string> json_malformed()
+{
+    return { "", "[]", "{", "{\"x\":1}x", "{\"x\":1,}" };
+}
+
+std::vector<std::string> xml_malformed(const std::string& classname)
+{
+    return { "", "<" + classname + ">", "<Not" + classname + "/>", "<!DOCTYPE " + classname + "><" + classname + "/>",
+        "<" + classname + ">&unknown;</" + classname + ">", "<" + classname + ">text</" + classname + ">" };
+}
+
+std::vector<std::vector<uint8_t>> bson_malformed()
+{
+    std::vector<std::vector<uint8_t>> bad;
+    bad.push_back({});
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00 }); // cut short
+    bad.push_back({ 0x06, 0x00, 0x00, 0x00, 0x00 }); // length beyond the bytes
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00, 0x01 }); // no terminating NUL
+    bad.push_back({ 0x05, 0x00, 0x00, 0x00, 0x00, 0x00 }); // a byte after the document
+    {
+        std::vector<uint8_t> e = { 0x14, 'x', 0x00 }; // an undefined element type
+        bad.push_back(bson_document(e));
+    }
+    {
+        std::vector<uint8_t> e;
+        bson_int32("\xff", 1, e); // a name that is not UTF-8
+        bad.push_back(bson_document(e));
+    }
+    {
+        // Unknown documents nested deeper than the limit.
+        std::vector<uint8_t> inner = bson_document({});
+        for (int i = 0; i < 128; i++)
+        {
+            std::vector<uint8_t> e = { 0x03, 'x', 0x00 };
+            e.insert(e.end(), inner.begin(), inner.end());
+            inner = bson_document(e);
+        }
+        bad.push_back(inner);
+    }
+    return bad;
+}
+
+namespace
+{
+
+std::vector<std::string> text_bad_values(bool json, const std::string& type, bool nested, unsigned int length, unsigned int bits)
+{
+    std::vector<std::string> values;
+    if (type == "string")
+    {
+        const std::string too_long(length + 1, 'x');
+        values.push_back(json ? "\"" + too_long + "\"" : too_long);
+    }
+    else if (nested)
+    {
+        values.push_back("1");
+    }
+    else
+    {
+        values.push_back(text_out_of_range(type, bits));
+        values.push_back(json ? "true" : "<x/>");
+        if (type != "float" && type != "double")
+            values.push_back("1.5");
+    }
+    return values;
+}
+
+}
+
+std::vector<std::string> json_bad_values(const std::string& type, bool nested, unsigned int length, unsigned int bits)
+{
+    return text_bad_values(true, type, nested, length, bits);
+}
+
+std::vector<std::string> xml_bad_values(const std::string& type, bool nested, unsigned int length, unsigned int bits)
+{
+    return text_bad_values(false, type, nested, length, bits);
+}
+
+std::vector<std::vector<uint8_t>> bson_bad_elements(const std::string& type, bool nested, const std::string& name,
+    unsigned int length, unsigned int bits)
+{
+    std::vector<std::vector<uint8_t>> elements;
+    std::vector<uint8_t> e;
+    auto add = [&]() {
+        elements.push_back(e);
+        e.clear();
+    };
+
+    if (type == "string")
+    {
+        const std::string too_long(length + 1, 'x');
+        bson_string(name, too_long, e);
+        add();
+        bson_binary(name, too_long, e);
+        add();
+        bson_string(name, "\xff", e);
+        add();
+    }
+    else if (nested)
+    {
+        bson_int32(name, 1, e);
+        add();
+    }
+    else
+    {
+        if (bson_out_of_range(type, name, e, bits))
+            add();
+        if (type != "float" && type != "double")
+        {
+            bson_double(name, 1.5, e);
+            add();
+        }
+        if (type == "uint64_t")
+        {
+            bson_int64(name, -1, e);
+            add();
+        }
+    }
+    bson_bool(name, true, e);
+    add();
+    return elements;
 }
 
 bool encode_bson(const std::string& type, const std::string& name, unsigned int length, std::vector<uint8_t>& out, unsigned int bits)

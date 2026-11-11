@@ -27,7 +27,7 @@ Every test name starts with its group:
 | `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
 | `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
 | `skywire_generated_tests:BsonInterop` | The generated C++ BSON against pymongo's BSON library, both ways |
-| `skywire_golden:<language>` | wiregen's output, byte for byte, against the files in `src/test/golden` |
+| `skywire_golden:<language>`, `skywire_golden:<language>_text` | wiregen's output, without and with the JSON, XML and BSON flags, byte for byte, against the files in `src/test/golden` |
 | `skywire_ring:Serial` | One message through every language in turn |
 | `skywire_example:*` | The [example programs](#examples); only with `SKYWIRE_EXAMPLES` |
 | `skywire_install:Consumer` | The install and its CMake package (see [Using skywire](using.md)) |
@@ -84,7 +84,10 @@ and reports Skipped without it. CI runs it on Linux.
 type) and `Telemetry` (bitfields, a string, a nested message) with their tests
 and relays, and no optional output such as `--generate_json`, and compares
 every file with `src/test/golden/<language>`. It catches any change to code
-users already generate, down to a blank line. When a change is meant, build the
+users already generate, down to a blank line. `skywire_golden:<language>_text`
+does the same with `--generate_json --generate_xml --generate_bson`, for each
+language that has them (so far `cpp_text`), so work on one language's text and
+BSON code cannot quietly change another's. When a change is meant, build the
 `skywire_update_golden` target, which rewrites `src/test/golden` from the
 current wiregen, and commit the result with the change.
 

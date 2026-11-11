@@ -115,7 +115,7 @@ TEST(BsonUnitTest, IntegerTypes)
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_int64("v", 3000000000, e); }), written(uint32_t(3000000000u)));
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_int64("v", 0, e); }), written(uint32_t(0)));
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_int64("v", std::numeric_limits<int64_t>::min(), e); }),
-              written(std::numeric_limits<int64_t>::min()));
+        written(std::numeric_limits<int64_t>::min()));
 }
 
 TEST(BsonUnitTest, CharIsSigned)
@@ -174,13 +174,13 @@ TEST(BsonUnitTest, Decimal128Integers)
     // (10^34 - 1) x 10^-15 is not whole.
     EXPECT_FALSE(reads(decimal(0x3040000000000000ull - (uint64_t(15) << 49) + 0x1ED09BEAD87C0ull, 0x378D8E63FFFFFFFFull), u));
 
-    EXPECT_FALSE(reads(decimal(false, 15, -1), i));                    // 1.5
+    EXPECT_FALSE(reads(decimal(false, 15, -1), i)); // 1.5
     EXPECT_FALSE(reads(decimal(false, 9223372036854775808ull, 0), i)); // 2^63
     EXPECT_FALSE(reads(decimal(false, 1844674407370955162ull, 1), u)); // 2^64 + 4
-    EXPECT_FALSE(reads(decimal(0x3040000000000001ull, 0), u));         // 2^64
-    EXPECT_FALSE(reads(decimal(0x7C00000000000000ull, 0), i));         // NaN
-    EXPECT_FALSE(reads(decimal(0x7800000000000000ull, 0), i));         // Infinity
-    EXPECT_FALSE(reads(decimal(0x6000000000000000ull, 1), i));         // the large-coefficient form
+    EXPECT_FALSE(reads(decimal(0x3040000000000001ull, 0), u)); // 2^64
+    EXPECT_FALSE(reads(decimal(0x7C00000000000000ull, 0), i)); // NaN
+    EXPECT_FALSE(reads(decimal(0x7800000000000000ull, 0), i)); // Infinity
+    EXPECT_FALSE(reads(decimal(0x6000000000000000ull, 1), i)); // the large-coefficient form
     // A coefficient of 10^34 is not canonical.
     EXPECT_FALSE(reads(decimal(0x3040000000000000ull | 0x1ED09BEAD87C0ull, 0x378D8E6400000000ull), u));
 }
@@ -281,18 +281,21 @@ TEST(BsonUnitTest, StringOrBinary)
     // Not UTF-8, a NUL inside, a surrogate, an overlong form: binary.
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_binary("v", "\xff", e); }), written_bytes("\xff"));
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_binary("v", std::string("a\0b", 3), e); }),
-              written_bytes(std::string("a\0b\0", 4)));
+        written_bytes(std::string("a\0b\0", 4)));
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_binary("v", "\xed\xa0\x80", e); }), written_bytes("\xed\xa0\x80"));
     EXPECT_EQ(doc_of([](auto& e) { tv::bson_binary("v", "\xc0\x80", e); }), written_bytes("\xc0\x80"));
 
+    // The Document refers into the bytes, so they must outlive it.
+    const std::string binary = doc_of([](auto& e) { tv::bson_binary("v", std::string("\0\xff", 2), e); });
+    const std::string string = doc_of([](auto& e) { tv::bson_string("v", "abcd", e); });
     Document doc;
     char out[4];
-    ASSERT_TRUE(parse(doc_of([](auto& e) { tv::bson_binary("v", std::string("\0\xff", 2), e); }), doc));
+    ASSERT_TRUE(parse(binary, doc));
     ASSERT_TRUE(read_bytes(doc.elements[0], out, sizeof(out)));
     EXPECT_EQ(0, std::memcmp(out, "\0\xff\0\0", 4));
 
     doc = Document();
-    ASSERT_TRUE(parse(doc_of([](auto& e) { tv::bson_string("v", "abcd", e); }), doc));
+    ASSERT_TRUE(parse(string, doc));
     EXPECT_TRUE(read_bytes(doc.elements[0], out, 4));
     EXPECT_FALSE(read_bytes(doc.elements[0], out, 3));
 
@@ -309,17 +312,17 @@ TEST(BsonUnitTest, StructureIsChecked)
     EXPECT_TRUE(parses(std::string("\x05\0\0\0\0", 5)));
     EXPECT_FALSE(parses(""));
     EXPECT_FALSE(parses(std::string("\x05\0\0\0", 4)));
-    EXPECT_FALSE(parses(std::string("\x04\0\0\0\0", 5)));             // shorter than possible
-    EXPECT_FALSE(parses(std::string("\x06\0\0\0\0", 5)));             // longer than the bytes
-    EXPECT_FALSE(parses(std::string("\x05\0\0\0\0\0", 6)));           // bytes after it
-    EXPECT_FALSE(parses(std::string("\x05\0\0\0\x01", 5)));           // no terminating NUL
-    EXPECT_FALSE(parses(std::string("\x05\0\0\x80\0", 5)));           // negative length
-    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x10v\0\0", 8)));      // int32 cut short
-    EXPECT_FALSE(parses(std::string("\x07\0\0\0\x10vv", 7)));         // name not terminated
-    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x14v\0\0", 8)));      // unknown type
-    EXPECT_FALSE(parses(std::string("\x09\0\0\0\x08v\0\x02\0", 9)));  // bool other than 0 or 1
+    EXPECT_FALSE(parses(std::string("\x04\0\0\0\0", 5))); // shorter than possible
+    EXPECT_FALSE(parses(std::string("\x06\0\0\0\0", 5))); // longer than the bytes
+    EXPECT_FALSE(parses(std::string("\x05\0\0\0\0\0", 6))); // bytes after it
+    EXPECT_FALSE(parses(std::string("\x05\0\0\0\x01", 5))); // no terminating NUL
+    EXPECT_FALSE(parses(std::string("\x05\0\0\x80\0", 5))); // negative length
+    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x10v\0\0", 8))); // int32 cut short
+    EXPECT_FALSE(parses(std::string("\x07\0\0\0\x10vv", 7))); // name not terminated
+    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x14v\0\0", 8))); // unknown type
+    EXPECT_FALSE(parses(std::string("\x09\0\0\0\x08v\0\x02\0", 9))); // bool other than 0 or 1
     EXPECT_TRUE(parses(std::string("\x09\0\0\0\x08v\0\x01\0", 9)));
-    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x10\xff\0\0", 8)));   // name not UTF-8
+    EXPECT_FALSE(parses(std::string("\x08\0\0\0\x10\xff\0\0", 8))); // name not UTF-8
 
     // Strings: length counts the NUL, which must be there; UTF-8.
     EXPECT_TRUE(parses(std::string("\x0e\0\0\0\x02v\0\x02\0\0\0a\0\0", 14)));
@@ -384,8 +387,9 @@ TEST(BsonUnitTest, EveryKnownTypeIsSkipped)
     e.insert(e.end(), { 0xFF, 'm', 0 });
     e.insert(e.end(), { 0x7F, 'M', 0 });
 
+    const std::string bytes = str(tv::bson_document(e));
     Document doc;
-    ASSERT_TRUE(parse(str(tv::bson_document(e)), doc));
+    ASSERT_TRUE(parse(bytes, doc));
     EXPECT_EQ(21u, doc.elements.size()); // every type in bsonspec.org 1.1
 
     // Code with scope whose total length is wrong.

@@ -122,6 +122,13 @@ protected:
     // The expected BSON document, likewise.
     bool expected_bson(std::vector<uint8_t>& out);
 
+    // What this message's readers must reject (test_values' malformed input,
+    // then each member's bad values alone in a message), the same for every
+    // language's generated tests.
+    std::vector<std::string> rejected_json();
+    std::vector<std::string> rejected_xml();
+    std::vector<std::vector<uint8_t>> rejected_bson();
+
     // For a bitfield narrower than its type: a value of the type with a bit
     // set above the field (hex, e.g. "0x25"), which its setter must cut back
     // to test_literal(member). Empty for other members.
