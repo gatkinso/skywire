@@ -134,6 +134,9 @@ protected:
     // to test_literal(member). Empty for other members.
     static std::string out_of_range_hex(const member_desc_t& member);
 
+    // bytes as the body of a C or C++ array initializer, eight to a line.
+    static std::string byte_list(const std::vector<uint8_t>& bytes, const std::string& indent);
+
     // Nested types' members, from set_nested_specs.
     std::map<std::string, members_t> nested_members_;
 

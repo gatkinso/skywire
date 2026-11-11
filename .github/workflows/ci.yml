@@ -214,7 +214,7 @@ jobs:
         run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
       - name: No test skipped
         if: success() || failure()
-        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInterop$'
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInteropC?$'
 
   windows:
     name: Windows (MSVC, VS 2026)
@@ -271,7 +271,7 @@ jobs:
 
       - name: No test skipped
         if: success() || failure()
-        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInterop$'
+        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInteropC?$'
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.vcpkg.outputs.cache-hit != 'true'

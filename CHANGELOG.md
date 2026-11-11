@@ -26,9 +26,19 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   Generated tests check the exact bytes, round trips and rejection of bad
   documents; `skywire_generated_tests:BsonInterop` checks the bytes against
   pymongo, and `fuzz_cpp_bson` fuzzes the reader.
+- JSON, XML and BSON for generated C: `X_ToJson`/`X_FromJson`,
+  `X_ToXml`/`X_FromXml` and `X_ToBson`/`X_FromBson`, with the same flags.
+  The writers follow `snprintf` (they return the length needed); the readers
+  return 0 or -1 and leave the message unchanged on failure. The runtime is
+  the header-only C99 `lang/c/ctext.h` and `lang/c/cbson.h`, installed with
+  `cstream.h`; BSON reading needs no allocation. Generated tests check the
+  same expected bytes as C++, `skywire_generated_tests:BsonInteropC` checks
+  the BSON against pymongo, and `fuzz_c_cpp_text` checks that C reads and
+  writes exactly what C++ does.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
-  `skywire_golden:cpp_text` the C++ output with the JSON, XML and BSON flags;
+  `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML
+  and BSON flags;
   `skywire_update_golden` rewrites them after a deliberate change.
 - A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
   class per message, for .NET Framework 4.6.2+, Unity and .NET, with

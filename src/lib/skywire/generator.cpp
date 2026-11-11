@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <cstdio>
 #include <iostream>
 #include <algorithm>
 #include "generator.h"
@@ -187,6 +188,19 @@ std::string Generator::test_literal(const member_desc_t& member)
     }
     const char* literal = test_values::literal(type);
     return literal ? literal : "";
+}
+
+std::string Generator::byte_list(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    std::string out;
+    for (size_t i = 0; i < bytes.size(); i++)
+    {
+        out += (i % 8 == 0) ? "\n" + indent : " ";
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", bytes[i]);
+        out += hex;
+    }
+    return out;
 }
 
 std::string Generator::out_of_range_hex(const member_desc_t& member)

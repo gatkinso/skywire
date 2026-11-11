@@ -46,6 +46,7 @@ protected:
     virtual bool hdr_size(int& errorcode);
     virtual bool hdr_get_functions(int& errorcode);
     virtual bool hdr_set_functions(int& errorcode);
+    virtual bool hdr_text(int& errorcode);
     virtual bool hdr_equals_function(int& errorcode);
     virtual bool hdr_extern_bottom(int& errorcode);
     virtual bool hdr_sentry_bottom(int& errorcode);
@@ -58,6 +59,7 @@ protected:
     virtual bool imp_equals_function(int& errorcode);
     virtual bool imp_get_functions(int& errorcode);
     virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_text(int& errorcode);
 
 private:
     virtual bool getset_functions(const std::string& fcn_key, const std::string& ass_key, int& errorcode);
@@ -65,6 +67,8 @@ private:
     bool imp_stream_function(const std::string& direction, int& errorcode);
     void write_bitfield(uint32_t tag, const member_desc_t& member);
     void read_bitfield(uint32_t tag, const member_desc_t& member);
+    std::vector<std::string> text_formats() const;
+    std::string text_member(const std::string& function, const member_desc_t& member);
 };
 
 }

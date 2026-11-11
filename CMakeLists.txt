@@ -210,6 +210,8 @@ set(SKYWIRE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/skywire)
 
 install(FILES lang/c/cstream.h
               lang/c/sw_endian.h
+              lang/c/ctext.h
+              lang/c/cbson.h
               lang/cpp/stream.h
               lang/cpp/streamable.h
               lang/cpp/text.h

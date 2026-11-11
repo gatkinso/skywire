@@ -30,6 +30,7 @@ set(UNIT_TESTS
                 cgenerator_unit_test.cpp
                 cppgenerator_unit_test.cpp
                 csharpgenerator_unit_test.cpp
+                ctext_unit_test.cpp
                 javascriptgenerator_unit_test.cpp
                 cstream_unit_test.cpp
                 endian_unit_test.cpp
@@ -185,6 +186,10 @@ add_test(NAME wiregen_cli:GenerateBson
 set_tests_properties(wiregen_cli:GenerateBson PROPERTIES
     PASS_REGULAR_EXPRESSION "std::string to_bson\\(\\) const"
     FAIL_REGULAR_EXPRESSION "to_json|to_xml")
+add_test(NAME wiregen_cli:GenerateCText
+    COMMAND wiregen --language c --generate_json --generate_xml --generate_bson --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:GenerateCText PROPERTIES
+    PASS_REGULAR_EXPRESSION "#include \"ctext\\.h\".*#include \"cbson\\.h\".*_ToJson\\(.*_ToXml\\(.*_ToBson\\(")
 add_test(NAME wiregen_cli:GenerateBsonUnsupported
     COMMAND wiregen --language python3 --generate_bson --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateBsonUnsupported PROPERTIES

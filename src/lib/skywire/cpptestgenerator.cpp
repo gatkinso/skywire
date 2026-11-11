@@ -260,25 +260,6 @@ bool CppTestGenerator::test_text(const std::string& format, int& errorcode)
     return true;
 }
 
-namespace
-{
-
-// bytes as the body of a C++ array or vector initializer, eight to a line.
-std::string byte_list(const std::vector<uint8_t>& bytes, const std::string& indent)
-{
-    std::string out;
-    for (size_t i = 0; i < bytes.size(); i++)
-    {
-        out += (i % 8 == 0) ? "\n" + indent : " ";
-        char hex[8];
-        std::snprintf(hex, sizeof(hex), "0x%02x,", bytes[i]);
-        out += hex;
-    }
-    return out;
-}
-
-}
-
 // The BSON tests: the exact bytes (the same in every language, from
 // test_values), a round trip, an empty document reading as zero, uint64_t
 // values above 2^63-1 as Decimal128, and malformed or out-of-range documents

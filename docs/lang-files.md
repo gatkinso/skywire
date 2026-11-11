@@ -58,13 +58,17 @@ this).
 
 ## JSON, XML and BSON
 
-With `--generate_json`, `--generate_xml` or `--generate_bson` the C++
-generator uses the `to_json_*`, `from_json_*`, `to_xml_*`, `from_xml_*`,
+With `--generate_json`, `--generate_xml` or `--generate_bson` the C and C++
+generators use the `to_json_*`, `from_json_*`, `to_xml_*`, `from_xml_*`,
 `to_bson_*` and `from_bson_*` templates: for each function a `_str` that
 begins it, a `_end_str` that ends it, and one `_native_mem_str`,
 `_string_mem_str` and `_user_mem_str` per member kind (the `from_` ones also a
 `_bits_mem_str`, with `__BITS__` for the bitfield's width), and
-`text_include_str` and `bson_include_str` for the runtime headers. Without the
+`text_include_str` and `bson_include_str` for the runtime headers. The C
+generator also takes `json_decl_str`, `xml_decl_str` and `bson_decl_str`, the
+header's declarations, and `__TYPEID__`, the member's type with spaces as
+underscores (`unsigned_char`), which names the runtime function that writes
+or reads it (`sw_json_put_unsigned_char`). Without the
 options they are not used, so a lang file without them still works. See
 [JSON, XML and BSON](text-formats.md).
 

@@ -51,7 +51,7 @@ another in `SPECS`) changes. Its output goes to `OUT_DIR`, by default
 generated sources are added to that target, which also gets `OUT_DIR` on its
 include path and links the language's runtime. `OUT_VAR` receives the generated
 file names. `JSON`, `XML` and `BSON` add the [JSON, XML and BSON forms](text-formats.md)
-(C++ only for now). Give a nested message's specification in the same call as the
+(C and C++). Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs
 `${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the [Swift package](#swift-package).

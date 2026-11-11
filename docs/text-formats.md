@@ -7,12 +7,13 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
     wiregen --language c++ --generate_json --generate_xml --generate_bson --input_file Telemetry.json --outdir out --write_to_file
 
 `--generate_json` adds `to_json` and `from_json`, `--generate_xml` adds
-`to_xml` and `from_xml`, `--generate_bson` adds `to_bson` and `from_bson`.
-Without them nothing changes: the generated code is exactly what it was. With
-`--generate_tests` the generated tests also check these forms.
+`to_xml` and `from_xml`, `--generate_bson` adds `to_bson` and `from_bson`
+(in C, `_ToJson`, `_FromJson` and so on; see [C](#c)). Without them nothing
+changes: the generated code is exactly what it was. With `--generate_tests`
+the generated tests also check these forms.
 
-They are C++ only for now; the other languages refuse the options until they
-have them. Every language will write the same text and the same BSON for the
+They are C and C++ only for now; the other languages refuse the options until
+they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -208,3 +209,66 @@ std::string record = w.take();
 A member cannot be named `to_json` or `from_json` with `--generate_json`,
 `to_xml` or `from_xml` with `--generate_xml`, or `to_bson` or `from_bson`
 with `--generate_bson`.
+
+## C
+
+`--language c` generates functions named for the message, as for the wire
+format:
+
+| Function | |
+|---|---|
+| `size_t X_ToJson(const X* m, char* buf, size_t cap)` | The JSON text, NUL-terminated, into `buf`; returns its length. |
+| `int X_FromJson(X* m, const char* text, size_t len)` | Reads `len` bytes of JSON text; 0, or -1 leaving the message unchanged. |
+| `size_t X_ToXml(const X* m, char* buf, size_t cap)` | The XML text, as `_ToJson`. |
+| `int X_FromXml(X* m, const char* text, size_t len)` | Reads XML text, as `_FromJson`. |
+| `size_t X_ToBson(const X* m, uint8_t* buf, size_t cap)` | The BSON document into `buf`; returns its length. |
+| `int X_FromBson(X* m, const uint8_t* bytes, size_t len)` | Reads one BSON document, exactly `len` bytes; 0, or -1 leaving the message unchanged. |
+
+`_ToJson` and `_ToXml` follow `snprintf`: they always return the whole
+text's length (without the NUL), write at most `cap` bytes, and end what they
+write with a NUL, so a call with a NULL buffer gives the size to allocate.
+`_ToBson` returns the document's length too; the document is complete only
+when that is no more than `cap`.
+
+```c
+Telemetry msg;
+memset(&msg, 0, sizeof(msg));
+msg.device_id = 42;
+
+size_t n = Telemetry_ToJson(&msg, NULL, 0);
+char* json = malloc(n + 1);
+Telemetry_ToJson(&msg, json, n + 1);
+
+Telemetry copy;
+if (0 != Telemetry_FromJson(&copy, json, n)) { /* not a Telemetry */ }
+```
+
+The runtime is the header-only `lang/c/ctext.h` and `lang/c/cbson.h`
+(installed with `cstream.h`), C99 with only the standard library, and
+included only when asked for. They write and read exactly what the C++ runtime
+does: the generated tests check both against the same expected bytes, and
+the `fuzz_c_cpp_text` fuzz target checks that C accepts exactly the input C++
+does and writes back exactly the same bytes. Reading streams through the input
+once without building a tree; BSON is checked where it lies and needs no
+allocation, and JSON and XML allocate only for a number written in more than
+about 100 bytes. Neither depends on the C locale.
+
+`X_WriteJson(const X*, sw_json_writer*)`, `X_ReadJson(X*, sw_json*)`,
+`X_WriteXml(const X*, sw_out*, const char* element)`,
+`X_ReadXml(X*, sw_xml*, const sw_xml_tag*)`, `X_WriteBson(const X*, sw_out*)`
+and `X_ReadBson(X*, const sw_bson_doc*)` are what nested messages use, and can
+put a message inside a larger document of your own:
+
+```c
+uint8_t record[512];
+sw_out o;
+sw_out_init(&o, record, sizeof(record));
+size_t start = sw_bson_begin(&o);
+sw_bson_put_int64_t(&o, "received_at", 1700000000);
+sw_bson_document(&o, "telemetry");
+Telemetry_WriteBson(&msg, &o);
+sw_bson_end(&o, start);
+/* o.len bytes; complete if o.len <= sizeof(record) */
+```
+
+No member name is reserved in C.

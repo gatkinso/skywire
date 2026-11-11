@@ -30,7 +30,7 @@
 #  OUT_VAR receives the generated files. A spec that nests another message
 #  should be given with it, in the same directory, so a change to either
 #  regenerates both. JSON, XML and BSON add those forms (wiregen
-#  --generate_json, --generate_xml, --generate_bson; C++ only for now).
+#  --generate_json, --generate_xml, --generate_bson).
 
 function(skywire_generate)
     cmake_parse_arguments(PARSE_ARGV 0 arg "JSON;XML;BSON" "LANGUAGE;TARGET;OUT_DIR;OUT_VAR;NAMESPACE" "SPECS")

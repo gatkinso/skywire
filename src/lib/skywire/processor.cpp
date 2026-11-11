@@ -441,9 +441,9 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
         return success;
     }
 
-    // The text and BSON forms are C++ only for now; other languages refuse
-    // them rather than quietly leave them out.
-    if ((generate_json_ || generate_xml_ || generate_bson_) && lang != cpp_str_)
+    // The text and BSON forms are C and C++ only for now; other languages
+    // refuse them rather than quietly leave them out.
+    if ((generate_json_ || generate_xml_ || generate_bson_) && lang != cpp_str_ && lang != c_str_)
     {
         errorcode |= SW_ERROR;
         std::cerr << (generate_json_ ? "--generate_json" : generate_xml_ ? "--generate_xml" : "--generate_bson")

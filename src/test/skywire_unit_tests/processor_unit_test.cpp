@@ -1065,6 +1065,67 @@ TEST(ProcessorTextFormatsTest, MemberNameClash)
     EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }
 
+// C: the same three forms as functions, each only when asked for.
+TEST(ProcessorTextFormatsTest, COffByDefault)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, false, out, errorcode));
+    EXPECT_FALSE(has(out["header"], "ctext.h"));
+    EXPECT_FALSE(has(out["header"], "cbson.h"));
+    EXPECT_FALSE(has(out["header"], "Json"));
+    EXPECT_FALSE(has(out["header"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "Bson"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+}
+
+TEST(ProcessorTextFormatsTest, CEachForm)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", true, false, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"ctext.h\""));
+    EXPECT_TRUE(has(out["header"], "size_t Texty_ToJson(const Texty * structure, char * buf, size_t cap);"));
+    EXPECT_TRUE(has(out["header"], "int Texty_FromJson(Texty * structure, const char * text, size_t len);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_put_int16_t(w, structure->a);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_read_bytes(p, decoded.s, 4)"));
+    EXPECT_FALSE(has(out["header"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "cbson.h"));
+    EXPECT_TRUE(has(out["unittest"], R"(R"sw({"a":-12345,"s":"skyw"})sw")"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "int Texty_FromXml(Texty * structure, const char * text, size_t len);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_xml_is(&p, &root, \"Texty\")"));
+    EXPECT_FALSE(has(out["header"], "Json"));
+    EXPECT_TRUE(has(out["unittest"], "R\"sw(<Texty><a>-12345</a><s>skyw</s></Texty>)sw\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, false, out, errorcode, true));
+    EXPECT_TRUE(has(out["header"], "#include \"cbson.h\""));
+    EXPECT_FALSE(has(out["header"], "#include \"ctext.h\""));
+    EXPECT_TRUE(has(out["header"], "size_t Texty_ToBson(const Texty * structure, uint8_t * buf, size_t cap);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_int16_t(o, \"a\", structure->a);"));
+    EXPECT_TRUE(has(out["unittest"], "0x18, 0x00, 0x00, 0x00, 0x10, 0x61, 0x00, 0xc7,"));
+}
+
+TEST(ProcessorTextFormatsTest, CNestedAndBitfields)
+{
+    results_t out;
+    int errorcode = 0;
+    const char* spec = R"({"stringValues":{"classname":"Outer","namespace":"t"},"members":{
+        "1":{"type":"Inner","name":"inner"},"2":{"type":"uint8_t","name":"u","bits":3},
+        "3":{"type":"unsigned char","name":"c"}}})";
+    ASSERT_TRUE(generate_text(spec, "c/lang.c.json", true, true, out, errorcode, true));
+    EXPECT_TRUE(has(out["implementation"], "Inner_WriteJson(&structure->inner, w);"));
+    EXPECT_TRUE(has(out["implementation"], "Inner_ReadXml(&decoded.inner, p, &child)"));
+    EXPECT_TRUE(has(out["implementation"], "e.type != SW_BSON_DOCUMENT || 0 != Inner_ReadBson(&decoded.inner, &e.doc)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_read_uint8_t(p, &decoded.u, 3)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_uint8_t(o, \"u\", structure->u);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_xml_read_unsigned_char(p, &child, &decoded.c, 0)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_unsigned_char(o, \"c\", structure->c);"));
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {
@@ -1073,7 +1134,7 @@ TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
     EXPECT_FALSE(generate_text(text_spec, "go/lang.go.json", true, false, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "c/lang.c.json", false, true, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);

@@ -13,9 +13,9 @@
 #   express or implied. See the License for the specific language governing
 #   permissions and limitations under the License.
 #
-"""Checks the generated C++ BSON against pymongo's bson module.
+"""Checks the generated C or C++ BSON against pymongo's bson module.
 
-    bson_interop.py <bson_interop program> <scratch dir>
+    bson_interop.py <bson_interop or bson_interop_c program> <scratch dir>
 
 Both ways: pymongo decodes what the generated code writes, to the values it
 was given, and encodes it again to the same bytes; the generated code reads

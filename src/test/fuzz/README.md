@@ -14,6 +14,7 @@ crashes, leaks or misbehaves.
 | `fuzz_cpp_json` | text, to the generated C++ `from_json` | Bad input fails and leaves the message alone; a decoded message's JSON and BSON are canonical (read back to the same JSON and BSON), and its XML and SW forms carry it unchanged |
 | `fuzz_cpp_xml` | text, to the generated C++ `from_xml` | The same, for XML |
 | `fuzz_cpp_bson` | bytes, to the generated C++ `from_bson` | The same, for BSON |
+| `fuzz_c_cpp_text` | bytes, as JSON, XML and BSON, to the generated C and C++ | For each form: C accepts exactly what C++ does; then C writes back exactly C++'s bytes; when it refuses, the C message is unchanged |
 | `fuzz_spec` | a message spec's JSON | wiregen generates it (code and tests) for every language without crashing, and no generator throws with the shipped lang files |
 | `fuzz_lang` | a lang file's JSON | wiregen generates the ring spec with it without crashing; a bad lang file is reported, not fatal |
 
@@ -78,13 +79,15 @@ A single target can also be run by hand, as any libFuzzer program:
   Decimal128, a binary string, NaN, Decimal128 with exponents, a negative
   int64 for a `uint64_t`, unknown elements of many types, a truncated document
   and deep nesting.
+- `fuzz_c_cpp_text`: all of the above text and BSON seeds.
 - `fuzz_spec`: every spec in the tree (`src/test/generated_tests`,
   `examples/specs`, `cfg`).
 - `fuzz_lang`: every lang file in `lang/`.
 
 [`json.dict`](json.dict) gives the two wiregen targets and `fuzz_cpp_json`
 JSON syntax and the spec and lang-file keywords; [`xml.dict`](xml.dict) gives
-`fuzz_cpp_xml` XML syntax and the ring message's element names.
+`fuzz_cpp_xml` and `fuzz_c_cpp_text` XML syntax and the ring message's
+element names.
 
 ## CI
 

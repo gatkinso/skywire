@@ -41,8 +41,11 @@ protected:
     virtual bool test_short_buffer(int& errorcode);
     virtual bool test_wire(int& errorcode);
     virtual bool test_bitfield_setters(int& errorcode);
+    virtual bool test_text(const std::string& format, int& errorcode);
+    virtual bool test_bson(int& errorcode);
 
     virtual bool do_sets(int& errorcode);
+    void do_test_value_sets();
 
 private:
     char BASECHAR = 1;
