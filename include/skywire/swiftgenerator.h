@@ -37,6 +37,15 @@ protected:
     void serialize_bitfield(uint32_t tag, const member_desc_t& member);
     void deserialize_bitfield(uint32_t tag, const member_desc_t& member);
 
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    // With --generate_json, --generate_xml or --generate_bson: false, with
+    // an error, if the class or a member takes a name the forms need.
+    bool check_text_names(int& errorcode);
+    // The methods the options add to the class, and one member's lines in
+    // them.
+    std::string text_functions();
+    std::string text_member(const std::string& function, const member_desc_t& member);
+
 private:
     virtual bool do_implementation(int& errorcode);
 

@@ -3,11 +3,12 @@
 #
 #  Detects the Swift toolchain at test time. If swiftc is absent it prints the
 #  skip marker matched by the test's SKIP_REGULAR_EXPRESSION; otherwise it
-#  generates the Swift sources with wiregen, compiles them and runs the result.
+#  generates the Swift sources with wiregen (with the JSON, XML and BSON
+#  forms), compiles them and runs the result.
 #
 #  Required -D variables: WIREGEN, SPECS, LANGFILE, RUNTIME, OUTDIR
-#  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
-#  nested message types must be among them.
+#  SPECS and RUNTIME are comma-separated lists (CTest splits arguments on
+#  ';'); a spec's nested message types must be among SPECS.
 #  Each test has its own @main, so each is built separately, with the runtime,
 #  its own message and the messages nested in it. swiftc starts from scratch
 #  every time, so the builds run at once.
@@ -29,6 +30,7 @@ message("Using swiftc: ${SWIFTC_EXECUTABLE}")
 
 file(MAKE_DIRECTORY ${OUTDIR})
 string(REPLACE "," ";" SPECS "${SPECS}")
+string(REPLACE "," ";" RUNTIME "${RUNTIME}")
 
 # A member type that isn't one of the lang file's native types names a
 # nested message.
@@ -62,6 +64,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

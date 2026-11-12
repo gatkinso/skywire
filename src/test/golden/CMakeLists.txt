@@ -32,7 +32,7 @@ set(GOLDEN_LANGUAGES c cpp csharp go java javascript proto3 python3 rust swift)
 string(REPLACE ";" "|" GOLDEN_SPEC_ARG "${GOLDEN_SPECS}")
 
 # Languages that have --generate_json, --generate_xml and --generate_bson.
-set(GOLDEN_TEXT_LANGUAGES c cpp csharp go java python3 rust)
+set(GOLDEN_TEXT_LANGUAGES c cpp csharp go java python3 rust swift)
 set(GOLDEN_TEXT_FLAGS "--generate_json|--generate_xml|--generate_bson")
 
 set(UPDATE_COMMANDS)

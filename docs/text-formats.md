@@ -12,8 +12,8 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C, C++, Python, Go, C#, Rust and Java only for now; the other
-languages refuse the options until they have them. Every language will write the same text and the same BSON for the
+They are in every language but JavaScript for now; JavaScript refuses
+the options until it has them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -501,3 +501,49 @@ in another package. Members are fields, which never clash with methods in
 Java, so the options reserve no member names but one: with any of them
 neither the class nor a member can be named `SkywireText`, which would hide
 the helper class.
+
+## Swift
+
+| Method | |
+|---|---|
+| `toJson() -> String` | The JSON text. |
+| `init(json: String) throws`, `init(json: [UInt8]) throws` | Reads JSON; throws `SkywireText.Invalid` if it is not the JSON form of one (bytes that are not UTF-8 included). |
+| `toXml() -> String` | The XML text. |
+| `init(xml: String) throws`, `init(xml: [UInt8]) throws` | Reads XML, as `init(json:)`. |
+| `toBson() -> [UInt8]` | The BSON document. |
+| `init(bson: [UInt8]) throws` | Reads one BSON document, exactly `bson`, as `init(json:)`. |
+
+```swift
+let msg = Telemetry()
+msg.Set_device_id(42)
+let text = msg.toJson()
+
+do {
+    let copy = try Telemetry(json: text)
+} catch {
+    // not a Telemetry
+}
+```
+
+The initializers build a new message, so there is nothing to leave
+unchanged on an error. The helpers are `lang/swift/SkywireText.swift`, which
+ships like `SWStream.swift`: build it into the module with the generated
+files, or take both from the `Skywire` package (see
+[Swift package](using.md#swift-package)); wiregen does not write it. It is
+Swift 5.9 or newer with only the standard library, its types all inside
+`enum SkywireText`. Floats are written from their exact decimal value,
+worked out here, rounded ties to even, and read with `Double(String)`, or
+`Float(String)` for a `float` member, so the decimal is rounded straight to
+32 bits. A member is matched by its name's exact bytes, not by Swift's
+`String` equality, which would take a name that is only canonically
+equivalent (KELVIN SIGN for `K`). The generated tests check the same
+expected bytes as every other language, and `skywire_text_diff:swift`
+checks that Swift accepts exactly the input C++ does and writes back the
+same bytes.
+
+`writeJson`, `readJson`, `writeXml`, `readXml`, `writeBson` and `readBson`
+are what nested messages use. A property cannot share a method's name, so
+with `--generate_json` a member cannot be named `toJson`, `writeJson` or
+`readJson`; likewise for XML with `--generate_xml` and BSON with
+`--generate_bson`. With any of them neither the message nor a member can be
+named `SkywireText`.

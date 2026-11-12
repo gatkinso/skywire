@@ -51,6 +51,7 @@ foreach(file
         include/skywire/text.h
         include/skywire/bson.h
         share/skywire/runtime/swift/SWStream.swift
+        share/skywire/runtime/swift/SkywireText.swift
         share/skywire/lang/lang.c.json
         share/skywire/lang/lang.cpp.json
         share/skywire/lang/lang.csharp.json

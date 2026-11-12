@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] [-DSWIFTC=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -31,6 +31,10 @@ if(LANGUAGE STREQUAL "go" AND NOT GO)
 endif()
 if(LANGUAGE STREQUAL "rust" AND NOT RUSTC)
     message("TEXT_DIFF_SKIPPED: no rustc")
+    return()
+endif()
+if(LANGUAGE STREQUAL "swift" AND NOT SWIFTC)
+    message("TEXT_DIFF_SKIPPED: no swiftc")
     return()
 endif()
 if(LANGUAGE STREQUAL "java")
@@ -140,6 +144,18 @@ elseif(LANGUAGE STREQUAL "java")
     file(GLOB java_files RELATIVE ${OUTDIR}/generated ${OUTDIR}/generated/*.java)
     run("javac" ${JAVAC} -Xlint:all -Werror -d ${OUTDIR}/classes ${java_files} WORKING_DIRECTORY ${OUTDIR}/generated)
     execute_process(COMMAND ${JAVA} -cp ${OUTDIR}/classes Driver ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "swift")
+    # The runtime (SWStream.swift, SkywireText.swift), the generated classes
+    # and the driver as main.swift, optimized.
+    configure_file(${SOURCE_DIR}/driver.swift ${OUTDIR}/generated/main.swift COPYONLY)
+    set(driver ${OUTDIR}/driver_swift)
+    if(CMAKE_HOST_WIN32)
+        string(APPEND driver .exe)
+    endif()
+    run("swiftc" ${SWIFTC} -O -o ${driver} ${LANG_DIR}/swift/SWStream.swift ${LANG_DIR}/swift/SkywireText.swift
+        RingyInner.swift RingyMcRingface.swift main.swift WORKING_DIRECTORY ${OUTDIR}/generated)
+    execute_process(COMMAND ${driver} ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")

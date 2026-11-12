@@ -10,7 +10,7 @@
 | JavaScript | `javascript`, `js` | none | `node:test` | `examples/javascript` |
 | Python 3 | `python3`, `python` | none | `unittest` | `examples/python` |
 | Rust | `rust` | none | `#[test]` | `examples/rust` |
-| Swift | `swift` | `SWStream.swift`, or the [Swift package](using.md#swift-package) | a test program (`@main`) | `examples/swift` |
+| Swift | `swift` | `SWStream.swift` (and `SkywireText.swift` for JSON, XML and BSON), or the [Swift package](using.md#swift-package) | a test program (`@main`) | `examples/swift` |
 | proto3 | `proto3` | | a text-format message | |
 
 Every language puts the same bytes on the wire for the same specification.

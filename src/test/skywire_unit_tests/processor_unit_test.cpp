@@ -1321,18 +1321,67 @@ TEST(ProcessorTextFormatsTest, JavaForms)
     }
 }
 
+TEST(ProcessorTextFormatsTest, SwiftForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "SkywireText"));
+
+    // The helpers ship with SWStream.swift, not with each message.
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", true, false, out, errorcode, true));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_TRUE(has(out["implementation"], "    public func toJson() -> String {\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public convenience init(json: [UInt8]) throws {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", Int32(self.a))\n"));
+    EXPECT_TRUE(has(out["implementation"], "self.a = try Int16(truncatingIfNeeded: m.value.integer(\"int16_t\", 0))\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public convenience init(bson: [UInt8]) throws {\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "let jsonText = input.toJson()"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "writeXml(w, \"Texty\")"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+
+    // A property cannot share a method's name, and SkywireText names the
+    // helpers.
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "swift/lang.swift.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "swift/lang.swift.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* member = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"SkywireText"}}})";
+    const char* type = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    for (const char* spec : { member, type })
+    {
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(spec, "swift/lang.swift.json", false, false, out, errorcode));
+        out.clear();
+        EXPECT_FALSE(generate_text(spec, "swift/lang.swift.json", false, true, out, errorcode));
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    }
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {
     results_t out;
     int errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", true, false, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", true, false, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, true, out, errorcode));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, false, out, errorcode));
+    EXPECT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode));
 }

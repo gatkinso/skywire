@@ -66,6 +66,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   helpers, the class `skywire.text.SkywireText` (`SkywireText.java`, Java 8
   or newer, standard library only), beside the classes.
   `skywire_text_diff:java` checks Java against C++ as for Python.
+- JSON, XML and BSON for generated Swift: `toJson`/`init(json:)`,
+  `toXml`/`init(xml:)` and `toBson`/`init(bson:)`, the initializers throwing
+  `SkywireText.Invalid`. The helpers are `lang/swift/SkywireText.swift`
+  (Swift 5.9 or newer, standard library only), installed beside
+  `SWStream.swift` and part of the `Skywire` package.
+  `skywire_text_diff:swift` checks Swift against C++ as for Python.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

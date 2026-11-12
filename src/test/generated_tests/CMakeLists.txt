@@ -173,7 +173,7 @@ add_test(NAME skywire_generated_tests:SwiftRoundTrip
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
-            -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift
+            -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift,${PROJECT_SOURCE_DIR}/lang/swift/SkywireText.swift
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_swift_wiregen
             -DEXE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/swift_roundtrip.cmake)

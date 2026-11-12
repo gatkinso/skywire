@@ -54,7 +54,8 @@ file names. `JSON`, `XML` and `BSON` add the [JSON, XML and BSON forms](text-for
 (C and C++). Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs
-`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the [Swift package](#swift-package).
+`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift` (and `SkywireText.swift`, for the
+JSON, XML and BSON forms), or the [Swift package](#swift-package).
 
 ## Without CMake
 
@@ -75,7 +76,7 @@ include directory and `-std=c++17`; protozero has no `.pc` of its own.
 ## Swift package
 
 A Swift package can depend on skywire for SWStream instead of copying
-`SWStream.swift`. The `Package.swift` at the top of the repository has one
+`SWStream.swift` (and `SkywireText.swift`, which the package holds too). The `Package.swift` at the top of the repository has one
 library, `Skywire`:
 
 ```swift
