@@ -87,7 +87,7 @@ and relays, and no optional output such as `--generate_json`, and compares
 every file with `src/test/golden/<language>`. It catches any change to code
 users already generate, down to a blank line. `skywire_golden:<language>_text`
 does the same with `--generate_json --generate_xml --generate_bson`, for each
-language that has them (`c_text`, `cpp_text`, `csharp_text`, `go_text`, `python3_text`), so work on one language's text and
+language that has them (`c_text`, `cpp_text`, `csharp_text`, `go_text`, `python3_text`, `rust_text`), so work on one language's text and
 BSON code cannot quietly change another's. When a change is meant, build the
 `skywire_update_golden` target, which rewrites `src/test/golden` from the
 current wiregen, and commit the result with the change.
@@ -99,7 +99,8 @@ seeded mutations of them as JSON, XML and BSON, and fails unless the
 language accepts exactly the inputs the C++ does and writes back exactly the
 same bytes. The C++ side is `oracle.cpp`; each language has a small driver.
 It needs Python 3, which makes the inputs, and the language's toolchain (Go
-for `skywire_text_diff:go`, the .NET SDK for `skywire_text_diff:csharp`), and reports Skipped without them.
+for `skywire_text_diff:go`, the .NET SDK for `skywire_text_diff:csharp`, rustc for
+`skywire_text_diff:rust`), and reports Skipped without them.
 The C code is held to the C++ by the `fuzz_c_cpp_text` fuzz target instead.
 
 `skywire_schema:Check` runs `scripts/check_schemas.py`. It needs Python's

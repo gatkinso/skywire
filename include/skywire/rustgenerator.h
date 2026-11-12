@@ -68,6 +68,12 @@ protected:
     // The function names a member's accessors take.
     std::vector<std::string> accessor_names(const member_desc_t& member);
 
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    // The items --generate_json, --generate_xml and --generate_bson add to
+    // the impl block, and one member's lines in them.
+    std::vector<std::string> text_items();
+    std::string text_member(const std::string& function, const member_desc_t& member);
+
 private:
     std::string classname_;
 

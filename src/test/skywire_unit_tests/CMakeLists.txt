@@ -191,9 +191,9 @@ add_test(NAME wiregen_cli:GenerateCText
 set_tests_properties(wiregen_cli:GenerateCText PROPERTIES
     PASS_REGULAR_EXPRESSION "#include \"ctext\\.h\".*#include \"cbson\\.h\".*_ToJson\\(.*_ToXml\\(.*_ToBson\\(")
 add_test(NAME wiregen_cli:GenerateBsonUnsupported
-    COMMAND wiregen --language rust --generate_bson --input_file ${CLI_SPEC})
+    COMMAND wiregen --language java --generate_bson --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateBsonUnsupported PROPERTIES
-    PASS_REGULAR_EXPRESSION "--generate_bson is not yet supported for rust")
+    PASS_REGULAR_EXPRESSION "--generate_bson is not yet supported for java")
 add_test(NAME wiregen_cli:NoTextByDefault
     COMMAND wiregen --language c++ --generate_tests --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:NoTextByDefault PROPERTIES

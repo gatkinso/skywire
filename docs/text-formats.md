@@ -12,8 +12,8 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C, C++, Python, Go and C# only for now; the other languages
-refuse the options until they have them. Every language will write the same text and the same BSON for the
+They are C, C++, Python, Go, C# and Rust only for now; the other
+languages refuse the options until they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -408,3 +408,52 @@ named `ToJson`, `FromJson`, `WriteJson` or `ReadJson`; likewise for XML with
 cannot take the name of one of the helper types: `SwText`,
 `SwInvalidException`, `SwJson`, `SwJsonMember`, `SwJsonWriter`, `SwXml`,
 `SwXmlWriter`, `SwBson`, `SwBsonElement` or `SwBsonWriter`.
+
+## Rust
+
+| Function | |
+|---|---|
+| `to_json(&self) -> String` | The JSON text. |
+| `from_json(text: impl AsRef<[u8]>) -> std::io::Result<Self>` | Reads JSON from a `&str`, a `String` or bytes; an `InvalidData` error if it is not the JSON form of one (bytes that are not UTF-8 included). |
+| `to_xml(&self) -> String` | The XML text. |
+| `from_xml(text: impl AsRef<[u8]>) -> std::io::Result<Self>` | Reads XML, as `from_json`. |
+| `to_bson(&self) -> Vec<u8>` | The BSON document. |
+| `from_bson(bson: impl AsRef<[u8]>) -> std::io::Result<Self>` | Reads one BSON document, exactly `bson`, as `from_json`. |
+
+```rust
+mod skywire_text;
+mod telemetry;
+
+use telemetry::Telemetry;
+
+fn main() -> std::io::Result<()> {
+    let mut msg = Telemetry::default();
+    msg.set_device_id(42);
+    let text = msg.to_json();
+
+    let copy = Telemetry::from_json(&text)?;
+    assert_eq!(copy, msg);
+    Ok(())
+}
+```
+
+The readers build a new message, as `from_bytes` does, so there is nothing
+to leave unchanged on an error. The helpers are the module `skywire_text`
+(`skywire_text.rs`), which wiregen writes beside the message modules when
+any of the options is given; declare it next to them, as they import it as
+`super::skywire_text`. It uses only `std`, builds with rustc 1.58 and later,
+and is rustfmt- and clippy-clean; its items are `pub(crate)` and it allows
+`dead_code`, as a crate may use only some of the forms. The file is the
+same for every message. Floats are written from the exact decimal value std
+prints, rounded ties to even here, so the text does not depend on the
+rustc version's own rounding; `str::parse` reads them, a `float` member
+straight to 32 bits. The generated tests check the same expected bytes as
+every other language, and `skywire_text_diff:rust` checks that Rust accepts
+exactly the input C++ does and writes back the same bytes.
+
+`write_json`, `read_json`, `write_xml`, `read_xml`, `write_bson` and
+`read_bson` (`pub(crate)`) are what nested messages use. With
+`--generate_json` a member cannot be named `to_json`, `from_json`,
+`write_json` or `read_json`, as its getter would be; likewise for XML with `--generate_xml` and BSON with
+`--generate_bson`. With any of them a message or nested type cannot be named
+so that its module would be `skywire_text` (`SkywireText`).

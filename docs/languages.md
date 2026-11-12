@@ -70,6 +70,12 @@ The specification's `namespace` and `includes` are not used. A nested message
 is imported from its default module name, so generate it without overriding
 its `outputimplfilename`. PZ mode is not available in Rust.
 
+With `--generate_json`, `--generate_xml` or `--generate_bson` the struct also
+has `to_json`/`from_json`, `to_xml`/`from_xml` or `to_bson`/`from_bson`, and
+the module `skywire_text.rs` is written beside it, to be declared with the
+others; no member's accessors can then take those names, and no message can
+be `SkywireText` (see [Rust](text-formats.md#rust) in JSON, XML and BSON).
+
 ## C#
 
 `--language csharp` (or `cs`, `c#`) writes each message as a

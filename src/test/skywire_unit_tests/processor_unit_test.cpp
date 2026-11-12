@@ -1235,6 +1235,50 @@ TEST(ProcessorTextFormatsTest, CSharpForms)
     }
 }
 
+// Rust: the functions each flag adds, the runtime a sibling module, and
+// member and type names that clash with them refused.
+TEST(ProcessorTextFormatsTest, RustForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "skywire_text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "pub(crate) struct JsonWriter"));
+    EXPECT_TRUE(has(out["implementation"], "use super::skywire_text;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    pub fn to_json(&self) -> String {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", i32::from(self.a));\n"));
+    EXPECT_TRUE(has(out["implementation"], "self.a = m.value.int(\"int16_t\", 0)? as i16;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    pub fn from_bson(bson: impl AsRef<[u8]>) -> std::io::Result<Self> {\n"));
+    EXPECT_FALSE(has(out["implementation"], "to_xml"));
+    EXPECT_TRUE(has(out["unittest"], "b\"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "self.write_xml(&mut w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "to_bson"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"read_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "rust/lang.rust.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "rust/lang.rust.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* module = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(module, "rust/lang.rust.json", false, false, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(module, "rust/lang.rust.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {
@@ -1245,7 +1289,7 @@ TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
     errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode, true));
+    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_TRUE(generate_text(text_spec, "java/lang.java.json", false, false, out, errorcode));

@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -27,6 +27,10 @@ if(NOT PYTHON)
 endif()
 if(LANGUAGE STREQUAL "go" AND NOT GO)
     message("TEXT_DIFF_SKIPPED: no go")
+    return()
+endif()
+if(LANGUAGE STREQUAL "rust" AND NOT RUSTC)
+    message("TEXT_DIFF_SKIPPED: no rustc")
     return()
 endif()
 if(LANGUAGE STREQUAL "csharp")
@@ -108,6 +112,16 @@ elseif(LANGUAGE STREQUAL "csharp")
 ")
     run("dotnet build" ${DOTNET} build -c Release -o ${OUTDIR}/out WORKING_DIRECTORY ${OUTDIR})
     execute_process(COMMAND ${DOTNET} ${OUTDIR}/out/TextDiff.dll ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "rust")
+    # A crate whose root is the driver, the generated modules beside it.
+    configure_file(${SOURCE_DIR}/driver.rs ${OUTDIR}/generated/main.rs COPYONLY)
+    set(driver ${OUTDIR}/driver_rust)
+    if(CMAKE_HOST_WIN32)
+        string(APPEND driver .exe)
+    endif()
+    run("rustc" ${RUSTC} --edition 2021 -O -o ${driver} main.rs WORKING_DIRECTORY ${OUTDIR}/generated)
+    execute_process(COMMAND ${driver} ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")
