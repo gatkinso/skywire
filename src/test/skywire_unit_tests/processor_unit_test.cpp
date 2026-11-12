@@ -1193,6 +1193,48 @@ TEST(ProcessorTextFormatsTest, GoForms)
     EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }
 
+TEST(ProcessorTextFormatsTest, CSharpForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "ToJson"));
+    EXPECT_FALSE(has(out["implementation"], "Skywire.Text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "namespace Skywire.Text\n"));
+    EXPECT_TRUE(has(out["implementation"], "using Skywire.Text;\n"));
+    EXPECT_TRUE(has(out["implementation"], "public string ToJson()\n"));
+    EXPECT_TRUE(has(out["implementation"], "public bool FromJson(byte[] utf8)\n"));
+    EXPECT_TRUE(has(out["implementation"], "w.Int32(\"a\", m_a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "m_a = unchecked((short)SwJson.Int(m.Value, \"int16_t\", 0));\n"));
+    EXPECT_TRUE(has(out["implementation"], "public byte[] ToBson()\n"));
+    EXPECT_FALSE(has(out["implementation"], "ToXml"));
+    EXPECT_TRUE(has(out["unittest"], "string want = \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\";"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "WriteXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "ToBson"));
+
+    // The text forms' methods and the runtime's types are taken only with
+    // the flags.
+    for (const char* name : { "ReadBson", "SwJson" })
+    {
+        const std::string clash = std::string(R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":")") +
+                                  name + R"("}}})";
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(clash, "csharp/lang.csharp.json", false, false, out, errorcode)) << name;
+        out.clear();
+        EXPECT_FALSE(generate_text(clash, "csharp/lang.csharp.json", true, true, out, errorcode, true)) << name;
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u) << name;
+    }
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {

@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -28,6 +28,20 @@ endif()
 if(LANGUAGE STREQUAL "go" AND NOT GO)
     message("TEXT_DIFF_SKIPPED: no go")
     return()
+endif()
+if(LANGUAGE STREQUAL "csharp")
+    # Only the runtime, not an SDK, may be installed.
+    if(DOTNET)
+        execute_process(COMMAND ${DOTNET} --version RESULT_VARIABLE rc
+            OUTPUT_VARIABLE dotnet_version ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(NOT rc EQUAL 0 OR NOT dotnet_version MATCHES "^[0-9]+\\.")
+            set(DOTNET "")
+        endif()
+    endif()
+    if(NOT DOTNET)
+        message("TEXT_DIFF_SKIPPED: no .NET SDK")
+        return()
+    endif()
 endif()
 
 string(REPLACE "|" ";" CORPORA "${CORPORA}")
@@ -68,6 +82,32 @@ elseif(LANGUAGE STREQUAL "go")
     endif()
     run("go build" ${GO} build -o ${driver} ./driver WORKING_DIRECTORY ${OUTDIR})
     execute_process(COMMAND ${driver} ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "csharp")
+    # A project holding the generated classes, SkywireText.cs and the
+    # driver, built as the C# round-trip test builds: C# 7.3, warnings as
+    # errors, overflow checked.
+    set(ENV{DOTNET_CLI_TELEMETRY_OPTOUT} 1)
+    set(ENV{DOTNET_NOLOGO} 1)
+    set(ENV{DOTNET_SKIP_FIRST_TIME_EXPERIENCE} 1)
+    string(REGEX MATCH "^[0-9]+" dotnet_major "${dotnet_version}")
+    configure_file(${SOURCE_DIR}/Driver.cs ${OUTDIR}/Driver.cs COPYONLY)
+    file(WRITE ${OUTDIR}/TextDiff.csproj
+"<Project Sdk=\"Microsoft.NET.Sdk\">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net${dotnet_major}.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+</Project>
+")
+    run("dotnet build" ${DOTNET} build -c Release -o ${OUTDIR}/out WORKING_DIRECTORY ${OUTDIR})
+    execute_process(COMMAND ${DOTNET} ${OUTDIR}/out/TextDiff.dll ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")

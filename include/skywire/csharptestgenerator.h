@@ -37,6 +37,7 @@ protected:
     virtual bool do_test_implementation(int& errorcode);
     std::string set_line(const std::string& target, const member_desc_t& member);
     std::string expected_wire_test(const std::vector<uint8_t>& wire);
+    std::string text_tests_code(const std::string& classname, std::vector<std::string>& tests);
 
     // The shared test literal for a native type, suffixed or cast to suit the
     // member's C# type (e.g. "3.5f", "unchecked((sbyte)0x25UL)").

@@ -34,9 +34,9 @@ With it, the files go in `--outdir`, which must already exist.
 | `--namespace <name>` | The namespace (package) to generate into, replacing the specification's. |
 | `--generate_tests` | Also generate unit tests (see [Lang files](lang-files.md#tests-and-relays)). The C and C++ tests need Google Test (see [Using skywire](using.md#generated-tests)). |
 | `--generate_relay` | Also generate a relay program (see [Lang files](lang-files.md#tests-and-relays)). |
-| `--generate_json` | Also generate `to_json` and `from_json` (see [JSON, XML and BSON](text-formats.md)). C, C++, Python and Go only for now. |
-| `--generate_xml` | Also generate `to_xml` and `from_xml` (see [JSON, XML and BSON](text-formats.md)). C, C++, Python and Go only for now. |
-| `--generate_bson` | Also generate `to_bson` and `from_bson` (see [JSON, XML and BSON](text-formats.md#bson)). C, C++, Python and Go only for now. |
+| `--generate_json` | Also generate `to_json` and `from_json` (see [JSON, XML and BSON](text-formats.md)). C, C++, Python, Go and C# only for now. |
+| `--generate_xml` | Also generate `to_xml` and `from_xml` (see [JSON, XML and BSON](text-formats.md)). C, C++, Python, Go and C# only for now. |
+| `--generate_bson` | Also generate `to_bson` and `from_bson` (see [JSON, XML and BSON](text-formats.md#bson)). C, C++, Python, Go and C# only for now. |
 | `--write_to_file` | Write the generated files. Without it they are printed to standard output. |
 | `--outdir <dir>` | The directory to write the files to (default: the current directory). |
 | `--silent` | Do not print the success or failure summary. |

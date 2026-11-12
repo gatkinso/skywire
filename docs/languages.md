@@ -120,6 +120,12 @@ defines (`Size`, `Serialize`, `Deserialize`, `Equals`, `GetHashCode`,
 another member's field or string methods (`a`'s field is `m_a`). The
 specification's `includes` become `using` lines.
 
+With `--generate_json`, `--generate_xml` or `--generate_bson` the class also
+has `ToJson`/`FromJson`, `ToXml`/`FromXml` or `ToBson`/`FromBson`, and
+`SkywireText.cs` is written beside it; a member cannot then take those
+names or the helper types' (see [C#](text-formats.md#c_2) in JSON, XML and
+BSON).
+
 `examples/csharp` is a complete program, and `bench/` times C# like the other
 languages. C# has no relay yet, so it is not in the ring test.
 PZ mode is not available in C#.

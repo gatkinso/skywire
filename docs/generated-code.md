@@ -119,8 +119,9 @@ With `--generate_json`, `--generate_xml` or `--generate_bson` the class also
 has `to_json` and `from_json`, `to_xml` and `from_xml`, or `to_bson` and
 `from_bson` (see [JSON, XML and BSON](text-formats.md)); C gets `_ToJson`,
 `_FromJson` and the rest as functions (see [C](text-formats.md#c)), Python
-the same method names (see [Python](text-formats.md#python)), and Go
-`ToJSON`, `FromJSON`, `MarshalBSON` and the rest (see [Go](text-formats.md#go)).
+the same method names (see [Python](text-formats.md#python)), Go
+`ToJSON`, `FromJSON`, `MarshalBSON` and the rest (see [Go](text-formats.md#go)),
+and C# `ToJson`, `FromJson`, `ToBson` and the rest (see [C#](text-formats.md#c_2)).
 
 The PZ functions are the protobuf encoding (see [Protobuf (PZ) mode](protobuf.md)); the
 `*_sw` functions write and read memory directly (see [Serializing in place](#serializing-in-place)).

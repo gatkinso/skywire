@@ -12,8 +12,8 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C, C++, Python and Go only for now; the other languages refuse
-the options until they have them. Every language will write the same text and the same BSON for the
+They are C, C++, Python, Go and C# only for now; the other languages
+refuse the options until they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -363,3 +363,48 @@ are what nested messages use. With `--generate_json` a member cannot be
 named `ToJSON`, `FromJSON`, `MarshalJSON`, `UnmarshalJSON`, `writeJSON` or
 `readJSON`; likewise for XML with `--generate_xml`, and `MarshalBSON`,
 `UnmarshalBSON`, `writeBSON` and `readBSON` with `--generate_bson`.
+
+## C#
+
+| Method | |
+|---|---|
+| `string ToJson()` | The JSON text. |
+| `bool FromJson(string json)`, `bool FromJson(byte[] utf8)` | Reads JSON; false, with the message unchanged, if it is not the JSON form of one. A string with a lone surrogate, like bytes that are not UTF-8, is refused. |
+| `string ToXml()` | The XML text. |
+| `bool FromXml(string xml)`, `bool FromXml(byte[] utf8)` | Reads XML, as `FromJson`. |
+| `byte[] ToBson()` | The BSON document. |
+| `bool FromBson(byte[] bson)` | Reads one BSON document, exactly `bson`, as `FromJson`. |
+
+```csharp
+Telemetry msg = new Telemetry();
+msg.device_id = 42;
+string text = msg.ToJson();
+
+Telemetry copy = new Telemetry();
+if (!copy.FromJson(text))
+{
+    // not a Telemetry
+}
+```
+
+The helpers are in `SkywireText.cs`, which wiregen writes beside the classes
+when any of the options is given. It is C# 7.3 with only the base class
+library (`System.Numerics` for `BigInteger`, which an old-style .NET
+Framework project must reference), so it builds wherever the generated
+classes do: .NET Framework 4.6.2 and later, Unity and .NET. Its
+types are `internal`, in the namespace `Skywire.Text`, and every one starts
+with `Sw`; the file is the same for every message, so build one copy into
+each assembly that holds generated classes. The generated tests check the
+same expected bytes as every other language, and `skywire_text_diff:csharp`
+checks that C# accepts exactly the input C++ does and writes back the same
+bytes. Numbers are read and written with exact arithmetic rather than
+`double.Parse` and `ToString`, which differ between .NET Framework and .NET;
+a `float` member is read by rounding the decimal straight to 32 bits.
+
+`WriteJson`, `ReadJson`, `WriteXml`, `ReadXml`, `WriteBson` and `ReadBson`
+are what nested messages use. With `--generate_json` a member cannot be
+named `ToJson`, `FromJson`, `WriteJson` or `ReadJson`; likewise for XML with
+`--generate_xml` and BSON with `--generate_bson`. With any of them a member
+cannot take the name of one of the helper types: `SwText`,
+`SwInvalidException`, `SwJson`, `SwJsonMember`, `SwJsonWriter`, `SwXml`,
+`SwXmlWriter`, `SwBson`, `SwBsonElement` or `SwBsonWriter`.

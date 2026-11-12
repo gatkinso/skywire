@@ -47,6 +47,13 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   MongoDB Go driver's interfaces, with no dependency on it). wiregen writes
   the helpers, `skywire_text.go` (standard library only), into the message's
   package. `skywire_text_diff:go` checks Go against C++ as for Python.
+- JSON, XML and BSON for generated C#: `ToJson`/`FromJson`, `ToXml`/`FromXml`
+  and `ToBson`/`FromBson`, the readers returning false, with the message
+  unchanged, on bad input. wiregen writes the helpers, `SkywireText.cs`
+  (C# 7.3, base class library only, internal types in `Skywire.Text`), beside
+  the classes; numbers are read and written with exact arithmetic, so .NET
+  Framework, Unity and .NET agree. `skywire_text_diff:csharp` checks C#
+  against C++ as for Python.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML
