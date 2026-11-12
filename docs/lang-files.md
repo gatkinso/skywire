@@ -37,9 +37,11 @@ message's `classname` and `{classname_snake}` for it in snake_case
 
 With `--generate_json`, `--generate_xml` or `--generate_bson`, a language
 whose generated code has no runtime of its own also gets one helper file,
-named by `outputruntimefilename` (Python: `skywire_text.py`), beside the
-generated code. Its contents are built into wiregen from `lang/` (for Python,
-`lang/python/skywire_text.py`); the lang file only names it.
+named by `outputruntimefilename` (Python: `skywire_text.py`, Go:
+`skywire_text.go`), beside the generated code. Its contents are built into
+wiregen from `lang/` (for Python, `lang/python/skywire_text.py`); the lang
+file only names it. The Go file's `package skywiretext` line becomes the
+message's package.
 
 A message specification may set any of these keys to use a different name for
 that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain

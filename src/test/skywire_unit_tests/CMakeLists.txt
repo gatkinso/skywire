@@ -200,11 +200,11 @@ set_tests_properties(wiregen_cli:NoTextByDefault PROPERTIES
     PASS_REGULAR_EXPRESSION "class ClassyMcClassface"
     FAIL_REGULAR_EXPRESSION "text\\.h|bson\\.h|to_json|to_xml|to_bson|Json|Xml|Bson")
 add_test(NAME wiregen_cli:GenerateJsonUnsupported
-    COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
+    COMMAND wiregen --language java --generate_json --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJsonUnsupported PROPERTIES
-    PASS_REGULAR_EXPRESSION "--generate_json is not yet supported for go")
+    PASS_REGULAR_EXPRESSION "--generate_json is not yet supported for java")
 add_test(NAME wiregen_cli:GenerateJsonUnsupportedFails
-    COMMAND wiregen --language go --generate_json --input_file ${CLI_SPEC})
+    COMMAND wiregen --language java --generate_json --input_file ${CLI_SPEC})
 add_test(NAME wiregen_cli:GenerateXmlValueFails
     COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --generate_xml yes)
 add_test(NAME wiregen_cli:GenerateBsonUnsupportedFails

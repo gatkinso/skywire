@@ -32,16 +32,21 @@ endif()
 add_dependencies(text_diff_oracle fuzz_ring_cpp_text)
 
 find_program(SKYWIRE_PYTHON3 NAMES python3 python)
+find_program(SKYWIRE_GO go)
+if(NOT SKYWIRE_GO)
+    set(SKYWIRE_GO "")
+endif()
 set(corpus ${PROJECT_SOURCE_DIR}/src/test/fuzz/corpus)
 set(corpora "${corpus}/text|${corpus}/fuzz_cpp_json|${corpus}/fuzz_cpp_xml|${corpus}/fuzz_cpp_bson")
 
-foreach(language python3)
+foreach(language python3 go)
     add_test(NAME skywire_text_diff:${language}
         COMMAND ${CMAKE_COMMAND}
                 -DLANGUAGE=${language}
                 -DWIREGEN=$<TARGET_FILE:wiregen>
                 -DORACLE=$<TARGET_FILE:text_diff_oracle>
                 -DPYTHON=${SKYWIRE_PYTHON3}
+                -DGO=${SKYWIRE_GO}
                 -DCOUNT=30000
                 -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
                 -DRING_DIR=${PROJECT_SOURCE_DIR}/src/test/generated_tests/ring

@@ -4,7 +4,8 @@
 #  Detects the Go toolchain at test time. If go is absent (or older than 1.21,
 #  which added binary.NativeEndian) it prints the skip marker matched by the
 #  test's SKIP_REGULAR_EXPRESSION; otherwise it generates the Go sources with
-#  wiregen, checks they are gofmt-clean, and runs `go vet` and `go test`.
+#  wiregen (with the JSON, XML and BSON forms), checks they are gofmt-clean,
+#  and runs `go vet` and `go test`.
 #
 #  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
 #  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
@@ -39,6 +40,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

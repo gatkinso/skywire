@@ -43,6 +43,11 @@ public:
     virtual bool imp_size(int& errorcode);
     virtual bool imp_get_functions(int& errorcode);
     virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_text(int& errorcode);
+
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    bool check_text_names(int& errorcode);
+    std::string text_member(const std::string& function, const member_desc_t& member);
 
     std::string go_type(const std::string& type);
     std::string go_endian(unsigned int endian_flag);

@@ -41,6 +41,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   generated modules; a lang file names it with the new `outputruntimefilename`.
   `skywire_text_diff:python3` checks that Python reads and writes exactly what
   C++ does, on the fuzz corpora and 30,000 mutations of them.
+- JSON, XML and BSON for generated Go: `ToJSON`/`FromJSON` and `ToXML`/`FromXML`,
+  which also implement `json.Marshaler`/`Unmarshaler` and
+  `xml.Marshaler`/`Unmarshaler`, and `MarshalBSON`/`UnmarshalBSON` (the
+  MongoDB Go driver's interfaces, with no dependency on it). wiregen writes
+  the helpers, `skywire_text.go` (standard library only), into the message's
+  package. `skywire_text_diff:go` checks Go against C++ as for Python.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

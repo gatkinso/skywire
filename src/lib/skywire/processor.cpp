@@ -444,7 +444,7 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
 
     // The languages that have the text and BSON forms so far; the others
     // refuse them rather than quietly leave them out.
-    const bool has_text_forms = lang == cpp_str_ || lang == c_str_ || lang == py3_str_;
+    const bool has_text_forms = lang == cpp_str_ || lang == c_str_ || lang == py3_str_ || lang == go_str_;
     if ((generate_json_ || generate_xml_ || generate_bson_) && false == has_text_forms)
     {
         errorcode |= SW_ERROR;

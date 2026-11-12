@@ -12,8 +12,8 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C, C++ and Python only for now; the other languages refuse the
-options until they have them. Every language will write the same text and the same BSON for the
+They are C, C++, Python and Go only for now; the other languages refuse
+the options until they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -312,3 +312,54 @@ messages use. A member cannot be named `to_json`, `from_json`, `_write_json`
 or `_read_json` with `--generate_json`, nor the same for `xml` or `bson` with
 those options.
 
+## Go
+
+| Method | |
+|---|---|
+| `ToJSON() []byte` | The JSON text. |
+| `FromJSON(b []byte) error` | Reads JSON (UTF-8); on an error the message is unchanged. |
+| `ToXML() []byte` | The XML text. |
+| `FromXML(b []byte) error` | Reads XML, as `FromJSON`. |
+| `MarshalBSON() ([]byte, error)` | The BSON document; the error is always nil. |
+| `UnmarshalBSON(b []byte) error` | Reads one BSON document, exactly `b`; on an error the message is unchanged. |
+
+```go
+msg := &telemetry.Telemetry{}
+msg.Set_device_id(42)
+text := msg.ToJSON()
+
+var copy telemetry.Telemetry
+if err := copy.FromJSON(text); err != nil {
+	// not a Telemetry
+}
+```
+
+The helpers are in `skywire_text.go`, which wiregen writes into the
+message's package when any of the options is given (standard library only;
+every name in it starts with `sw` and is unexported). They write and read
+exactly what the C++ runtime does: the generated tests check the same
+expected bytes, and `skywire_text_diff:go` checks that Go accepts exactly the
+input C++ does and writes back the same bytes. A `float32` member is read by
+rounding the decimal straight to 32 bits.
+
+The messages also work with the standard library and the MongoDB driver:
+
+- `MarshalJSON` and `UnmarshalJSON` make a message a `json.Marshaler` and
+  `json.Unmarshaler`. `UnmarshalJSON` is `FromJSON`. `json.Marshal` keeps the
+  canonical form but escapes `<`, `>` and `&` in strings, as `\u003c`,
+  `\u003e` and `\u0026` (still valid JSON that reads back the same); use
+  `ToJSON`, or an `Encoder` with `SetEscapeHTML(false)`, for the exact bytes.
+- `MarshalXML` and `UnmarshalXML` make it an `xml.Marshaler` and
+  `xml.Unmarshaler`. The element takes the name `encoding/xml` gives it, its
+  text is escaped the way `encoding/xml` escapes, and `UnmarshalXML` takes
+  the element as `encoding/xml` parses it, then reads its members as
+  `FromXML` does. `ToXML` and `FromXML` are the canonical form.
+- `MarshalBSON` and `UnmarshalBSON` are the MongoDB Go driver's
+  `bson.Marshaler` and `bson.Unmarshaler`, so a message can be stored and
+  read as a document as it is.
+
+`writeJSON`, `readJSON`, `writeXML`, `readXML`, `writeBSON` and `readBSON`
+are what nested messages use. With `--generate_json` a member cannot be
+named `ToJSON`, `FromJSON`, `MarshalJSON`, `UnmarshalJSON`, `writeJSON` or
+`readJSON`; likewise for XML with `--generate_xml`, and `MarshalBSON`,
+`UnmarshalBSON`, `writeBSON` and `readBSON` with `--generate_bson`.

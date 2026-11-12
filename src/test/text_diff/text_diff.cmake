@@ -18,11 +18,15 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
     message("TEXT_DIFF_SKIPPED: no Python 3, which makes the inputs and compares")
+    return()
+endif()
+if(LANGUAGE STREQUAL "go" AND NOT GO)
+    message("TEXT_DIFF_SKIPPED: no go")
     return()
 endif()
 
@@ -51,6 +55,19 @@ endif()
 
 if(LANGUAGE STREQUAL "python3")
     execute_process(COMMAND ${PYTHON} ${SOURCE_DIR}/driver.py ${OUTDIR}/generated ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "go")
+    # A module holding the generated package and the driver, built with the
+    # local toolchain only.
+    set(ENV{GOTOOLCHAIN} local)
+    file(WRITE ${OUTDIR}/go.mod "module textdiff\n\ngo 1.21\n")
+    configure_file(${SOURCE_DIR}/driver.go ${OUTDIR}/driver/main.go COPYONLY)
+    set(driver ${OUTDIR}/driver_go)
+    if(CMAKE_HOST_WIN32)
+        string(APPEND driver .exe)
+    endif()
+    run("go build" ${GO} build -o ${driver} ./driver WORKING_DIRECTORY ${OUTDIR})
+    execute_process(COMMAND ${driver} ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")

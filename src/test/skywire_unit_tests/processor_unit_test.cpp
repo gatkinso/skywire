@@ -1155,12 +1155,50 @@ TEST(ProcessorTextFormatsTest, PythonForms)
     EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }
 
+// Go: the methods each flag adds, the runtime written into the message's
+// package, and member names that clash with the methods refused.
+TEST(ProcessorTextFormatsTest, GoForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "ToJSON"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "\npackage t\n"));
+    EXPECT_FALSE(has(out["runtime"], "package skywiretext"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) ToJSON() []byte {"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) UnmarshalJSON(b []byte) error {"));
+    EXPECT_TRUE(has(out["implementation"], "\tw.int32(\"a\", int32(s.a))\n"));
+    EXPECT_TRUE(has(out["implementation"], "x, err := swJSONInt(m.value, \"int16_t\", 0)"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) MarshalBSON() ([]byte, error) {"));
+    EXPECT_FALSE(has(out["implementation"], "ToXML"));
+    EXPECT_FALSE(has(out["implementation"], "encoding/xml"));
+    EXPECT_TRUE(has(out["unittest"], "if want := \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\"; string(text) != want {"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "\t\"encoding/xml\"\n"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBSON"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "go/lang.go.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "go/lang.go.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {
     results_t out;
     int errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "go/lang.go.json", true, false, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "java/lang.java.json", true, false, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
@@ -1168,5 +1206,5 @@ TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
     EXPECT_FALSE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_TRUE(generate_text(text_spec, "go/lang.go.json", false, false, out, errorcode));
+    EXPECT_TRUE(generate_text(text_spec, "java/lang.java.json", false, false, out, errorcode));
 }
