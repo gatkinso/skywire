@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -32,6 +32,16 @@ endif()
 if(LANGUAGE STREQUAL "rust" AND NOT RUSTC)
     message("TEXT_DIFF_SKIPPED: no rustc")
     return()
+endif()
+if(LANGUAGE STREQUAL "java")
+    # macOS has a javac stub that only offers to install a JDK.
+    if(JAVAC AND JAVA)
+        execute_process(COMMAND ${JAVAC} -version RESULT_VARIABLE rc OUTPUT_QUIET ERROR_QUIET)
+    endif()
+    if(NOT JAVAC OR NOT JAVA OR NOT rc EQUAL 0)
+        message("TEXT_DIFF_SKIPPED: no JDK")
+        return()
+    endif()
 endif()
 if(LANGUAGE STREQUAL "csharp")
     # Only the runtime, not an SDK, may be installed.
@@ -122,6 +132,14 @@ elseif(LANGUAGE STREQUAL "rust")
     endif()
     run("rustc" ${RUSTC} --edition 2021 -O -o ${driver} main.rs WORKING_DIRECTORY ${OUTDIR}/generated)
     execute_process(COMMAND ${driver} ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "java")
+    # The generated classes, SkywireText.java and the driver, compiled as
+    # the Java round-trip test compiles them: all lint warnings as errors.
+    configure_file(${SOURCE_DIR}/Driver.java ${OUTDIR}/generated/Driver.java COPYONLY)
+    file(GLOB java_files RELATIVE ${OUTDIR}/generated ${OUTDIR}/generated/*.java)
+    run("javac" ${JAVAC} -Xlint:all -Werror -d ${OUTDIR}/classes ${java_files} WORKING_DIRECTORY ${OUTDIR}/generated)
+    execute_process(COMMAND ${JAVA} -cp ${OUTDIR}/classes Driver ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")

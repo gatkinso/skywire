@@ -122,7 +122,8 @@ has `to_json` and `from_json`, `to_xml` and `from_xml`, or `to_bson` and
 the same method names (see [Python](text-formats.md#python)), Go
 `ToJSON`, `FromJSON`, `MarshalBSON` and the rest (see [Go](text-formats.md#go)),
 C# `ToJson`, `FromJson`, `ToBson` and the rest (see [C#](text-formats.md#c_2)),
-and Rust the same names as C++ (see [Rust](text-formats.md#rust)).
+Rust the same names as C++ (see [Rust](text-formats.md#rust)), and Java
+`toJson`, `fromJson`, `toBson` and the rest (see [Java](text-formats.md#java)).
 
 The PZ functions are the protobuf encoding (see [Protobuf (PZ) mode](protobuf.md)); the
 `*_sw` functions write and read memory directly (see [Serializing in place](#serializing-in-place)).

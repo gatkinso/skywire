@@ -12,7 +12,7 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C, C++, Python, Go, C# and Rust only for now; the other
+They are C, C++, Python, Go, C#, Rust and Java only for now; the other
 languages refuse the options until they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
@@ -457,3 +457,47 @@ exactly the input C++ does and writes back the same bytes.
 `write_json` or `read_json`, as its getter would be; likewise for XML with `--generate_xml` and BSON with
 `--generate_bson`. With any of them a message or nested type cannot be named
 so that its module would be `skywire_text` (`SkywireText`).
+
+## Java
+
+| Method | |
+|---|---|
+| `String toJson()` | The JSON text. |
+| `static X fromJson(String json)`, `static X fromJson(byte[] utf8)` | Reads JSON; throws `IllegalArgumentException` if it is not the JSON form of an `X`. A string with a lone surrogate, like bytes that are not UTF-8, is refused. |
+| `String toXml()` | The XML text. |
+| `static X fromXml(String xml)`, `static X fromXml(byte[] utf8)` | Reads XML, as `fromJson`. |
+| `byte[] toBson()` | The BSON document. |
+| `static X fromBson(byte[] bson)` | Reads one BSON document, exactly `bson`, as `fromJson`. |
+
+```java
+Telemetry msg = new Telemetry();
+msg.Set_device_id(42);
+String text = msg.toJson();
+
+try {
+    Telemetry copy = Telemetry.fromJson(text);
+} catch (IllegalArgumentException e) {
+    // not a Telemetry
+}
+```
+
+The readers build a new message, so there is nothing to leave unchanged on
+an error. The helpers are the class
+`skywire.text.SkywireText`, in `SkywireText.java`, which wiregen writes
+beside the classes when any of the options is given; it goes in the
+package `skywire.text` (in a Maven or Gradle layout,
+`skywire/text/SkywireText.java`), and the classes import it. It is Java 8
+with only the standard library, and the same for every message. Floats are
+written from their exact decimal value (`BigDecimal`), rounded ties to even
+here, and read with `Double.parseDouble`, or `Float.parseFloat` for a
+`float` member, so the decimal is rounded straight to 32 bits. The
+generated tests check the same expected bytes as every other language, and
+`skywire_text_diff:java` checks that Java accepts exactly the input C++
+does and writes back the same bytes.
+
+`writeJson`, `readJson`, `writeXml`, `readXml`, `writeBson` and `readBson`
+are what nested messages use; they are public, as a nested message can be
+in another package. Members are fields, which never clash with methods in
+Java, so the options reserve no member names but one: with any of them
+neither the class nor a member can be named `SkywireText`, which would hide
+the helper class.

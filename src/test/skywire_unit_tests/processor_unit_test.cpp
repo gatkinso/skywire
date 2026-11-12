@@ -1279,12 +1279,54 @@ TEST(ProcessorTextFormatsTest, RustForms)
     EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
 }
 
+TEST(ProcessorTextFormatsTest, JavaForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "SkywireText"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "public static final class JsonWriter {"));
+    EXPECT_TRUE(has(out["implementation"], "import skywire.text.SkywireText;\n"));
+    EXPECT_TRUE(has(out["implementation"], "import java.util.List;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public String toJson() {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", this.a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "this.a = (short) m.value.integer(\"int16_t\", 0);\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public static Texty fromBson(byte[] bson) {\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "\"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "writeXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+    EXPECT_FALSE(has(out["implementation"], "import java.util.List;"));
+
+    // The runtime class's simple name, which a class or member of that name
+    // would hide.
+    const char* member = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"SkywireText"}}})";
+    const char* type = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    for (const char* spec : { member, type })
+    {
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(spec, "java/lang.java.json", false, false, out, errorcode));
+        out.clear();
+        EXPECT_FALSE(generate_text(spec, "java/lang.java.json", false, true, out, errorcode));
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    }
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {
     results_t out;
     int errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "java/lang.java.json", true, false, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", true, false, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
     EXPECT_FALSE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
@@ -1292,5 +1334,5 @@ TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
     EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_TRUE(generate_text(text_spec, "java/lang.java.json", false, false, out, errorcode));
+    EXPECT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, false, out, errorcode));
 }

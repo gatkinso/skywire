@@ -46,10 +46,17 @@ find_program(SKYWIRE_RUSTC rustc HINTS $ENV{HOME}/.cargo/bin $ENV{USERPROFILE}/.
 if(NOT SKYWIRE_RUSTC)
     set(SKYWIRE_RUSTC "")
 endif()
+find_program(SKYWIRE_JAVAC javac)
+find_program(SKYWIRE_JAVA java)
+foreach(tool SKYWIRE_JAVAC SKYWIRE_JAVA)
+    if(NOT ${tool})
+        set(${tool} "")
+    endif()
+endforeach()
 set(corpus ${PROJECT_SOURCE_DIR}/src/test/fuzz/corpus)
 set(corpora "${corpus}/text|${corpus}/fuzz_cpp_json|${corpus}/fuzz_cpp_xml|${corpus}/fuzz_cpp_bson")
 
-foreach(language python3 go csharp rust)
+foreach(language python3 go csharp rust java)
     add_test(NAME skywire_text_diff:${language}
         COMMAND ${CMAKE_COMMAND}
                 -DLANGUAGE=${language}
@@ -59,6 +66,8 @@ foreach(language python3 go csharp rust)
                 -DGO=${SKYWIRE_GO}
                 -DDOTNET=${SKYWIRE_DOTNET}
                 -DRUSTC=${SKYWIRE_RUSTC}
+                -DJAVAC=${SKYWIRE_JAVAC}
+                -DJAVA=${SKYWIRE_JAVA}
                 -DCOUNT=30000
                 -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
                 -DRING_DIR=${PROJECT_SOURCE_DIR}/src/test/generated_tests/ring

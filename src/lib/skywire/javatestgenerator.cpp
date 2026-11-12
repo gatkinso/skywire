@@ -68,7 +68,7 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     ss_ << "package " << package << ";\n\n";
     ss_ << "import java.nio.ByteBuffer;\n";
     ss_ << "import java.nio.ByteOrder;\n";
-    if (have_string)
+    if (have_string || wants_json() || wants_xml() || wants_bson())
     {
         ss_ << "import java.nio.charset.StandardCharsets;\n";
     }
@@ -158,6 +158,10 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
         do_expected_wire(wire, errorcode);
     }
 
+    std::vector<std::string> text_tests;
+    do_text_tests(classname, text_tests);
+    do_bson_tests(classname, text_tests);
+
     ss_ << "\n";
     ss_ << "    private static int run(String name, Runnable test) {\n";
     ss_ << "        try {\n";
@@ -182,6 +186,10 @@ bool JavaTestGenerator::do_test_implementation(int& errorcode)
     if (false == setters.empty())
     {
         ss_ << "        failures += run(\"BitfieldSetters\", " << testclass << "::testBitfieldSetters);\n";
+    }
+    for (auto& test : text_tests)
+    {
+        ss_ << "        failures += run(\"" << test << "\", " << testclass << "::test" << test << ");\n";
     }
     ss_ << "        if (failures > 0) {\n";
     ss_ << "            System.exit(1);\n";
@@ -270,6 +278,221 @@ bool JavaTestGenerator::do_expected_wire(const std::vector<uint8_t>& wire, int& 
     ss_ << "    }\n";
 
     return true;
+}
+
+namespace
+{
+
+// bytes as a Java string literal, each character one byte: printable ASCII
+// as is (but " and \ escaped), every other byte as a three-digit octal
+// escape; broken into pieces of at most 64 characters, one to a line at the
+// given indent, joined with +.
+std::string java_bytes(const std::string& bytes, const std::string& indent)
+{
+    std::string out = "\"";
+    size_t piece = 0;
+    for (unsigned char c : bytes)
+    {
+        std::string one;
+        if (c == '"' || c == '\\')
+            one = std::string("\\") + static_cast<char>(c);
+        else if (c >= 0x20 && c <= 0x7E)
+            one = std::string(1, static_cast<char>(c));
+        else
+        {
+            char oct[8];
+            std::snprintf(oct, sizeof(oct), "\\%03o", c);
+            one = oct;
+        }
+        if (piece + one.size() > 64)
+        {
+            out += "\"\n" + indent + "+ \"";
+            piece = 0;
+        }
+        out += one;
+        piece += one.size();
+    }
+    return out + "\"";
+}
+
+std::string java_bytes(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    return java_bytes(std::string(bytes.begin(), bytes.end()), indent);
+}
+
+}
+
+// The JSON and XML tests: the exact text (the same in every language, from
+// test_values), a round trip, from bytes too, an empty object or element
+// reading as the default, and malformed or out-of-range input failing.
+void JavaTestGenerator::do_text_tests(const std::string& classname, std::vector<std::string>& tests)
+{
+    for (const std::string format : { "json", "xml" })
+    {
+        if ((format == "json" && false == wants_json()) || (format == "xml" && false == wants_xml()))
+        {
+            continue;
+        }
+        const bool json = format == "json";
+        const std::string name = json ? "Json" : "Xml";
+        const std::string label = json ? "JSON" : "XML";
+        std::string expected;
+        const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+        ss_ << "\n    static void test" << name << "() {\n";
+        ss_ << "        " << classname << " msg = makeMessage();\n";
+        ss_ << "        String text = msg.to" << name << "();\n";
+        if (have_expected)
+        {
+            ss_ << "        String want = " << java_bytes(expected, "            ") << ";\n";
+            ss_ << "        check(text.equals(want), \"" << label << " mismatch\\n got \" + text + \"\\nwant \" + want);\n";
+        }
+        ss_ << "        " << classname << " got = " << classname << ".from" << name << "(text);\n";
+        ss_ << "        check(got.equals(msg), \"" << label << " round-trip value mismatch\\n in \" + msg + \"\\nout \" + got);\n";
+        ss_ << "        check(got.to" << name << "().equals(text), \"" << label << " written again differs\");\n";
+        ss_ << "        check(" << classname << ".from" << name << "(text.getBytes(StandardCharsets.UTF_8)).equals(msg),\n";
+        ss_ << "            \"" << label << " from bytes differs\");\n";
+        ss_ << "    }\n";
+
+        ss_ << "\n    static void test" << name << "EmptyIsDefault() {\n";
+        ss_ << "        check(" << classname << ".from" << name << "(\"" << (json ? "{}" : "<" + classname + "/>")
+            << "\").equals(new " << classname << "()), \"an empty " << label << " message is not the default\");\n";
+        ss_ << "    }\n";
+
+        // Every reject case as bytes, and a lone surrogate, which only a
+        // String can hold, as a String: in a member the message does not
+        // have, so it is the only thing wrong.
+        ss_ << "\n    static void test" << name << "Rejects() {\n";
+        ss_ << "        String[] texts = {\n";
+        for (const auto& text : json ? rejected_json() : rejected_xml())
+        {
+            ss_ << "            " << java_bytes(text, "                ") << ",\n";
+        }
+        ss_ << "        };\n";
+        ss_ << "        for (String text : texts) {\n";
+        ss_ << "            try {\n";
+        ss_ << "                " << classname << ".from" << name << "(text.getBytes(StandardCharsets.ISO_8859_1));\n";
+        ss_ << "            } catch (IllegalArgumentException expected) {\n";
+        ss_ << "                continue;\n";
+        ss_ << "            }\n";
+        ss_ << "            throw new AssertionError(\"accepted \" + text);\n";
+        ss_ << "        }\n";
+        ss_ << "        try {\n";
+        ss_ << "            " << classname << ".from" << name << "("
+            << (json ? std::string("\"{\\\"unknown\\\":\\\"\\ud800\\\"}\"")
+                     : "\"<" + classname + "><unknown>\\ud800</unknown></" + classname + ">\"")
+            << ");\n";
+        ss_ << "        } catch (IllegalArgumentException expected) {\n";
+        ss_ << "            return;\n";
+        ss_ << "        }\n";
+        ss_ << "        throw new AssertionError(\"accepted a lone surrogate\");\n";
+        ss_ << "    }\n";
+
+        tests.push_back(name);
+        tests.push_back(name + "EmptyIsDefault");
+        tests.push_back(name + "Rejects");
+    }
+}
+
+// The BSON tests: the exact bytes (from test_values), a round trip, an empty
+// document reading as the default, uint64_t values above 2^63-1 as
+// Decimal128, and malformed or out-of-range documents failing.
+void JavaTestGenerator::do_bson_tests(const std::string& classname, std::vector<std::string>& tests)
+{
+    if (false == wants_bson())
+    {
+        return;
+    }
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "\n    private static byte[] latin1(String bytes) {\n";
+    ss_ << "        return bytes.getBytes(StandardCharsets.ISO_8859_1);\n";
+    ss_ << "    }\n";
+
+    ss_ << "\n    static void testBson() {\n";
+    ss_ << "        " << classname << " msg = makeMessage();\n";
+    ss_ << "        byte[] data = msg.toBson();\n";
+    if (have_expected)
+    {
+        ss_ << "        byte[] want = latin1(" << java_bytes(expected, "            ") << ");\n";
+        ss_ << "        check(Arrays.equals(data, want), \"BSON mismatch\\n got \" + Arrays.toString(data) + \"\\nwant \" + Arrays.toString(want));\n";
+    }
+    ss_ << "        " << classname << " got = " << classname << ".fromBson(data);\n";
+    ss_ << "        check(got.equals(msg), \"BSON round-trip value mismatch\\n in \" + msg + \"\\nout \" + got);\n";
+    ss_ << "        check(Arrays.equals(got.toBson(), data), \"BSON written again differs\");\n";
+    ss_ << "    }\n";
+
+    ss_ << "\n    static void testBsonEmptyIsDefault() {\n";
+    ss_ << "        check(" << classname << ".fromBson(new byte[] {5, 0, 0, 0, 0}).equals(new " << classname
+        << "()), \"an empty BSON document is not the default\");\n";
+    ss_ << "    }\n";
+    tests.push_back("Bson");
+    tests.push_back("BsonEmptyIsDefault");
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    bool have_large = false;
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+        if (false == have_large)
+        {
+            ss_ << "\n    private static boolean contains(byte[] data, byte[] part) {\n";
+            ss_ << "        for (int i = 0; i + part.length <= data.length; i++) {\n";
+            ss_ << "            if (Arrays.equals(Arrays.copyOfRange(data, i, i + part.length), part)) {\n";
+            ss_ << "                return true;\n";
+            ss_ << "            }\n";
+            ss_ << "        }\n";
+            ss_ << "        return false;\n";
+            ss_ << "    }\n";
+            have_large = true;
+        }
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+        ss_ << "\n    static void testBsonLargeUint64_" << name << "() {\n";
+        ss_ << "        long[] values = {-1L, Long.MAX_VALUE};\n";
+        ss_ << "        byte[][] elements = {\n";
+        ss_ << "            latin1(" << java_bytes(big, "                ") << "),\n";
+        ss_ << "            latin1(" << java_bytes(edge, "                ") << "),\n";
+        ss_ << "        };\n";
+        ss_ << "        for (int i = 0; i < values.length; i++) {\n";
+        ss_ << "            " << classname << " msg = new " << classname << "();\n";
+        ss_ << "            msg.Set_" << name << "(values[i]);\n";
+        ss_ << "            byte[] data = msg.toBson();\n";
+        ss_ << "            check(contains(data, elements[i]), \"" << name << " = \" + Long.toUnsignedString(values[i]) + \" is not \" + Arrays.toString(elements[i]));\n";
+        ss_ << "            check(" << classname << ".fromBson(data).equals(msg), \"" << name << " did not read back\");\n";
+        ss_ << "        }\n";
+        ss_ << "    }\n";
+        tests.push_back("BsonLargeUint64_" + name);
+    }
+
+    ss_ << "\n    static void testBsonRejects() {\n";
+    ss_ << "        byte[] good = new " << classname << "().toBson();\n";
+    ss_ << "        byte[] miscounted = good.clone();\n";
+    ss_ << "        miscounted[0]++;\n";
+    ss_ << "        byte[][] docs = {\n";
+    ss_ << "            Arrays.copyOf(good, good.length - 1),\n";
+    ss_ << "            Arrays.copyOf(good, good.length + 1),\n";
+    ss_ << "            miscounted,\n";
+    for (const auto& doc : rejected_bson())
+    {
+        ss_ << "            latin1(" << java_bytes(doc, "                ") << "),\n";
+    }
+    ss_ << "        };\n";
+    ss_ << "        for (byte[] doc : docs) {\n";
+    ss_ << "            try {\n";
+    ss_ << "                " << classname << ".fromBson(doc);\n";
+    ss_ << "            } catch (IllegalArgumentException expected) {\n";
+    ss_ << "                continue;\n";
+    ss_ << "            }\n";
+    ss_ << "            throw new AssertionError(\"accepted \" + Arrays.toString(doc));\n";
+    ss_ << "        }\n";
+    ss_ << "    }\n";
+    tests.push_back("BsonRejects");
 }
 
 }

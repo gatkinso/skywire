@@ -60,6 +60,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   the module `skywire_text.rs` (std only, rustc 1.58 or newer), beside the
   message modules. `skywire_text_diff:rust` checks Rust against C++ as for
   Python.
+- JSON, XML and BSON for generated Java: `toJson`/`fromJson`,
+  `toXml`/`fromXml` and `toBson`/`fromBson`, the static readers returning a
+  new message or throwing `IllegalArgumentException`. wiregen writes the
+  helpers, the class `skywire.text.SkywireText` (`SkywireText.java`, Java 8
+  or newer, standard library only), beside the classes.
+  `skywire_text_diff:java` checks Java against C++ as for Python.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

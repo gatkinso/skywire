@@ -97,7 +97,7 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
              ${TARGET_INC_DIR}/result_presenter.h)
 
 # The runtime files wiregen writes beside generated code, built into it.
-set(_RUNTIME_FILES python/skywire_text.py go/skywire_text.go csharp/SkywireText.cs rust/skywire_text.rs)
+set(_RUNTIME_FILES python/skywire_text.py go/skywire_text.go csharp/SkywireText.cs rust/skywire_text.rs java/SkywireText.java)
 set(_RUNTIME_DEPENDS)
 foreach(file IN LISTS _RUNTIME_FILES)
     list(APPEND _RUNTIME_DEPENDS ${PROJECT_SOURCE_DIR}/lang/${file})
