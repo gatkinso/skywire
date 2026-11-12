@@ -72,6 +72,15 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   (Swift 5.9 or newer, standard library only), installed beside
   `SWStream.swift` and part of the `Skywire` package.
   `skywire_text_diff:swift` checks Swift against C++ as for Python.
+- JSON, XML and BSON for generated JavaScript: `toJsonText`/`fromJsonText`,
+  `toXml`/`fromXml` and `toBson`/`fromBson`, the static readers returning a
+  new message or throwing `SyntaxError` (the existing `toJSON()` is
+  unchanged). wiregen writes the helpers, the ES2020 module `skywire_text.js`
+  and its declarations `skywire_text.d.ts`, beside the modules; a lang file
+  names the second with the new `outputruntimeheaderfilename`.
+  `skywire_text_diff:javascript` checks JavaScript against C++ as for Python.
+  With it every language has the forms; proto3, which has no code to add
+  them to, refuses the options for good.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

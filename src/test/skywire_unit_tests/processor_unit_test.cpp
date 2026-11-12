@@ -1369,19 +1369,68 @@ TEST(ProcessorTextFormatsTest, SwiftForms)
     }
 }
 
-// Other languages refuse the flags until they have the text forms.
-TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
+TEST(ProcessorTextFormatsTest, JavaScriptForms)
 {
     results_t out;
     int errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", true, false, out, errorcode));
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_EQ(0u, out.count("runtimeheader"));
+    EXPECT_FALSE(has(out["implementation"], "skywireText"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    ASSERT_EQ(1u, out.count("runtimeheader"));
+    EXPECT_TRUE(has(out["runtime"], "export class JsonWriter {"));
+    EXPECT_TRUE(has(out["runtimeheader"], "export declare class JsonWriter {"));
+    EXPECT_TRUE(has(out["implementation"], "import * as skywireText from \"./skywire_text.js\";\n"));
+    EXPECT_TRUE(has(out["header"], "import type * as skywireText from \"./skywire_text.js\";\n"));
+    EXPECT_TRUE(has(out["implementation"], "  toJsonText() {\n"));
+    EXPECT_TRUE(has(out["implementation"], "    w.i32(\"a\", this._a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "          this.a = m.value.integer(\"int16_t\", 0);\n"));
+    EXPECT_TRUE(has(out["implementation"], "  static fromBson(bytes) {\n"));
+    EXPECT_TRUE(has(out["header"], "  static fromJsonText(text: skywireText.Text): Texty;\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "test(\"Texty Json\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "this.writeXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+
+    // A member's accessor cannot take a method's name, nor a type the
+    // binding the helpers are imported as.
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "javascript/lang.javascript.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "javascript/lang.javascript.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* binding = R"({"stringValues":{"classname":"skywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(binding, "javascript/lang.javascript.json", false, false, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(binding, "javascript/lang.javascript.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// proto3 is a schema, with no code to add the forms to.
+TEST(ProcessorTextFormatsTest, Proto3Refuses)
+{
+    results_t out;
+    int errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", true, false, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, true, out, errorcode));
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", false, true, out, errorcode));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_FALSE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode, true));
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", false, false, out, errorcode, true));
     EXPECT_NE(errorcode & SW_ERROR, 0u);
     errorcode = 0;
-    EXPECT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode));
+    EXPECT_TRUE(generate_text(text_spec, "proto/lang.proto3.json", false, false, out, errorcode));
 }

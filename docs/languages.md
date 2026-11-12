@@ -178,7 +178,11 @@ would collide with something the class defines (`size`, `serialize`,
 `toJSON`, `toString`, `constructor`, `SIZE`, `then`, `valueOf`, `__proto__`,
 ...) or with another member's backing property or text getter (`a`'s is
 `_a`, string `s`'s is `sText`), and a class or nested type named after a
-reserved word or a global the module uses (`Object`, `DataView`, ...). The
+reserved word or a global the module uses (`Object`, `DataView`, ...). With
+`--generate_json`, `--generate_xml` or `--generate_bson` the methods those
+add are taken too (`toJsonText`, `readXml`, `fromBson`, ...), and a type
+cannot be named `skywireText` (see [JavaScript](text-formats.md#javascript)
+in JSON, XML and BSON). The
 specification's `namespace` is not used; its `includes` become side-effect
 imports (`import "./polyfill.js";`).
 

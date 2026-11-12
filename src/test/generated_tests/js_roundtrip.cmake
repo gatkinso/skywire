@@ -3,7 +3,8 @@
 #
 #  Detects Node.js 18 or later at test time. Without it, it prints the skip
 #  marker matched by the test's SKIP_REGULAR_EXPRESSION. Otherwise it
-#  generates the modules and their tests with wiregen, adds a package.json
+#  generates the modules and their tests with wiregen (with the JSON, XML
+#  and BSON forms), adds a package.json
 #  that makes Node 18 and 20 treat the .js files as ES modules, checks every
 #  file's syntax, and runs the generated tests (plus EXTRA_TESTS, hand-written
 #  ones that import the generated modules) with node --test.
@@ -48,6 +49,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

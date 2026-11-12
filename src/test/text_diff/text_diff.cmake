@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] [-DSWIFTC=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] [-DSWIFTC=...] [-DNODE=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -31,6 +31,10 @@ if(LANGUAGE STREQUAL "go" AND NOT GO)
 endif()
 if(LANGUAGE STREQUAL "rust" AND NOT RUSTC)
     message("TEXT_DIFF_SKIPPED: no rustc")
+    return()
+endif()
+if(LANGUAGE STREQUAL "javascript" AND NOT NODE)
+    message("TEXT_DIFF_SKIPPED: no node")
     return()
 endif()
 if(LANGUAGE STREQUAL "swift" AND NOT SWIFTC)
@@ -156,6 +160,9 @@ elseif(LANGUAGE STREQUAL "swift")
     run("swiftc" ${SWIFTC} -O -o ${driver} ${LANG_DIR}/swift/SWStream.swift ${LANG_DIR}/swift/SkywireText.swift
         RingyInner.swift RingyMcRingface.swift main.swift WORKING_DIRECTORY ${OUTDIR}/generated)
     execute_process(COMMAND ${driver} ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "javascript")
+    execute_process(COMMAND ${NODE} ${SOURCE_DIR}/driver.mjs ${OUTDIR}/generated ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 else()
     message(FATAL_ERROR "text_diff.cmake: no driver for ${LANGUAGE}")

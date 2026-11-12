@@ -16,6 +16,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "generator.h"
 
 namespace skyloupe
@@ -91,6 +92,15 @@ private:
 
     bool uses_native_order();
     bool has_strings();
+
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    // The formats asked for: "json", "xml", "bson".
+    std::vector<std::string> text_formats() const;
+    // The methods --generate_json, --generate_xml and --generate_bson add to
+    // the class and its declarations, and one member's lines in them.
+    std::string imp_text_functions();
+    std::string dts_text_methods();
+    std::string text_member(const std::string& function, const member_desc_t& member);
 };
 
 }

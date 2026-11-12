@@ -50,6 +50,7 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "unittest", "outputtestfilename" },
     { "relay", "outputrelayfilename" },
     { "runtime", "outputruntimefilename" },
+    { "runtimeheader", "outputruntimeheaderfilename" },
 };
 
 // Output file names may contain these, which are replaced by the spec's
@@ -442,15 +443,13 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
         return success;
     }
 
-    // The languages that have the text and BSON forms so far; the others
-    // refuse them rather than quietly leave them out.
-    const bool has_text_forms = lang == cpp_str_ || lang == c_str_ || lang == py3_str_ || lang == go_str_ || lang == csharp_str_ ||
-                                lang == rust_str_ || lang == java_str_ || lang == swift_str_;
-    if ((generate_json_ || generate_xml_ || generate_bson_) && false == has_text_forms)
+    // Every language has the text and BSON forms but proto3, a schema, which
+    // refuses them rather than quietly leave them out.
+    if ((generate_json_ || generate_xml_ || generate_bson_) && lang == proto3_str_)
     {
         errorcode |= SW_ERROR;
         std::cerr << (generate_json_ ? "--generate_json" : generate_xml_ ? "--generate_xml" : "--generate_bson")
-                  << " is not yet supported for " << lang << std::endl;
+                  << " is not supported for " << lang << ", which has no code to add them to" << std::endl;
         return success;
     }
 

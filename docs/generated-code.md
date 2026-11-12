@@ -124,7 +124,9 @@ the same method names (see [Python](text-formats.md#python)), Go
 C# `ToJson`, `FromJson`, `ToBson` and the rest (see [C#](text-formats.md#c_2)),
 Rust the same names as C++ (see [Rust](text-formats.md#rust)), Java
 `toJson`, `fromJson`, `toBson` and the rest (see [Java](text-formats.md#java)),
-and Swift `toJson`, `init(json:)`, `toBson` and the rest (see [Swift](text-formats.md#swift)).
+Swift `toJson`, `init(json:)`, `toBson` and the rest (see [Swift](text-formats.md#swift)),
+and JavaScript `toJsonText`, `fromJsonText`, `toBson` and the rest (see
+[JavaScript](text-formats.md#javascript)).
 
 The PZ functions are the protobuf encoding (see [Protobuf (PZ) mode](protobuf.md)); the
 `*_sw` functions write and read memory directly (see [Serializing in place](#serializing-in-place)).

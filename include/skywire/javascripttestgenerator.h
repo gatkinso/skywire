@@ -41,6 +41,10 @@ protected:
     virtual bool do_test_implementation(int& errorcode);
     std::string set_line(const std::string& target, const member_desc_t& member);
     std::string expected_wire_test(const std::string& classname, const std::vector<uint8_t>& wire);
+    // With --generate_json, --generate_xml or --generate_bson: the exact
+    // text or bytes, round trips and rejected input.
+    std::string text_tests(const std::string& classname);
+    std::string bson_tests(const std::string& classname);
 
     // The module the class is imported from, by the implementation file name.
     std::string module_name();

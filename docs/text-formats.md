@@ -12,10 +12,10 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are in every language but JavaScript for now; JavaScript refuses
-the options until it has them. Every language will write the same text and the same BSON for the
-same message, byte for byte, as they already put the same bytes on the wire,
-so this page is their specification.
+Every language has them; proto3, a schema with no code to add them to,
+refuses the options. Every language writes the same text and the same BSON
+for the same message, byte for byte, as they already put the same bytes on
+the wire, so this page is their specification.
 
 ## JSON
 
@@ -547,3 +547,51 @@ with `--generate_json` a member cannot be named `toJson`, `writeJson` or
 `readJson`; likewise for XML with `--generate_xml` and BSON with
 `--generate_bson`. With any of them neither the message nor a member can be
 named `SkywireText`.
+
+## JavaScript
+
+| Method | |
+|---|---|
+| `toJsonText(): string` | The JSON text. (`toJSON()`, for `JSON.stringify`, is unchanged and not this form.) |
+| `static fromJsonText(text)` | Reads JSON from a string or UTF-8 bytes (a typed array, `DataView` or `ArrayBuffer`); throws `SyntaxError` if it is not the JSON form of one. A string with a lone surrogate, like bytes that are not UTF-8, is refused. |
+| `toXml(): string` | The XML text. |
+| `static fromXml(text)` | Reads XML, as `fromJsonText`. |
+| `toBson(): Uint8Array` | The BSON document. |
+| `static fromBson(bytes)` | Reads one BSON document, exactly `bytes`, as `fromJsonText`. |
+
+```js
+import { Telemetry } from "./Telemetry.js";
+
+const msg = new Telemetry();
+msg.device_id = 42;
+const text = msg.toJsonText();
+
+try {
+  const copy = Telemetry.fromJsonText(text);
+} catch (e) {
+  // a SyntaxError: not a Telemetry
+}
+```
+
+The readers build a new message, so there is nothing to leave unchanged on
+an error; each value goes through its member's setter, which converts it as
+C does (a `char` of 200 becomes -56). The helpers are the module
+`skywire_text.js`, with its declarations `skywire_text.d.ts`, which wiregen
+writes beside the modules when any of the options is given; the modules
+import it as `skywireText`. It is ES2020 with no Node APIs, like the
+modules, and the same for every message. Floats are written from their
+exact decimal value (with `BigInt`), rounded ties to even here, and read
+with `Number`; a `float` member is not read as `Math.fround(Number(text))`,
+which rounds twice and is wrong where the double lands halfway between two
+floats, but corrected there from the exact value. The generated tests check
+the same expected bytes as every other language,
+`skywire_generated_tests:JavaScriptTypes` checks the declarations, and
+`skywire_text_diff:javascript` checks that JavaScript accepts exactly the
+input C++ does and writes back the same bytes.
+
+`writeJson`, `readJson`, `writeXml`, `readXml`, `writeBson` and `readBson`
+are what nested messages use. With `--generate_json` a member cannot be
+named `toJsonText`, `fromJsonText`, `writeJson` or `readJson`, as its
+accessor would be; likewise for XML (`toXml`, ...) with `--generate_xml` and
+BSON (`toBson`, ...) with `--generate_bson`. With any of them a message
+cannot be named `skywireText`, the binding the helpers are imported as.

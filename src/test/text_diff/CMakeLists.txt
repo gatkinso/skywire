@@ -49,7 +49,8 @@ endif()
 find_program(SKYWIRE_JAVAC javac)
 find_program(SKYWIRE_JAVA java)
 find_program(SKYWIRE_SWIFTC swiftc)
-foreach(tool SKYWIRE_JAVAC SKYWIRE_JAVA SKYWIRE_SWIFTC)
+find_program(SKYWIRE_NODE node)
+foreach(tool SKYWIRE_JAVAC SKYWIRE_JAVA SKYWIRE_SWIFTC SKYWIRE_NODE)
     if(NOT ${tool})
         set(${tool} "")
     endif()
@@ -57,7 +58,7 @@ endforeach()
 set(corpus ${PROJECT_SOURCE_DIR}/src/test/fuzz/corpus)
 set(corpora "${corpus}/text|${corpus}/fuzz_cpp_json|${corpus}/fuzz_cpp_xml|${corpus}/fuzz_cpp_bson")
 
-foreach(language python3 go csharp rust java swift)
+foreach(language python3 go csharp rust java swift javascript)
     add_test(NAME skywire_text_diff:${language}
         COMMAND ${CMAKE_COMMAND}
                 -DLANGUAGE=${language}
@@ -70,6 +71,7 @@ foreach(language python3 go csharp rust java swift)
                 -DJAVAC=${SKYWIRE_JAVAC}
                 -DJAVA=${SKYWIRE_JAVA}
                 -DSWIFTC=${SKYWIRE_SWIFTC}
+                -DNODE=${SKYWIRE_NODE}
                 -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
                 -DCOUNT=30000
                 -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}

@@ -191,24 +191,24 @@ add_test(NAME wiregen_cli:GenerateCText
 set_tests_properties(wiregen_cli:GenerateCText PROPERTIES
     PASS_REGULAR_EXPRESSION "#include \"ctext\\.h\".*#include \"cbson\\.h\".*_ToJson\\(.*_ToXml\\(.*_ToBson\\(")
 add_test(NAME wiregen_cli:GenerateBsonUnsupported
-    COMMAND wiregen --language javascript --generate_bson --input_file ${CLI_SPEC})
+    COMMAND wiregen --language proto3 --generate_bson --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateBsonUnsupported PROPERTIES
-    PASS_REGULAR_EXPRESSION "--generate_bson is not yet supported for javascript")
+    PASS_REGULAR_EXPRESSION "--generate_bson is not supported for proto3")
 add_test(NAME wiregen_cli:NoTextByDefault
     COMMAND wiregen --language c++ --generate_tests --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:NoTextByDefault PROPERTIES
     PASS_REGULAR_EXPRESSION "class ClassyMcClassface"
     FAIL_REGULAR_EXPRESSION "text\\.h|bson\\.h|to_json|to_xml|to_bson|Json|Xml|Bson")
 add_test(NAME wiregen_cli:GenerateJsonUnsupported
-    COMMAND wiregen --language javascript --generate_json --input_file ${CLI_SPEC})
+    COMMAND wiregen --language proto3 --generate_json --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJsonUnsupported PROPERTIES
-    PASS_REGULAR_EXPRESSION "--generate_json is not yet supported for javascript")
+    PASS_REGULAR_EXPRESSION "--generate_json is not supported for proto3")
 add_test(NAME wiregen_cli:GenerateJsonUnsupportedFails
-    COMMAND wiregen --language javascript --generate_json --input_file ${CLI_SPEC})
+    COMMAND wiregen --language proto3 --generate_json --input_file ${CLI_SPEC})
 add_test(NAME wiregen_cli:GenerateXmlValueFails
     COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --generate_xml yes)
 add_test(NAME wiregen_cli:GenerateBsonUnsupportedFails
-    COMMAND wiregen --language javascript --generate_bson --input_file ${CLI_SPEC})
+    COMMAND wiregen --language proto3 --generate_bson --input_file ${CLI_SPEC})
 set_tests_properties(wiregen_cli:GenerateJsonUnsupportedFails wiregen_cli:GenerateXmlValueFails
                      wiregen_cli:GenerateBsonUnsupportedFails PROPERTIES
     WILL_FAIL TRUE)
