@@ -35,6 +35,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   same expected bytes as C++, `skywire_generated_tests:BsonInteropC` checks
   the BSON against pymongo, and `fuzz_c_cpp_text` checks that C reads and
   writes exactly what C++ does.
+- JSON, XML and BSON for generated Python: `to_json`/`from_json`,
+  `to_xml`/`from_xml` and `to_bson`/`from_bson`, with the same flags. wiregen
+  writes the helpers, `skywire_text.py` (standard library only), beside the
+  generated modules; a lang file names it with the new `outputruntimefilename`.
+  `skywire_text_diff:python3` checks that Python reads and writes exactly what
+  C++ does, on the fuzz corpora and 30,000 mutations of them.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

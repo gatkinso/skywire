@@ -428,7 +428,11 @@ void Generator::gen_lines(std::string text, unsigned int indents)
         {
             end = text.size();
         }
-        insert_indents(indents);
+        // A blank line gets no indent, so no trailing whitespace.
+        if (end > start)
+        {
+            insert_indents(indents);
+        }
         ss_ << text.substr(start, end - start) << std::endl;
         start = end + 1;
     }

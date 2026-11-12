@@ -47,6 +47,11 @@ protected:
     virtual bool imp_print(int& errorcode);
     virtual bool imp_get_functions(int& errorcode);
     virtual bool imp_set_functions(int& errorcode);
+    virtual bool imp_text(int& errorcode);
+
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    bool check_text_names(int& errorcode);
+    std::string text_member(const std::string& function, const member_desc_t& member);
 
     // struct format for one native member, e.g. ">I" or "16s".
     std::string py_format(const member_desc_t& member);

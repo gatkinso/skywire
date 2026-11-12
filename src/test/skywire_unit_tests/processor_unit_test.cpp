@@ -1126,6 +1126,35 @@ TEST(ProcessorTextFormatsTest, CNestedAndBitfields)
     EXPECT_TRUE(has(out["implementation"], "sw_bson_put_unsigned_char(o, \"c\", structure->c);"));
 }
 
+// Python: methods on the class, and skywire_text.py written beside it.
+TEST(ProcessorTextFormatsTest, PythonForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "python/lang.python3.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "skywire_text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "python/lang.python3.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "class JsonWriter"));
+    EXPECT_TRUE(has(out["implementation"], "import skywire_text"));
+    EXPECT_TRUE(has(out["implementation"], "    def to_json(self):"));
+    EXPECT_TRUE(has(out["implementation"], "            self.a = skywire_text.json_number(field, \"int16_t\")"));
+    EXPECT_TRUE(has(out["implementation"], "    def from_bson(self, data):"));
+    EXPECT_FALSE(has(out["implementation"], "to_xml"));
+    EXPECT_TRUE(has(out["unittest"], "self.assertEqual(text, \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\")"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"_read_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "python/lang.python3.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "python/lang.python3.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
 // Other languages refuse the flags until they have the text forms.
 TEST(ProcessorTextFormatsTest, OtherLanguagesRefuse)
 {

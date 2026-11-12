@@ -17,7 +17,9 @@
 #include <map>
 #include <set>
 #include <string>
+#include <iostream>
 #include "py3generator.h"
+#include "runtime_sources.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -115,6 +117,16 @@ bool Py3Generator::generate(int& errorcode)
         return false;
     }
 
+    if (wants_text())
+    {
+        if (false == check_text_names(errorcode))
+        {
+            return false;
+        }
+        // The JSON, XML and BSON helpers, written beside the message.
+        results_["runtime"] = runtime_source("python/skywire_text.py");
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -141,6 +153,7 @@ bool Py3Generator::do_implementation(int& errorcode)
     imp_print(errorcode);
     imp_get_functions(errorcode);
     imp_set_functions(errorcode);
+    imp_text(errorcode);
 
     imp_string.append(ss_.str());
 
@@ -156,6 +169,10 @@ bool Py3Generator::imp_banner(int& errorcode)
 bool Py3Generator::imp_includes(int& errorcode)
 {
     std::set<std::string> modules = { "struct" };
+    if (wants_text())
+    {
+        modules.insert(lang_spec_.get_value_string("runtime_module_str"));
+    }
 
     const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
     for (auto& item : values)
@@ -744,6 +761,79 @@ std::string Py3Generator::serialize_unit(uint32_t tag)
     }
 
     return value;
+}
+
+// The methods the text forms add, which a member cannot also be named.
+bool Py3Generator::check_text_names(int& errorcode)
+{
+    std::vector<std::string> reserved;
+    for (const auto& format : { std::string("json"), std::string("xml"), std::string("bson") })
+    {
+        if ((format == "json" && wants_json()) || (format == "xml" && wants_xml()) || (format == "bson" && wants_bson()))
+        {
+            reserved.insert(reserved.end(), { "to_" + format, "from_" + format, "_write_" + format, "_read_" + format });
+        }
+    }
+
+    bool valid = true;
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::find(reserved.begin(), reserved.end(), name) != reserved.end())
+        {
+            std::cerr << "Member name \"" << name << "\" clashes with the generated " << name << "()" << std::endl;
+            errorcode |= SW_SPEC_INVALID;
+            valid = false;
+        }
+    }
+    return valid;
+}
+
+std::string Py3Generator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (is_user_type(type))
+        kind = "user";
+    else if (is_bitfield(member) && function.rfind("from_", 0) == 0)
+        kind = "bits";
+
+    std::string template_str = subst(lang_spec_.get_value_string(function + "_" + kind + "_mem_str"), member);
+    return replace_all(template_str, lang_spec_.get_value_string("bits_substr"), std::to_string(std::get<member_bits>(member)));
+}
+
+// to_json/from_json, to_xml/from_xml and to_bson/from_bson
+// (docs/text-formats.md), each only when asked for, with the _write_ and
+// _read_ methods a containing message calls. Members go in tag order;
+// reading takes them in any order, leaves missing ones zero, ignores unknown
+// ones and on failure changes nothing.
+bool Py3Generator::imp_text(int& errorcode)
+{
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    for (const auto& format : formats)
+    {
+        for (const std::string direction : { "to_", "from_" })
+        {
+            const std::string function = direction + format;
+            gen_lines(replace_all(lang_spec_.get_value_string(function + "_str"), classname_substr, classname_), 1);
+            for (auto& member : ordered_members_)
+            {
+                gen_lines(text_member(function, member.second), 1);
+            }
+            gen_lines(lang_spec_.get_value_string(function + "_end_str"), 1);
+        }
+    }
+    return true;
 }
 
 }

@@ -12,8 +12,8 @@ and BSON, for MongoDB and other BSON stores. Each is asked for separately:
 changes: the generated code is exactly what it was. With `--generate_tests`
 the generated tests also check these forms.
 
-They are C and C++ only for now; the other languages refuse the options until
-they have them. Every language will write the same text and the same BSON for the
+They are C, C++ and Python only for now; the other languages refuse the
+options until they have them. Every language will write the same text and the same BSON for the
 same message, byte for byte, as they already put the same bytes on the wire,
 so this page is their specification.
 
@@ -272,3 +272,43 @@ sw_bson_end(&o, start);
 ```
 
 No member name is reserved in C.
+
+## Python
+
+| Method | |
+|---|---|
+| `to_json()` | The JSON text, a `str`. |
+| `from_json(text)` | Reads JSON from a `str` or UTF-8 `bytes`; `False` on failure, leaving the message unchanged. |
+| `to_xml()` | The XML text, a `str`. |
+| `from_xml(text)` | Reads XML, as `from_json`. |
+| `to_bson()` | The BSON document, `bytes`. |
+| `from_bson(data)` | Reads one BSON document, exactly `data`; `False` on failure, leaving the message unchanged. |
+
+```python
+from Telemetry import Telemetry
+
+msg = Telemetry()
+msg.Set_device_id(42)
+text = msg.to_json()
+
+copy = Telemetry()
+if not copy.from_json(text):
+    ...  # not a Telemetry
+```
+
+The helpers are in `skywire_text.py`, which wiregen writes beside the
+generated modules when any of the options is given (standard library only).
+They write and read exactly what the C++ runtime does: the generated tests
+check the same expected bytes, and `skywire_text_diff:python3` checks that
+Python accepts exactly the input C++ does and writes back the same bytes. A
+`float` member is written as the 32-bit float it is on the wire, and read by
+rounding the decimal straight to 32 bits. A value a member cannot hold (an
+integer out of its type's range, a float beyond 32 bits) raises an error
+when written, as `serialize` does.
+
+`_write_json(w)`, `_read_json(value)`, `_write_xml(w, element)`,
+`_read_xml(node)`, `_write_bson(w)` and `_read_bson(elements)` are what nested
+messages use. A member cannot be named `to_json`, `from_json`, `_write_json`
+or `_read_json` with `--generate_json`, nor the same for `xml` or `bson` with
+those options.
+

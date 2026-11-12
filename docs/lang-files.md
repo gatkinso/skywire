@@ -35,6 +35,12 @@ message's `classname` and `{classname_snake}` for it in snake_case
 | rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
+With `--generate_json`, `--generate_xml` or `--generate_bson`, a language
+whose generated code has no runtime of its own also gets one helper file,
+named by `outputruntimefilename` (Python: `skywire_text.py`), beside the
+generated code. Its contents are built into wiregen from `lang/` (for Python,
+`lang/python/skywire_text.py`); the lang file only names it.
+
 A message specification may set any of these keys to use a different name for
 that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain
 file name (no directories). Java requires a public class's file to be named

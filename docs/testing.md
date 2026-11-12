@@ -27,6 +27,7 @@ Every test name starts with its group:
 | `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
 | `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
 | `skywire_generated_tests:BsonInterop`, `BsonInteropC` | The generated C++ and C BSON against pymongo's BSON library, both ways |
+| `skywire_text_diff:<language>` | A language's generated JSON, XML and BSON code against the C++, on 30,000 inputs |
 | `skywire_golden:<language>`, `skywire_golden:<language>_text` | wiregen's output, without and with the JSON, XML and BSON flags, byte for byte, against the files in `src/test/golden` |
 | `skywire_ring:Serial` | One message through every language in turn |
 | `skywire_example:*` | The [example programs](#examples); only with `SKYWIRE_EXAMPLES` |
@@ -86,10 +87,19 @@ and relays, and no optional output such as `--generate_json`, and compares
 every file with `src/test/golden/<language>`. It catches any change to code
 users already generate, down to a blank line. `skywire_golden:<language>_text`
 does the same with `--generate_json --generate_xml --generate_bson`, for each
-language that has them (`c_text`, `cpp_text`), so work on one language's text and
+language that has them (`c_text`, `cpp_text`, `python3_text`), so work on one language's text and
 BSON code cannot quietly change another's. When a change is meant, build the
 `skywire_update_golden` target, which rewrites `src/test/golden` from the
 current wiregen, and commit the result with the change.
+
+`skywire_text_diff:<language>` (in `src/test/text_diff`) holds each
+language's JSON, XML and BSON code to the C++'s: it generates the ring
+message in the language, reads every file of the fuzz corpora and 30,000
+seeded mutations of them as JSON, XML and BSON, and fails unless the
+language accepts exactly the inputs the C++ does and writes back exactly the
+same bytes. The C++ side is `oracle.cpp`; each language has a small driver.
+It needs Python 3, which makes the inputs, and reports Skipped without it.
+The C code is held to the C++ by the `fuzz_c_cpp_text` fuzz target instead.
 
 `skywire_schema:Check` runs `scripts/check_schemas.py`. It needs Python's
 `jsonschema` module (`pip install jsonschema`, or `python3-jsonschema` on

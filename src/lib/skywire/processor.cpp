@@ -49,6 +49,7 @@ const std::pair<const char*, const char*> output_slots[] = {
     { "implementation", "outputimplfilename" },
     { "unittest", "outputtestfilename" },
     { "relay", "outputrelayfilename" },
+    { "runtime", "outputruntimefilename" },
 };
 
 // Output file names may contain these, which are replaced by the spec's
@@ -441,9 +442,10 @@ bool Processor::generate(results_t& output_str_map, int& errorcode, bool generat
         return success;
     }
 
-    // The text and BSON forms are C and C++ only for now; other languages
+    // The languages that have the text and BSON forms so far; the others
     // refuse them rather than quietly leave them out.
-    if ((generate_json_ || generate_xml_ || generate_bson_) && lang != cpp_str_ && lang != c_str_)
+    const bool has_text_forms = lang == cpp_str_ || lang == c_str_ || lang == py3_str_;
+    if ((generate_json_ || generate_xml_ || generate_bson_) && false == has_text_forms)
     {
         errorcode |= SW_ERROR;
         std::cerr << (generate_json_ ? "--generate_json" : generate_xml_ ? "--generate_xml" : "--generate_bson")
