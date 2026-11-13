@@ -27,7 +27,7 @@ public final class ClassyMcClassface {
 
     public init() {}
 
-    public func serialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {
+    public func serialize(_ stream: SWStream) -> Bool {
         guard var p = stream.claim(size()) else { return false }
         serialize(into: &p)
         return true
@@ -55,7 +55,7 @@ public final class ClassyMcClassface {
         SWWire.put(&p, r_mydouble2020, .big)
     }
 
-    public func deserialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {
+    public func deserialize(_ stream: SWStream) -> Bool {
         guard var p = stream.consume(size()) else { return false }
         deserialize(from: &p)
         return true

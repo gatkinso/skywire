@@ -16,6 +16,13 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   `0`, and give every multi-byte member that had no `endian` an
   `"endian": 1` to keep it big-endian. Members of 8-bit types are
   unaffected.
+- Generated C++ and Swift `serialize` and `deserialize` no longer take an
+  `endian` argument (and `skyloupe::Streamable`'s no longer declare one): it
+  did nothing, as each member has its own byte order, from the spec. Drop the
+  argument where code passed one.
+- `skyloupe::Stream`'s own `serialize` and `deserialize` of a single value
+  (C++ runtime, `stream.h`) default to little-endian, like specs; pass
+  `skyloupe::Endianness::Big` for big-endian.
 
 ## [0.10.0] - 2026-11-13
 

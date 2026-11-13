@@ -12,7 +12,7 @@ namespace testspace {
     public:
         ClassyMcClassface() {}
         virtual ~ClassyMcClassface() {}
-        bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
+        bool serialize(skyloupe::Stream& str) const {
             if (str.mode() == skyloupe::Stream::PZ) {
                 protozero::pbf_writer pbf{str.pz_buffer()};
                 return serialize_pb(pbf);
@@ -44,7 +44,7 @@ namespace testspace {
             p = skyloupe::wire::put(p, r_mydouble2020, skyloupe::Endianness::Big);
             return p;
         }
-        bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
+        bool deserialize(skyloupe::Stream& str) {
             if (str.mode() == skyloupe::Stream::PZ) {
                 ClassyMcClassface decoded;
                 try {

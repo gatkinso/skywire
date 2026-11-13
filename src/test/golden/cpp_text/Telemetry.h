@@ -13,7 +13,7 @@ namespace telemetry {
     public:
         Telemetry() {}
         virtual ~Telemetry() {}
-        bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
+        bool serialize(skyloupe::Stream& str) const {
             if (str.mode() == skyloupe::Stream::PZ) {
                 protozero::pbf_writer pbf{str.pz_buffer()};
                 return serialize_pb(pbf);
@@ -37,7 +37,7 @@ namespace telemetry {
             p = skyloupe::wire::put(p, battery_mv, skyloupe::Endianness::Little);
             return p;
         }
-        bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
+        bool deserialize(skyloupe::Stream& str) {
             if (str.mode() == skyloupe::Stream::PZ) {
                 Telemetry decoded;
                 try {
