@@ -4,6 +4,9 @@
 #     mkdocs serve            # preview at http://127.0.0.1:8000
 #     mkdocs build --strict   # what CI checks
 site_name: Skywire
+site_url: https://gatkinso.github.io/skywire/
+# The pins CI and the Pages workflow build the site with; not a page.
+exclude_docs: requirements.txt
 site_description: Generates code to read and write binary messages, byte for byte, in nine languages.
 repo_url: https://github.com/gatkinso/skywire
 repo_name: gatkinso/skywire
