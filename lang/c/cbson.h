@@ -542,10 +542,15 @@ SW_INLINE int sw_bson_integer(const sw_bson_element* e, int is_signed, int is_ch
     {
         const double d = e->number;
         double m;
-        if (0 == isfinite(d) || trunc(d) != d)
+        if (0 == isfinite(d))
+            return -1;
+        // Without trunc or fabs, which on some systems are in libm, a library
+        // to link: every double of 2^52 or more is whole, and a smaller one
+        // is whole if it survives a trip through an integer.
+        m = d < 0 ? -d : d;
+        if (m < 4503599627370496.0 && (double)(uint64_t)m != m)
             return -1;
         *negative = d < 0;
-        m = fabs(d);
         if (m >= 18446744073709551616.0)
             return -1;
         *magnitude = (uint64_t)m;
@@ -610,7 +615,8 @@ SW_INLINE int sw_bson_read_float(const sw_bson_element* e, float* out, unsigned 
         return -1;
     // Halfway from the largest float to 2^128 and beyond round to infinity:
     // too large.
-    if (isfinite(e->number) && fabs(e->number) >= ldexp(33554431.0, 103))
+    // (2^128 - 2^103, written out: ldexp and fabs may need libm.)
+    if (isfinite(e->number) && (e->number < 0 ? -e->number : e->number) >= 340282356779733661637539395458142568448.0)
         return -1;
     *out = (float)e->number;
     return 0;
