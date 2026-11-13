@@ -186,6 +186,8 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   unchanged byte for byte.
 
 ### Fixed
+- `skywire_install:Consumer` failed in a build with no `CMAKE_BUILD_TYPE`
+  (single-config, the CMake default): it passed `--config` with no value.
 - wiregen aborted with an uncaught exception when a lang file had a value
   the generators could not use, such as a malformed pattern or a Java type
   mapped to something unexpected. It now reports an invalid lang file

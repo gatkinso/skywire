@@ -36,8 +36,15 @@ function(run_checked what)
     endif()
 endfunction()
 
+# A single-config build with no CMAKE_BUILD_TYPE has an empty CONFIG, and
+# --config with no value is an error.
+set(config_args)
+if(CONFIG)
+    set(config_args --config ${CONFIG})
+endif()
+
 run_checked("cmake --install"
-    COMMAND ${CMAKE_COMMAND} --install ${BUILD_DIR} --prefix ${prefix} --config ${CONFIG}
+    COMMAND ${CMAKE_COMMAND} --install ${BUILD_DIR} --prefix ${prefix} ${config_args}
     OUTPUT_QUIET)
 
 # Everything lands under the prefix, and bin holds wiregen (and its DLLs) only.
@@ -114,7 +121,7 @@ endif()
 # skywire.pc's paths are relative to the .pc file.
 set(ENV{PKG_CONFIG_PATH} ${pc_dir})
 run_checked("consumer configure" COMMAND ${CMAKE_COMMAND} ${args})
-run_checked("consumer build" COMMAND ${CMAKE_COMMAND} --build ${build} --config ${CONFIG})
+run_checked("consumer build" COMMAND ${CMAKE_COMMAND} --build ${build} ${config_args})
 
 # consumer_pc is built when the consumer's FindPkgConfig found pkg-config; ask
 # its cache rather than searching here, which can find one it didn't.
