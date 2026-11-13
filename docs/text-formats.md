@@ -15,7 +15,12 @@ the generated tests also check these forms.
 Every language has them; proto3, a schema with no code to add them to,
 refuses the options. Every language writes the same text and the same BSON
 for the same message, byte for byte, as they already put the same bytes on
-the wire, so this page is their specification.
+the wire, so this page is their specification. The
+[JSON](https://github.com/gatkinso/skywire/blob/master/examples/json/README.md),
+[XML](https://github.com/gatkinso/skywire/blob/master/examples/xml/README.md)
+and [BSON](https://github.com/gatkinso/skywire/blob/master/examples/bson/README.md)
+examples (C++, Python, Go and Swift) read input written elsewhere and show
+what is accepted and refused.
 
 ## JSON
 

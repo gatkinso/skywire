@@ -17,6 +17,16 @@ language, plus one that talks to protobuf. All of them use the same message,
 | C# | [csharp/Program.cs](csharp/Program.cs) | Properties, a nested message's properties, `Equals` |
 | JavaScript | [javascript/main.js](javascript/main.js) | Accessors, a `BigInt` member, `fromBytes`, `equals` |
 
+Every one of those also writes and reads the message's JSON, XML and BSON.
+Three more examples, in C++, Python, Go and Swift, are about those forms,
+reading input written elsewhere:
+
+| Example | Programs | What it shows |
+|---|---|---|
+| [JSON](json/README.md) | [main.cpp](json/main.cpp), [main.py](json/main.py), [main.go](json/main.go), [main.swift](json/main.swift) | JSON written by hand: any order and whitespace, a missing member, an unknown one; what is refused |
+| [XML](xml/README.md) | [main.cpp](xml/main.cpp), [main.py](xml/main.py), [main.go](xml/main.go), [main.swift](xml/main.swift) | XML from another program: a declaration, comments, CDATA, a hexadecimal string; what is refused |
+| [BSON](bson/README.md) | [main.cpp](bson/main.cpp), [main.py](bson/main.py), [main.go](bson/main.go), [main.swift](bson/main.swift) | A document as a MongoDB driver returns it: `_id`, other number types; a `uint64_t` as a Decimal128; what is refused |
+
 Each directory has a README with the exact wiregen and compiler commands (run
 from the repository root, writing into `out/`) and what the build needs:
 include directories, what to compile and link, and the lang file.
@@ -145,13 +155,15 @@ each message starts with (`cstream.h`, `streamable.h`, `Foundation`).
 
 The examples are built and tested unless the project is configured with
 `-DSKYWIRE_EXAMPLES=OFF`. The C, C++ and protobuf programs build with the
-project (`example_c`, `example_cpp`, `example_protobuf`); `run_example.cmake`
+project (`example_c`, `example_cpp`, `example_protobuf`, and
+`example_json_cpp`, `example_xml_cpp`, `example_bson_cpp`); `run_example.cmake`
 generates and builds the others when their test runs.
 
 | Test | Passes when |
 |---|---|
 | `skywire_example:C`, `:C++`, `:Swift`, `:Go`, `:Python`, `:Java`, `:Rust`, `:CSharp`, `:JavaScript` | The program succeeds and the files it wrote are `Telemetry.bin`, `Telemetry.json`, `Telemetry.xml` and `Telemetry.bson`, byte for byte. |
 | `skywire_example:Protobuf` | protoc encodes `telemetry.txtpb` to `Telemetry.pb`, and the program succeeds and writes `Telemetry.pb`. |
+| `skywire_example:JSON.C++`, `:JSON.Python`, `:JSON.Go`, `:JSON.Swift`, and likewise `XML` and `BSON` | The program reads its directory's input, refuses the bad inputs it tries, and writes the directory's `expected.*`, byte for byte. |
 
 Like the round-trip tests, a test whose toolchain is missing reports Skipped.
 The Go, Java, Rust and C# builds must also be clean: gofmt and `go vet`;
@@ -169,6 +181,8 @@ they are installed; C# with warnings as errors.
 | `Telemetry.pb`, `protobuf/telemetry.txtpb` | The protobuf bytes, and the same message as text. |
 | `CMakeLists.txt` | Builds the C, C++ and protobuf programs; defines the tests. |
 | `run_example.cmake` | The test driver: builds the other languages, runs a program, compares its files. |
+| `json/`, `xml/`, `bson/` | The JSON, XML and BSON examples: programs, input, expected output, README. |
+| `run_format_example.cmake` | Their test driver. |
 
 To change the message, edit the specs and the values in every program, then
 regenerate the expected files: run any example to get `Telemetry.bin` and the

@@ -87,6 +87,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 - Every example program also writes and reads the JSON, XML and BSON forms,
   and its test checks them against `examples/Telemetry.json`, `.xml` and
   `.bson`, the same in every language.
+- `examples/json`, `examples/xml` and `examples/bson`, in C++, Python, Go
+  and Swift: each reads input written elsewhere (hand-written JSON; XML with
+  a declaration, comments, CDATA and a hexadecimal string; a BSON document
+  as a MongoDB driver returns it, with `_id` and other number types), writes
+  the canonical form, which ctest checks, and shows what is refused; the
+  BSON one also shows a `uint64_t` above 2^63-1 as a Decimal128.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML
