@@ -21,7 +21,6 @@ Every test name starts with its group:
 |---|---|
 | `skywire_unit_test:*` | wiregen's own code: specifications, lang files and each generator (Google Test) |
 | `wiregen_cli:*` | wiregen's command line: options, languages, lang files, errors |
-| `qwikpirate_test:*` | The qwikpirate command-line parser (Google Test) |
 | `skywire_generated_tests:*` | Generated C and C++, compiled into the build with their generated Google Test tests, plus bitfield, nested-message and PZ (protobuf) decoding checks |
 | `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust, C# and JavaScript code, each with its generated unit tests |
 | `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |

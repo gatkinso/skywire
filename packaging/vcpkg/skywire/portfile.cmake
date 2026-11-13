@@ -14,9 +14,8 @@
 #
 
 #  The skywire overlay port. It builds the source tree it is in; an upstream
-#  port would fetch the release with vcpkg_from_github, and qwikpirate (a
-#  submodule) with a second one. test_port.py builds from a copy of this file
-#  with SOURCE_PATH set.
+#  port would fetch the release with vcpkg_from_github. test_port.py builds
+#  from a copy of this file with SOURCE_PATH set.
 
 get_filename_component(SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 

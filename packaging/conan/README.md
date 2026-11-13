@@ -53,6 +53,5 @@ your profile, which takes several minutes; after that it is in the cache.
 
 Once the repository is public, a recipe for conan-center-index fetches the
 release tarball in `source()` (from a `conandata.yml` with its URL and
-sha256) instead of `export_sources()`, takes qwikpirate (a submodule, which
-tarballs don't include) the same way, sets the version from the reference
+sha256) instead of `export_sources()`, sets the version from the reference
 rather than `set_version()`, and has its own `test_package`.

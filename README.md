@@ -193,6 +193,3 @@ https://developers.google.com/protocol-buffers/
 
 Google Test - (Apache 2.0)
 https://github.com/google/googletest
-
-Qwikpirate - a command line parsing tool (LGPL)
-https://github.com/gatkinso/qwikpirate

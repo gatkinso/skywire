@@ -18,6 +18,7 @@
 #include <initializer_list>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -29,12 +30,10 @@
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
-#include "argv.h"
 #include "skywire/skywire.h"
 
 using namespace skyloupe;
 
-qwikpirate::ArgVee cmdargs;
 std::string input_filename;
 std::string input_str;
 std::string output_directory = ".";
@@ -155,7 +154,7 @@ void print_help()
               << "  --help                    print this help and exit" << std::endl;
 }
 
-void cli_callback(const std::string& flag, const std::string& value, void* param)
+void cli_callback(const std::string& flag, const std::string& value)
 {
     if (flag.compare("--help") == 0)
     {
@@ -327,26 +326,18 @@ const char* const flag_options[] = {
     "--help", "--version", "--banner", "--generate_tests", "--generate_relay", "--generate_json", "--generate_xml", "--generate_bson", "--silent", "--write_to_file",
 };
 
+// Every option is --name, and each of value_options is followed by its
+// value. Every argument is checked first: an unknown option, an option with
+// no value, a value given to a flag, or anything else is an error, and
+// nothing is applied. Then each option given goes to cli_callback, the flags
+// first (so --help and --version come before anything else) and in the order
+// the lists above name them, a repeated option once per time it is given.
 bool process_cmd_line(int argc, const char* argv[])
 {
-    std::vector<std::string> cli_errors_;
-    std::set<std::string> flags(std::begin(flag_options), std::end(flag_options));
-    std::set<std::string> values(std::begin(value_options), std::end(value_options));
+    const std::set<std::string> flags(std::begin(flag_options), std::end(flag_options));
+    const std::set<std::string> values(std::begin(value_options), std::end(value_options));
+    std::map<std::string, std::vector<std::string>> given;
 
-    // Callbacks run in this order, so --help and --version come first.
-    for (const char* option : flag_options)
-    {
-        cmdargs.setOption(option, true, true, cli_callback);
-    }
-
-    for (const char* option : value_options)
-    {
-        cmdargs.setOption(option, true, false, cli_callback);
-    }
-
-    // The parser accepts any flag and does not say which one lacks a value,
-    // so check the arguments here first; a removed or misspelled option must
-    // not be ignored.
     bool ret = true;
     for (int i = 1; i < argc; i++)
     {
@@ -362,7 +353,7 @@ bool process_cmd_line(int argc, const char* argv[])
             }
             else
             {
-                i++;
+                given[arg].push_back(argv[++i]);
             }
         }
         else if (flags.count(arg) != 0)
@@ -372,6 +363,10 @@ bool process_cmd_line(int argc, const char* argv[])
                 std::cout << arg << " takes no value, but was given " << argv[i + 1] << std::endl;
                 ret = false;
                 i++;
+            }
+            else
+            {
+                given[arg].push_back("");
             }
         }
         else if (arg.rfind("--", 0) == 0)
@@ -390,21 +385,29 @@ bool process_cmd_line(int argc, const char* argv[])
         }
     }
 
-    if (ret)
-    {
-        ret = cmdargs.parse(argc, argv, cli_errors_);
-        for (const auto& error : cli_errors_)
-        {
-            std::cout << error << std::endl;
-        }
-    }
-
     if (false == ret)
     {
         return ret;
     }
 
-    cmdargs.apply();
+    auto apply = [&given](const char* option) {
+        auto it = given.find(option);
+        if (it != given.end())
+        {
+            for (const auto& value : it->second)
+            {
+                cli_callback(option, value);
+            }
+        }
+    };
+    for (const char* option : flag_options)
+    {
+        apply(option);
+    }
+    for (const char* option : value_options)
+    {
+        apply(option);
+    }
 
     return ret;
 }

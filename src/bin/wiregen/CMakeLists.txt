@@ -15,8 +15,7 @@
 
 set(TARGETNAME wiregen)
 
-include_directories(${PROJECT_SOURCE_DIR}/include
-                    ${PROJECT_SOURCE_DIR}/3rd_party/qwikpirate/include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 set(_SOURCES main.cpp)
 
@@ -33,9 +32,9 @@ set(DEPLOY_JSONS   c/lang.c.json
 
 add_executable(${TARGETNAME} ${_SOURCES})
 
-add_dependencies(${TARGETNAME} skywire specification cli)
+add_dependencies(${TARGETNAME} skywire specification)
 
-target_link_libraries(${TARGETNAME} skywire cli)
+target_link_libraries(${TARGETNAME} skywire)
 
 # Where an installed wiregen finds the lang files, relative to itself:
 # ../share/skywire/lang, or ../../share/skywire/lang from vcpkg's tools/skywire.

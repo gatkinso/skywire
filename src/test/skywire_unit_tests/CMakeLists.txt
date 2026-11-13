@@ -258,6 +258,40 @@ add_test(NAME wiregen_cli:FlagValue
     COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --silent yes)
 set_tests_properties(wiregen_cli:FlagValue PROPERTIES
     PASS_REGULAR_EXPRESSION "--silent takes no value")
+add_test(NAME wiregen_cli:UnexpectedArgument
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} stray)
+set_tests_properties(wiregen_cli:UnexpectedArgument PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unexpected argument: stray")
+add_test(NAME wiregen_cli:UnexpectedArgumentFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} stray)
+# An option name is letters, digits and underscores: --write-to-file is not
+# --write_to_file.
+add_test(NAME wiregen_cli:HyphenatedOption
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --write-to-file)
+set_tests_properties(wiregen_cli:HyphenatedOption PROPERTIES
+    PASS_REGULAR_EXPRESSION "Unknown option: --write-to-file")
+add_test(NAME wiregen_cli:HyphenatedOptionFails
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --write-to-file)
+set_tests_properties(wiregen_cli:UnexpectedArgumentFails wiregen_cli:HyphenatedOptionFails PROPERTIES
+    WILL_FAIL TRUE)
+
+# An option given twice takes effect twice, in order: the last value wins.
+add_test(NAME wiregen_cli:RepeatedOption
+    COMMAND wiregen --language c++ --namespace first --namespace second --input_file ${CLI_SPEC})
+set_tests_properties(wiregen_cli:RepeatedOption PROPERTIES
+    PASS_REGULAR_EXPRESSION "namespace second"
+    FAIL_REGULAR_EXPRESSION "namespace first")
+
+# --help and --version act before any other option, wherever they are.
+add_test(NAME wiregen_cli:HelpComesFirst
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --help)
+set_tests_properties(wiregen_cli:HelpComesFirst PROPERTIES
+    PASS_REGULAR_EXPRESSION "--namespace name"
+    FAIL_REGULAR_EXPRESSION "ClassyMcClassface")
+add_test(NAME wiregen_cli:VersionComesFirst
+    COMMAND wiregen --language c++ --input_file ${CLI_SPEC} --version)
+set_tests_properties(wiregen_cli:VersionComesFirst PROPERTIES
+    PASS_REGULAR_EXPRESSION "^wiregen ${PROJECT_VERSION}\n$")
 
 # String mode: the spec (--input_str) and optionally the lang file
 # (--langspec) come on the command line instead of from files.

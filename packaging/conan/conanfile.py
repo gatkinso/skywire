@@ -32,7 +32,7 @@ from conan.tools.files import copy, load, rmdir
 
 # What the build needs from the source tree, relative to its top.
 SOURCES = ["CMakeLists.txt", "LICENSE", "README.md", "CHANGELOG.md",
-           "cmake/*", "lang/*", "src/*", "include/*", "3rd_party/*"]
+           "cmake/*", "lang/*", "src/*", "include/*", "schema/*"]
 
 
 class SkywireConan(ConanFile):

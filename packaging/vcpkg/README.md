@@ -56,7 +56,5 @@ checks. The release workflow runs it on its Linux x86_64 build job.
 ## Submitting upstream
 
 Once the repository is public, a port for microsoft/vcpkg replaces the
-`SOURCE_PATH` line with `vcpkg_from_github` for the release tag, plus a
-second `vcpkg_from_github` for `gatkinso/qwikpirate` (a submodule, which
-tarballs don't include) copied into `3rd_party/qwikpirate`, and adds the
-version to vcpkg's version database (`vcpkg x-add-version skywire`).
+`SOURCE_PATH` line with `vcpkg_from_github` for the release tag, and adds
+the version to vcpkg's version database (`vcpkg x-add-version skywire`).
