@@ -13,12 +13,12 @@
         "classname_str":"public final class __CLASSNAME__ {\n",
         "cons_str":"public init() {}\n",
 
-        "serialize_str":"public func serialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {\n",
+        "serialize_str":"public func serialize(_ stream: SWStream) -> Bool {\n",
         "serialize_claim_str":"guard var p = stream.claim(size()) else { return false }\nserialize(into: &p)\nreturn true\n",
         "serialize_into_str":"// Writes the wire representation, size() bytes, at p and moves p past it.\npublic func serialize(into p: inout UnsafeMutableRawPointer) {\n",
         "deserialize_consume_str":"guard var p = stream.consume(size()) else { return false }\ndeserialize(from: &p)\nreturn true\n",
         "deserialize_from_str":"// Reads the wire representation, size() bytes, from p and moves p past it.\npublic func deserialize(from p: inout UnsafeRawPointer) {\n",
-        "deserialize_str":"public func deserialize(_ stream: SWStream, _ endian: Endianness = .big) -> Bool {\n",
+        "deserialize_str":"public func deserialize(_ stream: SWStream) -> Bool {\n",
         "size_str":"public func size() -> Int {\n",
         "equals_str":"public func Equals(_ other: __CLASSNAME__) -> Bool {\n",
 

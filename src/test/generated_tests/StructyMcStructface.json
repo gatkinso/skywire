@@ -7,38 +7,38 @@
       "100": {
          "type": "double",
          "name": "a_mydouble100",
-         "endian": 1
+         "endian": 0
       },
       "200": {
          "type": "uint32_t",
-         "name": "b_myuint32_200"
+         "name": "b_myuint32_200", "endian": 1
       },
       "201": {
          "type": "int64_t",
-         "name": "c_myint64_201"
+         "name": "c_myint64_201", "endian": 1
       },
       "202": {
          "type": "float",
-         "name": "d_myfloat202"
+         "name": "d_myfloat202", "endian": 1
       },
       "203": {
          "type": "int16_t",
          "name": "e_myint16_203",
-         "endian": 1
+         "endian": 0
       },
       "204": {
          "type": "uint16_t",
-         "name": "f_myuint16_204"
+         "name": "f_myuint16_204", "endian": 1
       },
       "205": {
          "type": "int32_t",
          "name": "g_myint32_205",
-         "endian": 1
+         "endian": 0
       },
       "206": {
          "type": "uint64_t",
          "name": "h_myuint64_206",
-         "endian": 1
+         "endian": 0
       },
       "301": {
          "type": "char",
@@ -74,7 +74,7 @@
       "2000": {
          "type": "uint32_t",
          "name": "p_myuint32_2000",
-         "endian": 1
+         "endian": 0
       },
       "2010": {
          "type": "int64_t",
@@ -83,7 +83,7 @@
       },
       "2020": {
          "type": "double",
-         "name": "r_mydouble2020"
+         "name": "r_mydouble2020", "endian": 1
       }
    },
    "includes": [

@@ -29,8 +29,9 @@ class Streamable
 {
 public:
     virtual ~Streamable() = default;
-    virtual bool serialize(skyloupe::Stream& str, Endianness endian = Big) const = 0;
-    virtual bool deserialize(skyloupe::Stream& str, Endianness endian = Big) = 0;
+    // The wire format: each member in its own byte order, from the spec.
+    virtual bool serialize(skyloupe::Stream& str) const = 0;
+    virtual bool deserialize(skyloupe::Stream& str) = 0;
 
     // The protobuf (PZ) encoding: each member is the field numbered by its tag.
     virtual bool serialize_pb(protozero::pbf_writer& pbf) const = 0;

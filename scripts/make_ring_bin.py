@@ -67,7 +67,7 @@ def bits_value(mtype, bits):
         return 0x5555555555555555 & ((1 << bits) - 1)
     return -1 if bits == 1 else -(1 << (bits - 1)) + 1
 
-BYTE_ORDER = {0: ">", 1: "<"}
+BYTE_ORDER = {0: "<", 1: ">"}
 
 
 def load_spec(path):

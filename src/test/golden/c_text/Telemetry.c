@@ -18,7 +18,7 @@ char* Telemetry_SerializeSw(const Telemetry * structure, char * p) {
     unit_0 |= (uint8_t)(((uint8_t)structure->mode & 0xfu) << 0);
     unit_0 |= (uint8_t)(((uint8_t)structure->status & 0x7u) << 4);
     unit_0 |= (uint8_t)(((uint8_t)structure->armed & 0x1u) << 7);
-    p = sw_put(p, &unit_0, sizeof(unit_0), SW_BIG_ENDIAN_FLAG);
+    p = sw_put(p, &unit_0, sizeof(unit_0), SW_LITTLE_ENDIAN_FLAG);
     p = sw_put(p, &structure->callsign, sizeof(structure->callsign), SW_NATIVE_ENDIAN_FLAG);
     p = Position_SerializeSw(&structure->position, p);
     p = sw_put(p, &structure->battery_mv, sizeof(structure->battery_mv), SW_LITTLE_ENDIAN_FLAG);
@@ -37,7 +37,7 @@ const char* Telemetry_DeserializeSw(Telemetry * structure, const char * p) {
     p = sw_get(p, &structure->device_id, sizeof(structure->device_id), SW_BIG_ENDIAN_FLAG);
     p = sw_get(p, &structure->timestamp_us, sizeof(structure->timestamp_us), SW_LITTLE_ENDIAN_FLAG);
     uint8_t unit_0;
-    p = sw_get(p, &unit_0, sizeof(unit_0), SW_BIG_ENDIAN_FLAG);
+    p = sw_get(p, &unit_0, sizeof(unit_0), SW_LITTLE_ENDIAN_FLAG);
     structure->mode = (uint8_t)((uint8_t)(unit_0 >> 0) & 0xfu);
     structure->status = (uint8_t)((uint8_t)(unit_0 >> 4) & 0x7u);
     structure->armed = (uint8_t)((uint8_t)(unit_0 >> 7) & 0x1u);

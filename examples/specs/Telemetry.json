@@ -5,13 +5,13 @@
       "bitorder": "lsb"
    },
    "members": {
-      "1": { "type": "uint32_t", "name": "device_id",    "endian": 0 },
-      "2": { "type": "uint64_t", "name": "timestamp_us", "endian": 1 },
+      "1": { "type": "uint32_t", "name": "device_id",    "endian": 1 },
+      "2": { "type": "uint64_t", "name": "timestamp_us", "endian": 0 },
       "3": { "type": "uint8_t",  "name": "mode",         "bits": 4 },
       "4": { "type": "uint8_t",  "name": "status",       "bits": 3 },
       "5": { "type": "uint8_t",  "name": "armed",        "bits": 1 },
       "6": { "type": "string",   "name": "callsign",     "length": 8 },
       "7": { "type": "Position", "name": "position" },
-      "8": { "type": "uint16_t", "name": "battery_mv",   "endian": 1 }
+      "8": { "type": "uint16_t", "name": "battery_mv",   "endian": 0 }
    }
 }

@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include "skywire/bitfields.h"
 #include "skywire/test_values.h"
+#include "sw_endian.h"
 
 using namespace skyloupe;
 
@@ -96,9 +97,9 @@ TEST(Bitfields, EncodeUnit)
 {
     // 0b0101 at 0 and 0b101 at 4: 0x55, then 0b01 at 0 of a big-endian uint16_t.
     std::vector<uint8_t> out;
-    ASSERT_TRUE(test_values::encode_unit("uint8_t", 0, { { 0, 4 }, { 4, 3 } }, out));
-    ASSERT_TRUE(test_values::encode_unit("uint16_t", 0, { { 14, 2 } }, out));
+    ASSERT_TRUE(test_values::encode_unit("uint8_t", SW_BIG_ENDIAN_FLAG, { { 0, 4 }, { 4, 3 } }, out));
+    ASSERT_TRUE(test_values::encode_unit("uint16_t", SW_BIG_ENDIAN_FLAG, { { 14, 2 } }, out));
     // -3 in 3 bits at shift 1 of a little-endian int16_t: 0b1010 = 0x000a.
-    ASSERT_TRUE(test_values::encode_unit("int16_t", 1, { { 1, 3 } }, out));
+    ASSERT_TRUE(test_values::encode_unit("int16_t", SW_LITTLE_ENDIAN_FLAG, { { 1, 3 } }, out));
     EXPECT_EQ((std::vector<uint8_t>{ 0x55, 0x40, 0x00, 0x0a, 0x00 }), out);
 }

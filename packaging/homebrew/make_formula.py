@@ -66,8 +66,8 @@ class Skywire < Formula
       {{
         "stringValues": {{ "classname": "Point" }},
         "members": {{
-          "1": {{ "type": "uint16_t", "name": "x", "endian": 0 }},
-          "2": {{ "type": "uint16_t", "name": "y", "endian": 1 }}
+          "1": {{ "type": "uint16_t", "name": "x", "endian": 1 }},
+          "2": {{ "type": "uint16_t", "name": "y", "endian": 0 }}
         }}
       }}
     JSON

@@ -623,7 +623,7 @@ public:
     ~Stream() {}
     Stream(const Stream&) = delete;
     Stream& operator=(const Stream&) = delete;
-    bool serialize(char d, Endianness endian = Endianness::Big) {
+    bool serialize(char d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -631,7 +631,7 @@ public:
         }
         return true;
     }
-    bool serialize(signed char d, Endianness endian = Endianness::Big) {
+    bool serialize(signed char d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -639,7 +639,7 @@ public:
         }
         return true;
     }
-    bool serialize(int16_t d, Endianness endian = Endianness::Big) {
+    bool serialize(int16_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -647,7 +647,7 @@ public:
         }
         return true;
     }
-    bool serialize(int32_t d, Endianness endian = Endianness::Big) {
+    bool serialize(int32_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -655,7 +655,7 @@ public:
         }
         return true;
     }
-    bool serialize(int64_t d, Endianness endian = Endianness::Big) {
+    bool serialize(int64_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -663,7 +663,7 @@ public:
         }
         return true;
     }
-    bool serialize(unsigned char d, Endianness endian = Endianness::Big) {
+    bool serialize(unsigned char d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -671,7 +671,7 @@ public:
         }
         return true;
     }
-    bool serialize(uint16_t d, Endianness endian = Endianness::Big) {
+    bool serialize(uint16_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -679,7 +679,7 @@ public:
         }
         return true;
     }
-    bool serialize(uint32_t d, Endianness endian = Endianness::Big) {
+    bool serialize(uint32_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -687,7 +687,7 @@ public:
         }
         return true;
     }
-    bool serialize(uint64_t d, Endianness endian = Endianness::Big) {
+    bool serialize(uint64_t d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -695,7 +695,7 @@ public:
         }
         return true;
     }
-    bool serialize(float d, Endianness endian = Endianness::Big) {
+    bool serialize(float d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -703,7 +703,7 @@ public:
         }
         return true;
     }
-    bool serialize(double d, Endianness endian = Endianness::Big) {
+    bool serialize(double d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             swstream_.serialize(d, endian);
         } else {
@@ -711,77 +711,77 @@ public:
         }
         return true;
     }
-    bool deserialize(char& d, Endianness endian = Endianness::Big) {
+    bool deserialize(char& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(signed char& d, Endianness endian = Endianness::Big) {
+    bool deserialize(signed char& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(int16_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(int16_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(int32_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(int32_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(int64_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(int64_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(unsigned char& d, Endianness endian = Endianness::Big) {
+    bool deserialize(unsigned char& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(uint16_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(uint16_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(uint32_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(uint32_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(uint64_t& d, Endianness endian = Endianness::Big) {
+    bool deserialize(uint64_t& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(float& d, Endianness endian = Endianness::Big) {
+    bool deserialize(float& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {
             return pzstream_.deserialize(d, endian);
         }
     }
-    bool deserialize(double& d, Endianness endian = Endianness::Big) {
+    bool deserialize(double& d, Endianness endian = Endianness::Little) {
         if (mode_ == SW) {
             return swstream_.deserialize(d, endian);
         } else {

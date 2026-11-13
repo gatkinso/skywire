@@ -55,7 +55,7 @@ optional fields, or you get to design the format yourself, see
 ## Quick start
 
 Say a temperature sensor's interface control document (ICD) describes the
-reading it sends, 9 bytes, big-endian:
+reading it sends, 9 bytes, little-endian:
 
 | Offset | Size | Field | Notes |
 |---|---|---|---|
@@ -71,7 +71,7 @@ Download the archive for your platform from the
 unpack it. On Linux x86_64:
 
 ```sh
-VERSION=0.10.0
+VERSION=0.11.0
 curl -LO https://github.com/gatkinso/skywire/releases/download/v$VERSION/skywire-$VERSION-linux-x86_64.tar.gz
 tar xzf skywire-$VERSION-linux-x86_64.tar.gz
 SKYWIRE=$PWD/skywire-$VERSION-linux-x86_64
@@ -98,8 +98,8 @@ rest.
 }
 ```
 
-Members go on the wire in tag order (`"1"`, `"2"`, ...). Big-endian is the
-default; a little-endian member would add `"endian": 1`. `bits` packs `mode`
+Members go on the wire in tag order (`"1"`, `"2"`, ...). Little-endian is the
+default; a big-endian member would add `"endian": 1`. `bits` packs `mode`
 and `flags` into one byte, and `"bitorder": "msb"` puts the first one in the
 high bits, as the ICD draws it. [Specifications](docs/specs.md) has the rest.
 
@@ -125,7 +125,7 @@ This writes `out/SensorReading.h` and `out/SensorReading.c`: a
 int main(void)
 {
     /* A reading as the sensor sends it. */
-    const char wire[] = "\x00\x2a" "\x00\x01\xe2\x40" "\x09\xc4" "\x31";
+    const char wire[] = "\x2a\x00" "\x40\xe2\x01\x00" "\xc4\x09" "\x31";
     SensorReading r;
     SensorReading_DeserializeSw(&r, wire);
     printf("sensor %u at %u ms: %.2f C, mode %u, flags %u\n",

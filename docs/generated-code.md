@@ -10,8 +10,8 @@ What wiregen writes for a message, using this [specification](specs.md),
       "namespace": "SomeNamespace"
    },
    "members": {
-      "100": { "type": "float",    "name": "myfloat100",   "endian": 1 },
-      "200": { "type": "uint32_t", "name": "myuint32_200", "endian": 0 }
+      "100": { "type": "float",    "name": "myfloat100",   "endian": 0 },
+      "200": { "type": "uint32_t", "name": "myuint32_200", "endian": 1 }
    }
 }
 ```
@@ -37,7 +37,7 @@ namespace SomeNamespace {
     public:
         Example() {}
         virtual ~Example() {}
-        bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
+        bool serialize(skyloupe::Stream& str) const {
             if (str.mode() == skyloupe::Stream::PZ) {
                 protozero::pbf_writer pbf{str.pz_buffer()};
                 return serialize_pb(pbf);
@@ -53,7 +53,7 @@ namespace SomeNamespace {
             p = skyloupe::wire::put(p, myuint32_200, skyloupe::Endianness::Big);
             return p;
         }
-        bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
+        bool deserialize(skyloupe::Stream& str) {
             if (str.mode() == skyloupe::Stream::PZ) {
                 Example decoded;
                 try {

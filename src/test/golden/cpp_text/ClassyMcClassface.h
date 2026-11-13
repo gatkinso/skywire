@@ -12,7 +12,7 @@ namespace testspace {
     public:
         ClassyMcClassface() {}
         virtual ~ClassyMcClassface() {}
-        bool serialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) const {
+        bool serialize(skyloupe::Stream& str) const {
             if (str.mode() == skyloupe::Stream::PZ) {
                 protozero::pbf_writer pbf{str.pz_buffer()};
                 return serialize_pb(pbf);
@@ -32,11 +32,11 @@ namespace testspace {
             p = skyloupe::wire::put(p, f_myuint16_204, skyloupe::Endianness::Big);
             p = skyloupe::wire::put(p, g_myint32_205, skyloupe::Endianness::Little);
             p = skyloupe::wire::put(p, h_myuint64_206, skyloupe::Endianness::Little);
-            p = skyloupe::wire::put(p, i_charcoal301, skyloupe::Endianness::Big);
+            p = skyloupe::wire::put(p, i_charcoal301, skyloupe::Endianness::Little);
             p = skyloupe::wire::put_bytes(p, j_mystring302, 16);
-            p = skyloupe::wire::put(p, k_uchar303, skyloupe::Endianness::Big);
-            p = skyloupe::wire::put(p, l_myuint8_304, skyloupe::Endianness::Big);
-            p = skyloupe::wire::put(p, m_myint8_305, skyloupe::Endianness::Big);
+            p = skyloupe::wire::put(p, k_uchar303, skyloupe::Endianness::Little);
+            p = skyloupe::wire::put(p, l_myuint8_304, skyloupe::Endianness::Little);
+            p = skyloupe::wire::put(p, m_myint8_305, skyloupe::Endianness::Little);
             p = skyloupe::wire::put_bytes(p, n_shortstring306, 4);
             p = skyloupe::wire::put(p, o_myfloat1000, skyloupe::Endianness::Native);
             p = skyloupe::wire::put(p, p_myuint32_2000, skyloupe::Endianness::Little);
@@ -44,7 +44,7 @@ namespace testspace {
             p = skyloupe::wire::put(p, r_mydouble2020, skyloupe::Endianness::Big);
             return p;
         }
-        bool deserialize(skyloupe::Stream& str, skyloupe::Endianness endian = skyloupe::Endianness::Big) {
+        bool deserialize(skyloupe::Stream& str) {
             if (str.mode() == skyloupe::Stream::PZ) {
                 ClassyMcClassface decoded;
                 try {
@@ -71,11 +71,11 @@ namespace testspace {
             p = skyloupe::wire::get(p, f_myuint16_204, skyloupe::Endianness::Big);
             p = skyloupe::wire::get(p, g_myint32_205, skyloupe::Endianness::Little);
             p = skyloupe::wire::get(p, h_myuint64_206, skyloupe::Endianness::Little);
-            p = skyloupe::wire::get(p, i_charcoal301, skyloupe::Endianness::Big);
+            p = skyloupe::wire::get(p, i_charcoal301, skyloupe::Endianness::Little);
             p = skyloupe::wire::get_bytes(p, j_mystring302, 16);
-            p = skyloupe::wire::get(p, k_uchar303, skyloupe::Endianness::Big);
-            p = skyloupe::wire::get(p, l_myuint8_304, skyloupe::Endianness::Big);
-            p = skyloupe::wire::get(p, m_myint8_305, skyloupe::Endianness::Big);
+            p = skyloupe::wire::get(p, k_uchar303, skyloupe::Endianness::Little);
+            p = skyloupe::wire::get(p, l_myuint8_304, skyloupe::Endianness::Little);
+            p = skyloupe::wire::get(p, m_myint8_305, skyloupe::Endianness::Little);
             p = skyloupe::wire::get_bytes(p, n_shortstring306, 4);
             p = skyloupe::wire::get(p, o_myfloat1000, skyloupe::Endianness::Native);
             p = skyloupe::wire::get(p, p_myuint32_2000, skyloupe::Endianness::Little);

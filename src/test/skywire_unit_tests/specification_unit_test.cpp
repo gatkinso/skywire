@@ -367,7 +367,7 @@ TEST_F(SpecificationUnitTest, read_string_SchemaKey)
     ASSERT_TRUE(spec.read_string(R"({
         "$schema": "../schema/skywire-spec.schema.json",
         "stringValues": { "classname": "Point" },
-        "members": { "1": { "type": "uint16_t", "name": "x", "endian": 1, "bits": 12 } }
+        "members": { "1": { "type": "uint16_t", "name": "x", "endian": 0, "bits": 12 } }
     })"));
     ASSERT_EQ(spec.get_value_string("classname"), "Point");
 
