@@ -33,7 +33,20 @@ and byte order, plus fixed-length strings, bitfields and nested messages.
 wiregen turns that into plain structs or classes with getters, setters,
 serialize, deserialize, equality and size, and, if you like, unit tests for
 them. Most languages need no runtime library, and the generated code is yours
-under any license. Generated C++ can also speak protobuf.
+under any license.
+
+A message can travel in any of these forms:
+
+| Form | What it's for | Languages |
+|---|---|---|
+| **Wire format** | The fixed binary layout itself | All nine |
+| **JSON**, **XML** (`--generate_json`, `--generate_xml`) | Logs, test fixtures, configuration, web services, reading a captured frame | All nine |
+| **BSON** (`--generate_bson`) | MongoDB and other BSON stores | All nine |
+| **Protobuf (PZ)** | Talking to protobuf code; `--language proto3` writes the matching `.proto` | C++ |
+
+As with the wire format, every language writes the same JSON, XML and BSON,
+byte for byte, and reads what any of them writes ([JSON, XML and
+BSON](docs/text-formats.md)).
 
 skywire handles fixed layouts. If your format has arrays, variable-length or
 optional fields, or you get to design the format yourself, see
@@ -142,6 +155,26 @@ The runtime (`cstream.h`) is header-only, so there is nothing to link.
 The same specification with `--language` `c++`, `csharp`, `go`, `java`,
 `javascript`, `python3`, `rust` or `swift` writes the same 9 bytes.
 
+### 5. JSON, XML and BSON
+
+Add `--generate_json` to the wiregen command (or `--generate_xml`,
+`--generate_bson`, or all three), and the reading has its text form too:
+
+```c
+char json[128];
+SensorReading_ToJson(&r, json, sizeof json);   /* returns the length, like snprintf */
+puts(json);
+SensorReading_FromJson(&r, json, strlen(json)); /* 0, or -1 if it is not one */
+```
+
+```
+{"sensor_id":42,"timestamp_ms":123456,"temp_centi_c":2500,"mode":3,"flags":1}
+```
+
+Every language writes exactly that, and reads it back; the
+[examples](examples/README.md) read JSON written by hand, XML from another
+program and a document from MongoDB.
+
 ## Installing
 
 - **Release archives** for Linux (x86_64, arm64), macOS (Apple silicon) and
@@ -163,6 +196,7 @@ The same specification with `--language` `c++`, `csharp`, `go`, `java`,
 | [Running wiregen](docs/cli.md) | The command line |
 | [Generated code](docs/generated-code.md) | What wiregen writes, and serializing in place |
 | [Languages](docs/languages.md) | Each language's runtime, tests and details |
+| [JSON, XML and BSON](docs/text-formats.md) | The text and BSON forms: the format, and each language's API |
 | [Protobuf (PZ) mode](docs/protobuf.md) | Generated C++ speaking protobuf |
 | [Lang files](docs/lang-files.md) | Customizing the generated code |
 | [Installing](docs/install.md) | Release archives, Homebrew, vcpkg, Conan, versioning |
