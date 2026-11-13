@@ -4,8 +4,8 @@
 #  Detects a JDK at test time. If javac is absent (or is the macOS stub that
 #  only prompts to install one) it prints the skip marker matched by the test's
 #  SKIP_REGULAR_EXPRESSION; otherwise it generates the Java sources with
-#  wiregen, compiles them with all lint warnings as errors, and runs the
-#  generated test class.
+#  wiregen (with the JSON, XML and BSON forms), compiles them with all lint
+#  warnings as errors, and runs the generated test class.
 #
 #  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
 #  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
@@ -46,6 +46,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

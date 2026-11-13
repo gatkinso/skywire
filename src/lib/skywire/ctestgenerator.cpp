@@ -48,6 +48,12 @@ bool CTestGenerator::do_test_implementation(int& errorcode)
     test_short_buffer(errorcode);
     test_wire(errorcode);
     test_bitfield_setters(errorcode);
+    if (wants_json())
+        test_text("json", errorcode);
+    if (wants_xml())
+        test_text("xml", errorcode);
+    if (wants_bson())
+        test_bson(errorcode);
 
     header_string.append(ss_.str());
 
@@ -65,8 +71,14 @@ bool CTestGenerator::test_includes(int& errorcode)
 
     ss_ << "#include <gmock/gmock.h>" << std::endl
         << "#include <gtest/gtest.h>" << std::endl
-        << "#include <cstring>" << std::endl
-        << "#include \"";
+        << "#include <cstring>" << std::endl;
+    if (wants_json() || wants_xml() || wants_bson())
+    {
+        ss_ << "#include <algorithm>" << std::endl
+            << "#include <string>" << std::endl
+            << "#include <vector>" << std::endl;
+    }
+    ss_ << "#include \"";
     ss_ << hdr_name << "\"" << std::endl << std::endl;
 
     return true;
@@ -249,22 +261,7 @@ bool CTestGenerator::test_wire(int& errorcode)
     ss_ << "{\n";
     ss_ << "    " << classname << " in;\n";
     ss_ << "    std::memset(&in, 0, sizeof(in));\n";
-
-    for (auto& member : ordered_members_)
-    {
-        const std::string& type = std::get<member_type>(member.second);
-        const std::string& name = std::get<member_name>(member.second);
-
-        if (is_string_type(type))
-        {
-            ss_ << "    strncpy(in." << name << ", \"" << test_values::string_value() << "\", "
-                << std::get<member_length>(member.second) << ");\n";
-        }
-        else
-        {
-            ss_ << "    in." << name << " = " << test_literal(member.second) << ";\n";
-        }
-    }
+    do_test_value_sets();
 
     ss_ << "\n";
     ss_ << "    static const uint8_t want[] = {";
@@ -321,6 +318,223 @@ bool CTestGenerator::test_bitfield_setters(int& errorcode)
     ss_ << "    " << classname << " msg;\n";
     ss_ << "    std::memset(&msg, 0, sizeof(msg));\n";
     ss_ << body.str();
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// Gives each member of in the value shared by all the test generators; a
+// nested message has none, and stays zero.
+void CTestGenerator::do_test_value_sets()
+{
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+
+        if (is_string_type(type))
+        {
+            ss_ << "    strncpy(in." << name << ", \"" << test_values::string_value() << "\", "
+                << std::get<member_length>(member.second) << ");\n";
+        }
+        else if (false == is_user_type(type))
+        {
+            ss_ << "    in." << name << " = " << test_literal(member.second) << ";\n";
+        }
+    }
+}
+
+namespace
+{
+
+// text as a C++ raw string literal.
+std::string raw(const std::string& text)
+{
+    return "R\"sw(" + text + ")sw\"";
+}
+
+}
+
+// The JSON or XML tests: the exact text (the same in every language, from
+// test_values), the snprintf contract, a round trip, an empty object or
+// element reading as zero, and malformed or out-of-range input failing
+// without changing the message.
+bool CTestGenerator::test_text(const std::string& format, int& errorcode)
+{
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string testname = classname + "Test";
+    const bool json = format == "json";
+    const std::string Format = json ? "Json" : "Xml";
+    const std::string to = classname + "_To" + Format;
+    const std::string from = classname + "_From" + Format;
+
+    std::string expected;
+    const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+    ss_ << "TEST(" << testname << ", " << Format << ")\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    ss_ << "    std::memset(&out, 0, sizeof(out));\n";
+    do_test_value_sets();
+    ss_ << "\n";
+    ss_ << "    const size_t n = " << to << "(&in, NULL, 0);\n";
+    ss_ << "    std::vector<char> buf(n + 1);\n";
+    ss_ << "    ASSERT_EQ(n, " << to << "(&in, buf.data(), buf.size()));\n";
+    ss_ << "    const std::string text(buf.data(), n);\n";
+    if (have_expected)
+    {
+        ss_ << "    ASSERT_EQ(" << raw(expected) << ", text);\n";
+    }
+    ss_ << "    char small[8];\n";
+    ss_ << "    ASSERT_EQ(n, " << to << "(&in, small, sizeof(small)));\n";
+    ss_ << "    ASSERT_EQ(text.substr(0, sizeof(small) - 1), std::string(small));\n";
+    ss_ << "    ASSERT_EQ(0, " << from << "(&out, text.data(), text.size()));\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&in, &out));\n";
+    ss_ << "    std::vector<char> again(n + 1);\n";
+    ss_ << "    ASSERT_EQ(n, " << to << "(&out, again.data(), again.size()));\n";
+    ss_ << "    ASSERT_EQ(text, std::string(again.data(), n));\n";
+    ss_ << "}\n\n";
+
+    const std::string empty = json ? "{}" : "<" + classname + "/>";
+    ss_ << "TEST(" << testname << ", " << Format << "EmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out, zero;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    ss_ << "    std::memset(&zero, 0, sizeof(zero));\n";
+    do_test_value_sets();
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_EQ(0, " << from << "(&out, \"" << empty << "\", " << empty.size() << "));\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&zero, &out));\n";
+    ss_ << "}\n\n";
+
+    ss_ << "TEST(" << testname << ", " << Format << "Rejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    do_test_value_sets();
+    ss_ << "    out = in;\n";
+    ss_ << "    static const char* const bad[] = {\n";
+    for (const auto& text : json ? rejected_json() : rejected_xml())
+    {
+        ss_ << "        " << raw(text) << ",\n";
+    }
+    ss_ << "    };\n";
+    ss_ << "    for (const char* text : bad)\n";
+    ss_ << "    {\n";
+    ss_ << "        EXPECT_EQ(-1, " << from << "(&out, text, std::strlen(text))) << text;\n";
+    ss_ << "    }\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&in, &out));\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// The BSON tests: the exact bytes (the same in every language, from
+// test_values), a round trip, an empty document reading as zero, uint64_t
+// values above 2^63-1 as Decimal128, and malformed or out-of-range documents
+// failing without changing the message.
+bool CTestGenerator::test_bson(int& errorcode)
+{
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string testname = classname + "Test";
+
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "TEST(" << testname << ", Bson)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    ss_ << "    std::memset(&out, 0, sizeof(out));\n";
+    do_test_value_sets();
+    ss_ << "\n";
+    ss_ << "    const size_t n = " << classname << "_ToBson(&in, NULL, 0);\n";
+    ss_ << "    std::vector<uint8_t> bytes(n);\n";
+    ss_ << "    ASSERT_EQ(n, " << classname << "_ToBson(&in, bytes.data(), bytes.size()));\n";
+    if (have_expected)
+    {
+        ss_ << "    static const uint8_t want[] = {" << byte_list(expected, "        ") << "\n    };\n";
+        ss_ << "    ASSERT_EQ(std::vector<uint8_t>(want, want + sizeof(want)), bytes);\n";
+    }
+    ss_ << "    ASSERT_EQ(0, " << classname << "_FromBson(&out, bytes.data(), bytes.size()));\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&in, &out));\n";
+    ss_ << "    std::vector<uint8_t> again(n);\n";
+    ss_ << "    ASSERT_EQ(n, " << classname << "_ToBson(&out, again.data(), again.size()));\n";
+    ss_ << "    ASSERT_EQ(bytes, again);\n";
+    ss_ << "}\n\n";
+
+    ss_ << "TEST(" << testname << ", BsonEmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out, zero;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    ss_ << "    std::memset(&zero, 0, sizeof(zero));\n";
+    do_test_value_sets();
+    ss_ << "    out = in;\n";
+    ss_ << "    static const uint8_t empty[] = { 0x05, 0x00, 0x00, 0x00, 0x00 };\n";
+    ss_ << "    ASSERT_EQ(0, " << classname << "_FromBson(&out, empty, sizeof(empty)));\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&zero, &out));\n";
+    ss_ << "}\n\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+
+        ss_ << "TEST(" << testname << ", BsonLargeUint64_" << name << ")\n";
+        ss_ << "{\n";
+        ss_ << "    " << classname << " in, out;\n";
+        ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+        ss_ << "    std::memset(&out, 0, sizeof(out));\n";
+        ss_ << "    static const uint8_t big[] = {" << byte_list(big, "        ") << "\n    };\n";
+        ss_ << "    static const uint8_t edge[] = {" << byte_list(edge, "        ") << "\n    };\n";
+        ss_ << "    for (int k = 0; k < 2; k++)\n";
+        ss_ << "    {\n";
+        ss_ << "        const uint8_t* const element = k == 0 ? big : edge;\n";
+        ss_ << "        const size_t element_size = k == 0 ? sizeof(big) : sizeof(edge);\n";
+        ss_ << "        in." << name << " = k == 0 ? UINT64_C(18446744073709551615) : UINT64_C(9223372036854775807);\n";
+        ss_ << "        std::vector<uint8_t> bytes(" << classname << "_ToBson(&in, NULL, 0));\n";
+        ss_ << "        " << classname << "_ToBson(&in, bytes.data(), bytes.size());\n";
+        ss_ << "        ASSERT_NE(bytes.end(), std::search(bytes.begin(), bytes.end(), element, element + element_size));\n";
+        ss_ << "        ASSERT_EQ(0, " << classname << "_FromBson(&out, bytes.data(), bytes.size()));\n";
+        ss_ << "        ASSERT_EQ(1, " << classname << "_Equals(&in, &out));\n";
+        ss_ << "    }\n";
+        ss_ << "}\n\n";
+    }
+
+    ss_ << "TEST(" << testname << ", BsonRejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << classname << " in, out;\n";
+    ss_ << "    std::memset(&in, 0, sizeof(in));\n";
+    do_test_value_sets();
+    ss_ << "    out = in;\n";
+    ss_ << "    std::vector<uint8_t> good(" << classname << "_ToBson(&in, NULL, 0));\n";
+    ss_ << "    " << classname << "_ToBson(&in, good.data(), good.size());\n";
+    ss_ << "    EXPECT_EQ(-1, " << classname << "_FromBson(&out, good.data(), good.size() - 1));\n";
+    ss_ << "    std::vector<uint8_t> longer = good;\n";
+    ss_ << "    longer.push_back(0);\n";
+    ss_ << "    EXPECT_EQ(-1, " << classname << "_FromBson(&out, longer.data(), longer.size()));\n";
+    ss_ << "    longer = good;\n";
+    ss_ << "    longer[0] = static_cast<uint8_t>(longer[0] + 1);\n";
+    ss_ << "    EXPECT_EQ(-1, " << classname << "_FromBson(&out, longer.data(), longer.size()));\n";
+    ss_ << "    static const std::vector<std::vector<uint8_t>> bad = {\n";
+    for (const auto& doc : rejected_bson())
+    {
+        ss_ << "        {" << byte_list(doc, "            ") << (doc.empty() ? "},\n" : "\n        },\n");
+    }
+    ss_ << "    };\n";
+    ss_ << "    for (size_t i = 0; i < bad.size(); i++)\n";
+    ss_ << "    {\n";
+    ss_ << "        EXPECT_EQ(-1, " << classname << "_FromBson(&out, bad[i].data(), bad[i].size())) << \"document \" << i;\n";
+    ss_ << "    }\n";
+    ss_ << "    ASSERT_EQ(1, " << classname << "_Equals(&in, &out));\n";
     ss_ << "}\n\n";
 
     return true;

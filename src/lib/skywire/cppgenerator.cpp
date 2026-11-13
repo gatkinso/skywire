@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <iostream>
 #include <map>
 #include "cppgenerator.h"
 #include "sw_endian.h"
@@ -60,6 +61,10 @@ bool CppGenerator::do_header(int& errorcode)
     hdr_deserialize(errorcode);
     hdr_serialize_pb(errorcode);
     hdr_deserialize_pb(errorcode);
+    if (false == hdr_text(errorcode))
+    {
+        return false;
+    }
     hdr_size(errorcode);
     hdr_equals(errorcode);
     hdr_get_functions(errorcode);
@@ -100,7 +105,17 @@ bool CppGenerator::hdr_includes(int& errorcode)
         return false;
     }
 
-    for (auto& item : with_user_headers(values))
+    std::vector<std::string> includes = values;
+    if (wants_json() || wants_xml())
+    {
+        includes.push_back(lang_spec_.get_value_string("text_include_str"));
+    }
+    if (wants_bson())
+    {
+        includes.push_back(lang_spec_.get_value_string("bson_include_str"));
+    }
+
+    for (auto& item : with_user_headers(includes))
     {
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
@@ -455,6 +470,95 @@ bool CppGenerator::hdr_deserialize_pb(int& errorcode)
     ss_ << "return true;" << std::endl;
     insert_indents(2);
     gen_one_line("endfunction_str");
+
+    return true;
+}
+
+// The text methods' names, which a member cannot also have.
+bool CppGenerator::check_text_names(int& errorcode)
+{
+    std::vector<std::string> reserved;
+    if (wants_json())
+        reserved.insert(reserved.end(), { "to_json", "from_json" });
+    if (wants_xml())
+        reserved.insert(reserved.end(), { "to_xml", "from_xml" });
+    if (wants_bson())
+        reserved.insert(reserved.end(), { "to_bson", "from_bson" });
+
+    bool valid = true;
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        for (const std::string& word : reserved)
+        {
+            if (name == word)
+            {
+                std::cerr << "Member name \"" << name << "\" clashes with the generated " << name << "()" << std::endl;
+                errorcode |= SW_SPEC_INVALID;
+                valid = false;
+            }
+        }
+    }
+    return valid;
+}
+
+std::string CppGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (is_user_type(type))
+        kind = "user";
+    else if (is_bitfield(member) && function.rfind("from_", 0) == 0)
+        kind = "bits";
+
+    std::string template_str = lang_spec_.get_value_string(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("bits_substr"), std::to_string(std::get<member_bits>(member)));
+    return template_str;
+}
+
+// to_json/from_json, to_xml/from_xml and to_bson/from_bson
+// (docs/text-formats.md), each only when asked for. Members go in tag order; reading takes them in any order, leaves
+// missing ones zero, ignores unknown ones and on failure changes nothing.
+bool CppGenerator::hdr_text(int& errorcode)
+{
+    if (false == wants_json() && false == wants_xml() && false == wants_bson())
+    {
+        return true;
+    }
+
+    if (false == check_text_names(errorcode))
+    {
+        return false;
+    }
+
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string classname = msg_spec_.get_value_string("classname");
+
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    for (const auto& format : formats)
+    {
+        for (const std::string direction : { "to_", "from_" })
+        {
+            const std::string function = direction + format;
+            gen_lines(replace_all(lang_spec_.get_value_string(function + "_str"), classname_substr, classname), 2);
+            for (auto& member : ordered_members_)
+            {
+                gen_lines(text_member(function, member.second), 2);
+            }
+            gen_lines(lang_spec_.get_value_string(function + "_end_str"), 2);
+        }
+    }
 
     return true;
 }

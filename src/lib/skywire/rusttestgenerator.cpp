@@ -65,6 +65,26 @@ std::string RustTestGenerator::byte_string(const std::string& value)
     return literal + "\"";
 }
 
+namespace
+{
+
+// bytes as a Rust array literal, eight to a line as in a hex dump, at the
+// given indent; the statement holding it is #[rustfmt::skip].
+std::string byte_array(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    std::string out = "[";
+    for (size_t i = 0; i < bytes.size(); i++)
+    {
+        out += (i % 8 == 0 ? "\n" + indent + "    " : " ");
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", bytes[i]);
+        out += hex;
+    }
+    return out + "\n" + indent + "]";
+}
+
+}
+
 bool RustTestGenerator::do_test_implementation(int& errorcode)
 {
     std::string& test_string_out = results_["unittest"];
@@ -129,6 +149,8 @@ bool RustTestGenerator::do_test_implementation(int& errorcode)
     do_expected_wire(errorcode);
     do_bitfield_setters(errorcode);
     do_string_setters(errorcode);
+    do_text_tests(classname);
+    do_bson_tests(classname);
 
     test_string_out.append(ss_.str());
 
@@ -286,6 +308,141 @@ bool RustTestGenerator::do_string_setters(int& errorcode)
     ss_ << "}\n";
 
     return true;
+}
+
+// The JSON and XML tests: the exact text (the same in every language, from
+// test_values), a round trip, from bytes too, an empty object or element
+// reading as the default, and malformed or out-of-range input failing.
+void RustTestGenerator::do_text_tests(const std::string& classname)
+{
+    for (const std::string format : { "json", "xml" })
+    {
+        if ((format == "json" && false == wants_json()) || (format == "xml" && false == wants_xml()))
+        {
+            continue;
+        }
+        const bool json = format == "json";
+        std::string expected;
+        const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+        ss_ << "\n#[test]\n";
+        ss_ << "fn " << format << "() {\n";
+        ss_ << "    let msg = sample();\n";
+        ss_ << "    let text = msg.to_" << format << "();\n";
+        if (have_expected)
+        {
+            ss_ << "    #[rustfmt::skip]\n";
+            ss_ << "    let want: &[u8] = " << byte_string(expected) << ";\n";
+            ss_ << "    assert_eq!(text.as_bytes(), want);\n";
+        }
+        ss_ << "    let got = " << classname << "::from_" << format << "(&text).unwrap();\n";
+        ss_ << "    assert_eq!(got, msg);\n";
+        ss_ << "    assert_eq!(got.to_" << format << "(), text);\n";
+        ss_ << "    assert_eq!(" << classname << "::from_" << format << "(text.as_bytes()).unwrap(), msg);\n";
+        ss_ << "}\n";
+
+        ss_ << "\n#[test]\n";
+        ss_ << "fn " << format << "_empty_is_default() {\n";
+        ss_ << "    let got = " << classname << "::from_" << format << "("
+            << byte_string(json ? "{}" : "<" + classname + "/>") << ").unwrap();\n";
+        ss_ << "    assert_eq!(got, " << classname << "::default());\n";
+        ss_ << "}\n";
+
+        ss_ << "\n#[test]\n";
+        ss_ << "fn " << format << "_rejects() {\n";
+        ss_ << "    #[rustfmt::skip]\n";
+        ss_ << "    let texts: &[&[u8]] = &[\n";
+        for (const auto& text : json ? rejected_json() : rejected_xml())
+        {
+            ss_ << "        " << byte_string(text) << ",\n";
+        }
+        ss_ << "    ];\n";
+        ss_ << "    for text in texts {\n";
+        ss_ << "        let got = " << classname << "::from_" << format << "(text);\n";
+        ss_ << "        let err = got.expect_err(&String::from_utf8_lossy(text));\n";
+        ss_ << "        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);\n";
+        ss_ << "    }\n";
+        ss_ << "}\n";
+    }
+}
+
+// The BSON tests: the exact bytes (from test_values), a round trip, an empty
+// document reading as the default, uint64_t values above 2^63-1 as
+// Decimal128, and malformed or out-of-range documents failing.
+void RustTestGenerator::do_bson_tests(const std::string& classname)
+{
+    if (false == wants_bson())
+    {
+        return;
+    }
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "\n#[test]\n";
+    ss_ << "fn bson() {\n";
+    ss_ << "    let msg = sample();\n";
+    ss_ << "    let data = msg.to_bson();\n";
+    if (have_expected)
+    {
+        ss_ << "    #[rustfmt::skip]\n";
+        ss_ << "    let want: [u8; " << expected.size() << "] = " << byte_array(expected, "    ") << ";\n";
+        ss_ << "    assert_eq!(data, want);\n";
+    }
+    ss_ << "    let got = " << classname << "::from_bson(&data).unwrap();\n";
+    ss_ << "    assert_eq!(got, msg);\n";
+    ss_ << "    assert_eq!(got.to_bson(), data);\n";
+    ss_ << "}\n";
+
+    ss_ << "\n#[test]\n";
+    ss_ << "fn bson_empty_is_default() {\n";
+    ss_ << "    let got = " << classname << "::from_bson([5, 0, 0, 0, 0]).unwrap();\n";
+    ss_ << "    assert_eq!(got, " << classname << "::default());\n";
+    ss_ << "}\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+        ss_ << "\n#[test]\n";
+        ss_ << "fn bson_large_uint64_" << name << "() {\n";
+        ss_ << "    #[rustfmt::skip]\n";
+        ss_ << "    let big: &[u8] = &" << byte_array(big, "    ") << ";\n";
+        ss_ << "    #[rustfmt::skip]\n";
+        ss_ << "    let edge: &[u8] = &" << byte_array(edge, "    ") << ";\n";
+        ss_ << "    for (value, element) in [(u64::MAX, big), (u64::MAX >> 1, edge)] {\n";
+        ss_ << "        let mut msg = " << classname << "::default();\n";
+        ss_ << "        msg.set_" << name << "(value);\n";
+        ss_ << "        let data = msg.to_bson();\n";
+        ss_ << "        assert!(data.windows(element.len()).any(|w| w == element));\n";
+        ss_ << "        assert_eq!(" << classname << "::from_bson(&data).unwrap(), msg);\n";
+        ss_ << "    }\n";
+        ss_ << "}\n";
+    }
+
+    ss_ << "\n#[test]\n";
+    ss_ << "fn bson_rejects() {\n";
+    ss_ << "    let good = " << classname << "::default().to_bson();\n";
+    ss_ << "    let mut longer = good.clone();\n";
+    ss_ << "    longer.push(0);\n";
+    ss_ << "    let mut miscounted = good.clone();\n";
+    ss_ << "    miscounted[0] += 1;\n";
+    ss_ << "    let mut docs = vec![good[..good.len() - 1].to_vec(), longer, miscounted];\n";
+    for (const auto& doc : rejected_bson())
+    {
+        ss_ << "    #[rustfmt::skip]\n";
+        ss_ << "    docs.push(vec!" << byte_array(doc, "    ") << ");\n";
+    }
+    ss_ << "    for doc in &docs {\n";
+    ss_ << "        let err = " << classname << "::from_bson(doc).expect_err(&format!(\"{doc:02x?}\"));\n";
+    ss_ << "        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);\n";
+    ss_ << "    }\n";
+    ss_ << "}\n";
 }
 
 }

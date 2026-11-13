@@ -24,12 +24,14 @@ namespace skyloupe
 {
     // language may be empty; otherwise the lang file must be for that language.
     // name_space, when not empty, replaces the specification's namespace.
-    bool process_file(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langfile, const std::string& language, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string());
+    // generate_json, generate_xml and generate_bson add the JSON, XML and
+    // BSON forms (docs/text-formats.md) to the generated messages.
+    bool process_file(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langfile, const std::string& language, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string(), bool generate_json = false, bool generate_xml = false, bool generate_bson = false);
 
     // As process_file, with the lang file's contents given as a string.
-    bool process_file_langstr(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langstring, const std::string& language, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string());
+    bool process_file_langstr(const std::string& pathname, results_t& output_str_map, const std::string& outdirname, const std::string& langstring, const std::string& language, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string(), bool generate_json = false, bool generate_xml = false, bool generate_bson = false);
 
-    bool process_string(const std::string& input_msg_str, results_t& output_str_map, const std::string& langstring, const std::string& language, const std::string& outdirname, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string());
+    bool process_string(const std::string& input_msg_str, results_t& output_str_map, const std::string& langstring, const std::string& language, const std::string& outdirname, int& errorcode, bool generate_tests = true, bool write_to_file = false, bool generate_relay = false, const std::string& name_space = std::string(), bool generate_json = false, bool generate_xml = false, bool generate_bson = false);
 
     // Looks up a language name (or alias such as "cpp") for the language its
     // lang file declares and that lang file's name, e.g. "cpp" -> "c++", "lang.cpp.json".

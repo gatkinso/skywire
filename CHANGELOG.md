@@ -7,7 +7,99 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-13
+
 ### Added
+- JSON and XML text forms for generated C++ messages: `--generate_json` adds
+  `to_json` and `from_json`, `--generate_xml` adds `to_xml` and `from_xml`
+  (and `skywire_generate()` takes `JSON` and `XML`). The format, which every
+  language writes byte for byte, is in `docs/text-formats.md`. The
+  runtime is the header-only, standard-library-only `lang/cpp/text.h`,
+  installed with `stream.h`. Generated tests check the exact text, round
+  trips and rejection of bad input; `fuzz_cpp_json` and `fuzz_cpp_xml` fuzz
+  the readers. Without the options the generated code is unchanged. Every
+  other language followed (the entries below); proto3 refuses the options.
+- BSON for generated C++ messages: `--generate_bson` adds `to_bson` and
+  `from_bson` (and `skywire_generate()` takes `BSON`). Elements are in tag
+  order, named after the members; integers are int32 or int64, a `uint64_t`
+  above 2^63-1 a Decimal128, strings a string or (if not UTF-8) binary; the
+  mapping is in `docs/text-formats.md`. The runtime is the header-only,
+  standard-library-only `lang/cpp/bson.h`, installed with `stream.h`.
+  Generated tests check the exact bytes, round trips and rejection of bad
+  documents; `skywire_generated_tests:BsonInterop` checks the bytes against
+  pymongo, and `fuzz_cpp_bson` fuzzes the reader.
+- JSON, XML and BSON for generated C: `X_ToJson`/`X_FromJson`,
+  `X_ToXml`/`X_FromXml` and `X_ToBson`/`X_FromBson`, with the same flags.
+  The writers follow `snprintf` (they return the length needed); the readers
+  return 0 or -1 and leave the message unchanged on failure. The runtime is
+  the header-only C99 `lang/c/ctext.h` and `lang/c/cbson.h`, installed with
+  `cstream.h`; BSON reading needs no allocation. Generated tests check the
+  same expected bytes as C++, `skywire_generated_tests:BsonInteropC` checks
+  the BSON against pymongo, and `fuzz_c_cpp_text` checks that C reads and
+  writes exactly what C++ does.
+- JSON, XML and BSON for generated Python: `to_json`/`from_json`,
+  `to_xml`/`from_xml` and `to_bson`/`from_bson`, with the same flags. wiregen
+  writes the helpers, `skywire_text.py` (standard library only), beside the
+  generated modules; a lang file names it with the new `outputruntimefilename`.
+  `skywire_text_diff:python3` checks that Python reads and writes exactly what
+  C++ does, on the fuzz corpora and 30,000 mutations of them.
+- JSON, XML and BSON for generated Go: `ToJSON`/`FromJSON` and `ToXML`/`FromXML`,
+  which also implement `json.Marshaler`/`Unmarshaler` and
+  `xml.Marshaler`/`Unmarshaler`, and `MarshalBSON`/`UnmarshalBSON` (the
+  MongoDB Go driver's interfaces, with no dependency on it). wiregen writes
+  the helpers, `skywire_text.go` (standard library only), into the message's
+  package. `skywire_text_diff:go` checks Go against C++ as for Python.
+- JSON, XML and BSON for generated C#: `ToJson`/`FromJson`, `ToXml`/`FromXml`
+  and `ToBson`/`FromBson`, the readers returning false, with the message
+  unchanged, on bad input. wiregen writes the helpers, `SkywireText.cs`
+  (C# 7.3, base class library only, internal types in `Skywire.Text`), beside
+  the classes; numbers are read and written with exact arithmetic, so .NET
+  Framework, Unity and .NET agree. `skywire_text_diff:csharp` checks C#
+  against C++ as for Python.
+- JSON, XML and BSON for generated Rust: `to_json`/`from_json`,
+  `to_xml`/`from_xml` and `to_bson`/`from_bson`, the readers returning a new
+  message or an `InvalidData` `std::io::Error`. wiregen writes the helpers,
+  the module `skywire_text.rs` (std only, rustc 1.58 or newer), beside the
+  message modules. `skywire_text_diff:rust` checks Rust against C++ as for
+  Python.
+- JSON, XML and BSON for generated Java: `toJson`/`fromJson`,
+  `toXml`/`fromXml` and `toBson`/`fromBson`, the static readers returning a
+  new message or throwing `IllegalArgumentException`. wiregen writes the
+  helpers, the class `skywire.text.SkywireText` (`SkywireText.java`, Java 8
+  or newer, standard library only), beside the classes.
+  `skywire_text_diff:java` checks Java against C++ as for Python.
+- JSON, XML and BSON for generated Swift: `toJson`/`init(json:)`,
+  `toXml`/`init(xml:)` and `toBson`/`init(bson:)`, the initializers throwing
+  `SkywireText.Invalid`. The helpers are `lang/swift/SkywireText.swift`
+  (Swift 5.9 or newer, standard library only), installed beside
+  `SWStream.swift` and part of the `Skywire` package.
+  `skywire_text_diff:swift` checks Swift against C++ as for Python.
+- JSON, XML and BSON for generated JavaScript: `toJsonText`/`fromJsonText`,
+  `toXml`/`fromXml` and `toBson`/`fromBson`, the static readers returning a
+  new message or throwing `SyntaxError` (the existing `toJSON()` is
+  unchanged). wiregen writes the helpers, the ES2020 module `skywire_text.js`
+  and its declarations `skywire_text.d.ts`, beside the modules; a lang file
+  names the second with the new `outputruntimeheaderfilename`.
+  `skywire_text_diff:javascript` checks JavaScript against C++ as for Python.
+  With it every language has the forms; proto3, which has no code to add
+  them to, refuses the options for good.
+- `skywire_text_diff:c`, and the hard floating-point cases (float midpoints,
+  overflow, subnormals, BSON integers into floats) in the shared corpus, so
+  every language's readers are held to C++'s on them.
+- Every example program also writes and reads the JSON, XML and BSON forms,
+  and its test checks them against `examples/Telemetry.json`, `.xml` and
+  `.bson`, the same in every language.
+- `examples/json`, `examples/xml` and `examples/bson`, in C++, Python, Go
+  and Swift: each reads input written elsewhere (hand-written JSON; XML with
+  a declaration, comments, CDATA and a hexadecimal string; a BSON document
+  as a MongoDB driver returns it, with `_id` and other number types), writes
+  the canonical form, which ctest checks, and shows what is refused; the
+  BSON one also shows a `uint64_t` above 2^63-1 as a Decimal128.
+- Golden files: `skywire_golden:<language>` compares wiregen's output for
+  every language, byte for byte, with `src/test/golden`, and
+  `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML
+  and BSON flags;
+  `skywire_update_golden` rewrites them after a deliberate change.
 - A C# generator: `--language csharp` (or `cs`, `c#`) writes a portable C# 7.3
   class per message, for .NET Framework 4.6.2+, Unity and .NET, with
   generated tests and the `skywire_generated_tests:CSharpRoundTrip` ctest
@@ -172,5 +264,6 @@ The first versioned release, covering the work since the `modernize` merge.
 - The unused `lang_file` field in specifications (#42).
 - The obsolete `c++11` lang file (#48).
 
-[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/gatkinso/skywire/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/gatkinso/skywire/releases/tag/v0.9.0

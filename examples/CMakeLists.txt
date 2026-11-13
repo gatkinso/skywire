@@ -44,6 +44,7 @@ foreach(lang c cpp)
         ARGS    --input_file ${SPECS_DIR}/Position.json
                 --outdir ${dir}
                 --language ${lang}
+                --generate_json --generate_xml --generate_bson
                 --write_to_file)
     add_custom_command(
         OUTPUT  ${telemetry_outputs}
@@ -52,6 +53,7 @@ foreach(lang c cpp)
         ARGS    --input_file ${SPECS_DIR}/Telemetry.json
                 --outdir ${dir}
                 --language ${lang}
+                --generate_json --generate_xml --generate_bson
                 --write_to_file)
 
     # Each language's Position.h is in its own directory, so neither sees the
@@ -62,6 +64,47 @@ foreach(lang c cpp)
         ${PROJECT_SOURCE_DIR}/lang/c
         ${PROJECT_SOURCE_DIR}/lang/cpp
         ${PROTOZERO_INC_DIR})
+endforeach()
+
+# The JSON, XML and BSON examples: each reads its directory's input with the
+# C++ messages above (generated with the three forms), and with Python's,
+# Go's and Swift's, which run_format_example.cmake builds, and must write the
+# directory's expected canonical form.
+foreach(format json xml bson)
+    add_executable(example_${format}_cpp ${format}/main.cpp
+        ${EXAMPLES_OUT}/cpp/Position.h ${EXAMPLES_OUT}/cpp/Telemetry.h)
+    target_include_directories(example_${format}_cpp PRIVATE
+        ${EXAMPLES_OUT}/cpp
+        ${PROJECT_SOURCE_DIR}/lang/c
+        ${PROJECT_SOURCE_DIR}/lang/cpp
+        ${PROTOZERO_INC_DIR})
+    string(TOUPPER ${format} upper)
+    foreach(lang cpp python go swift)
+        set(exe "")
+        if(lang STREQUAL "cpp")
+            set(name C++)
+            set(exe -DEXE=$<TARGET_FILE:example_${format}_cpp>)
+        elseif(lang STREQUAL "python")
+            set(name Python)
+        elseif(lang STREQUAL "go")
+            set(name Go)
+        else()
+            set(name Swift)
+        endif()
+        add_test(NAME skywire_example:${upper}.${name}
+            COMMAND ${CMAKE_COMMAND}
+                    -DFORMAT=${format}
+                    -DLANG=${lang}
+                    -DEXAMPLES_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+                    -DOUTDIR=${EXAMPLES_OUT}/run/${format}_${lang}
+                    -DWIREGEN=$<TARGET_FILE:wiregen>
+                    -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
+                    -DEXE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}
+                    ${exe}
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/run_format_example.cmake)
+        set_tests_properties(skywire_example:${upper}.${name} PROPERTIES
+            SKIP_REGULAR_EXPRESSION "PYTHON3_NOT_FOUND|GO_TOOLCHAIN_NOT_FOUND|SWIFT_TOOLCHAIN_NOT_FOUND")
+    endforeach()
 endforeach()
 
 # The protobuf example: the C++ messages above in a PZ-mode stream, talking to

@@ -21,7 +21,7 @@ if(POLICY CMP0207)
     cmake_policy(SET CMP0207 NEW)
 endif()
 
-project(skywire VERSION 0.9.0)
+project(skywire VERSION 0.10.0)
 
 include(TestBigEndian)
 include (CTest)
@@ -210,10 +210,14 @@ set(SKYWIRE_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/skywire)
 
 install(FILES lang/c/cstream.h
               lang/c/sw_endian.h
+              lang/c/ctext.h
+              lang/c/cbson.h
               lang/cpp/stream.h
               lang/cpp/streamable.h
+              lang/cpp/text.h
+              lang/cpp/bson.h
         DESTINATION ${SKYWIRE_INCLUDE_INSTALL_DIR})
-install(FILES lang/swift/SWStream.swift DESTINATION ${SKYWIRE_RUNTIME_INSTALL_DIR}/swift)
+install(FILES lang/swift/SWStream.swift lang/swift/SkywireText.swift DESTINATION ${SKYWIRE_RUNTIME_INSTALL_DIR}/swift)
 install(FILES schema/skywire-spec.schema.json
               schema/skywire-lang.schema.json
         DESTINATION ${CMAKE_INSTALL_DATADIR}/skywire/schema)

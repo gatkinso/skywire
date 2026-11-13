@@ -52,6 +52,23 @@ public static class Program
         Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
             "device_id {0}, callsign {1}, status {2}, position {3:F4}, {4:F4}, {5:F1} m",
             received.device_id, callsign, received.status, p.latitude, p.longitude, p.altitude_m));
+
+        // The same message as JSON, XML and BSON (docs/text-formats.md): each
+        // is written beside the file, read back and checked. A From method
+        // returns false, leaving the message unchanged, on input it refuses.
+        string stem = path.EndsWith(".bin", StringComparison.Ordinal) ? path.Substring(0, path.Length - 4) : path;
+        File.WriteAllBytes(stem + ".json", Encoding.UTF8.GetBytes(sent.ToJson()));
+        File.WriteAllBytes(stem + ".xml", Encoding.UTF8.GetBytes(sent.ToXml()));
+        File.WriteAllBytes(stem + ".bson", sent.ToBson());
+        Telemetry fromJson = new Telemetry(), fromXml = new Telemetry(), fromBson = new Telemetry();
+        if (!fromJson.FromJson(File.ReadAllBytes(stem + ".json")) || !fromJson.Equals(sent)
+            || !fromXml.FromXml(File.ReadAllBytes(stem + ".xml")) || !fromXml.Equals(sent)
+            || !fromBson.FromBson(File.ReadAllBytes(stem + ".bson")) || !fromBson.Equals(sent))
+        {
+            Console.Error.WriteLine("a JSON, XML or BSON copy is different");
+            return 1;
+        }
+        Console.WriteLine(sent.ToJson());
         return 0;
     }
 }

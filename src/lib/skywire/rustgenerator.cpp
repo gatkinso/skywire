@@ -21,6 +21,7 @@
 #include <set>
 #include <string>
 #include "naming.h"
+#include "runtime_sources.h"
 #include "rustgenerator.h"
 #include "sw_endian.h"
 
@@ -64,6 +65,12 @@ std::string trim_underscores(const std::string& name)
     }
     return name.substr(first, name.find_last_not_of('_') - first + 1);
 }
+
+// What the text forms add to a message, by flag: an accessor may not take
+// one of these names either.
+const std::vector<std::string> json_names = { "to_json", "from_json", "write_json", "read_json" };
+const std::vector<std::string> xml_names = { "to_xml", "from_xml", "write_xml", "read_xml" };
+const std::vector<std::string> bson_names = { "to_bson", "from_bson", "write_bson", "read_bson" };
 
 bool spec_error(int& errorcode, const std::string& what)
 {
@@ -215,6 +222,12 @@ bool RustGenerator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (wants_text())
+    {
+        // The JSON, XML and BSON helpers, a sibling module.
+        results_["runtime"] = runtime_source("rust/skywire_text.rs");
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -239,6 +252,11 @@ bool RustGenerator::check_names(int& errorcode)
         {
             valid = spec_error(errorcode, "type name '" + type + "' is a Rust keyword");
         }
+        if (wants_text() && module_name(type) == lang_spec_.get_value_string("runtime_module_str"))
+        {
+            valid = spec_error(errorcode, "type name '" + type + "' would be the module " + module_name(type) +
+                                              ", which --generate_json, --generate_xml and --generate_bson write");
+        }
     }
 
     std::map<std::string, std::string> taken;  // accessor name -> member that has it
@@ -246,6 +264,16 @@ bool RustGenerator::check_names(int& errorcode)
     {
         taken[name] = "";
     }
+    auto reserve = [&taken](const std::vector<std::string>& names, bool wanted) {
+        for (auto& name : names)
+        {
+            if (wanted)
+                taken[name] = "";
+        }
+    };
+    reserve(json_names, wants_json());
+    reserve(xml_names, wants_xml());
+    reserve(bson_names, wants_bson());
 
     for (auto& member : ordered_members_)
     {
@@ -356,6 +384,10 @@ bool RustGenerator::imp_uses(int& errorcode)
         line = replace_all(line, lang_spec_.get_value_string("module_substr"), module_name(type));
         line = replace_all(line, lang_spec_.get_value_string("type_substr"), type);
         uses.push_back(line);
+    }
+    if (wants_text())
+    {
+        uses.push_back(lang_spec_.get_value_string("runtime_use_str"));
     }
 
     if (uses.empty())
@@ -468,6 +500,10 @@ bool RustGenerator::imp_impl(int& errorcode)
         for (auto& member : ordered_members_)
         {
             items.push_back(accessors(member.second));
+        }
+        for (auto& item : text_items())
+        {
+            items.push_back(item);
         }
 
         std::string body;
@@ -742,6 +778,108 @@ std::string RustGenerator::deserialize_bitfield(uint32_t tag, const member_desc_
     body += "        self." + identifier(std::get<member_name>(member)) + " = " + value + ";\n";
 
     return body;
+}
+
+// One member's lines in a write_ or read_ function. The writer method is
+// i32 for every integer up to 32 bits but uint32_t (a char as signed, a
+// smaller type widened with i32::from), otherwise the member's own type;
+// a read value is cast to the member's type unless it already is one.
+std::string RustGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (!is_native_type(type))
+        kind = "user";
+    else if (reading)
+        kind = is_float_type(type) ? "real" : "int";
+
+    const std::string rtype = is_native_type(type) && !is_string_type(type) ? rust_type(type) : "";
+    std::string method = rtype;
+    std::string value = "self." + lang_spec_.get_value_string("member_substr");
+    if (!rtype.empty() && !is_float_type(type) && rust_bits(type) <= 32 && type != "uint32_t")
+    {
+        method = "i32";
+        if (rtype != "i32")
+            value = "i32::from(" + value + ")";
+    }
+    const std::string cast = rtype == "u64" || rtype == "f64" ? "" : " as " + rtype;
+
+    std::string template_str = lang_spec_.get_value_string(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, lang_spec_.get_value_string("value_substr"), value);
+    template_str = subst(template_str, member);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("ctype_substr"), type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("kind_substr"), method);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("cast_substr"), cast);
+    return replace_all(template_str, lang_spec_.get_value_string("fieldbits_substr"),
+                       std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+}
+
+// to_json/from_json, to_xml/from_xml and to_bson/from_bson
+// (docs/text-formats.md), each only when asked for, with the write_ and
+// read_ functions a containing message calls. Members go in tag order;
+// reading takes them in any order, leaves missing ones zero and ignores
+// unknown ones. A message of one member reads it with an if, as clippy
+// prefers to a match of one arm.
+std::vector<std::string> RustGenerator::text_items()
+{
+    const std::string body_token = lang_spec_.get_value_string("body_token");
+    const std::string structname_substr = lang_spec_.get_value_string("structname_substr");
+    auto value = [&](const std::string& key) {
+        return replace_all(lang_spec_.get_value_string(key), structname_substr, classname_);
+    };
+    auto with_body = [&](const std::string& key, const std::string& body) {
+        return replace_all(value(key), body_token, body);
+    };
+
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    std::vector<std::string> items;
+    for (const auto& format : formats)
+    {
+        std::string writes;
+        std::string arms;
+        for (auto& member : ordered_members_)
+        {
+            writes += text_member("to_" + format, member.second);
+            std::string reads = text_member("from_" + format, member.second);
+            if (ordered_members_.size() == 1)
+            {
+                // Four spaces less deep in an if than in a match arm.
+                std::string shallower;
+                for (size_t at = 0; at < reads.size();)
+                {
+                    size_t end = reads.find('\n', at);
+                    end = end == std::string::npos ? reads.size() : end + 1;
+                    shallower += reads.substr(at + 4, end - at - 4);
+                    at = end;
+                }
+                reads = shallower;
+                arms += subst(with_body("read_if_block", reads), member.second);
+            }
+            else
+            {
+                arms += subst(with_body("read_arm_block", reads), member.second);
+            }
+        }
+        if (ordered_members_.size() != 1)
+        {
+            arms = with_body("read_match_block", arms);
+        }
+        items.push_back(value("to_" + format + "_fcn_str"));
+        items.push_back(value("from_" + format + "_fcn_str"));
+        items.push_back(with_body("write_" + format + "_fcn_block", writes));
+        items.push_back(with_body("read_" + format + "_fcn_block", arms));
+    }
+    return items;
 }
 
 }

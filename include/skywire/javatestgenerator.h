@@ -37,6 +37,11 @@ protected:
     virtual bool do_sets(int& errorcode);
     std::string set_line(const std::string& target, const member_desc_t& member);
     virtual bool do_expected_wire(const std::vector<uint8_t>& wire, int& errorcode);
+    // With --generate_json, --generate_xml or --generate_bson: the exact
+    // text or bytes, round trips and rejected input. Each adds the names of
+    // the tests it writes to tests.
+    void do_text_tests(const std::string& classname, std::vector<std::string>& tests);
+    void do_bson_tests(const std::string& classname, std::vector<std::string>& tests);
 
     // The shared test literal for a native type, cast or suffixed to suit the
     // member's Java type (e.g. "(byte) -50", "3000000000L", "3.5f").

@@ -46,6 +46,34 @@ foreach(lang c cpp)
         VERBATIM)
 endforeach()
 
+# The text and BSON targets use the ring message's C++ with --generate_json,
+# --generate_xml and --generate_bson, written to fuzz/cpp_text.
+set(cpp_text_outputs ${FUZZ_DIR}/cpp_text/RingyMcRingface.h ${FUZZ_DIR}/cpp_text/RingyInner.h)
+file(MAKE_DIRECTORY ${FUZZ_DIR}/cpp_text)
+add_custom_command(
+    OUTPUT  ${cpp_text_outputs}
+    DEPENDS ${RING_SPEC} ${RING_INNER_SPEC} ${PROJECT_SOURCE_DIR}/lang/cpp/lang.cpp.json wiregen
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_INNER_SPEC} --generate_json --generate_xml --generate_bson
+            --outdir ${FUZZ_DIR}/cpp_text --language c++ --write_to_file
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_SPEC} --generate_json --generate_xml --generate_bson
+            --outdir ${FUZZ_DIR}/cpp_text --language c++ --write_to_file
+    VERBATIM)
+add_custom_target(fuzz_ring_cpp_text DEPENDS ${cpp_text_outputs})
+
+set(c_text_outputs ${FUZZ_DIR}/c_text/RingyMcRingface.h ${FUZZ_DIR}/c_text/RingyMcRingface.c
+                   ${FUZZ_DIR}/c_text/RingyInner.h ${FUZZ_DIR}/c_text/RingyInner.c)
+file(MAKE_DIRECTORY ${FUZZ_DIR}/c_text)
+add_custom_command(
+    OUTPUT  ${c_text_outputs}
+    DEPENDS ${RING_SPEC} ${RING_INNER_SPEC} ${PROJECT_SOURCE_DIR}/lang/c/lang.c.json wiregen
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_INNER_SPEC} --generate_json --generate_xml --generate_bson
+            --outdir ${FUZZ_DIR}/c_text --language c --write_to_file
+    COMMAND $<TARGET_FILE:wiregen> --input_file ${RING_SPEC} --generate_json --generate_xml --generate_bson
+            --outdir ${FUZZ_DIR}/c_text --language c --write_to_file
+    VERBATIM)
+add_library(fuzz_ring_c_text STATIC ${FUZZ_DIR}/c_text/RingyMcRingface.c ${FUZZ_DIR}/c_text/RingyInner.c)
+target_include_directories(fuzz_ring_c_text PUBLIC ${FUZZ_DIR} PRIVATE ${PROJECT_SOURCE_DIR}/lang/c)
+
 # The C target builds the generated C as C.
 add_library(fuzz_ring_c STATIC ${FUZZ_DIR}/c/RingyMcRingface.c ${FUZZ_DIR}/c/RingyInner.c)
 target_include_directories(fuzz_ring_c PUBLIC ${FUZZ_DIR} PRIVATE ${PROJECT_SOURCE_DIR}/lang/c)
@@ -117,6 +145,23 @@ add_dependencies(fuzz_c_cpp_diff fuzz_ring_cpp)
 
 skywire_fuzz(fuzz_cpp_pz SEEDS ${PROJECT_SOURCE_DIR}/examples/Telemetry.pb)
 add_dependencies(fuzz_cpp_pz fuzz_ring_cpp)
+
+# The text and BSON targets: the ring message as JSON, XML and BSON, and
+# corpus/<target>.
+skywire_fuzz(fuzz_cpp_json SEEDS ${CORPUS_DIR}/text/ring.json DICT ${CMAKE_CURRENT_SOURCE_DIR}/json.dict)
+add_dependencies(fuzz_cpp_json fuzz_ring_cpp_text)
+
+skywire_fuzz(fuzz_cpp_xml SEEDS ${CORPUS_DIR}/text/ring.xml DICT ${CMAKE_CURRENT_SOURCE_DIR}/xml.dict)
+add_dependencies(fuzz_cpp_xml fuzz_ring_cpp_text)
+
+skywire_fuzz(fuzz_cpp_bson SEEDS ${CORPUS_DIR}/text/ring.bson)
+add_dependencies(fuzz_cpp_bson fuzz_ring_cpp_text)
+
+# The C text and BSON code against the C++, so the same corpora seed it.
+skywire_fuzz(fuzz_c_cpp_text SEEDS ${CORPUS_DIR}/text ${CORPUS_DIR}/fuzz_cpp_json ${CORPUS_DIR}/fuzz_cpp_xml
+             ${CORPUS_DIR}/fuzz_cpp_bson DICT ${CMAKE_CURRENT_SOURCE_DIR}/xml.dict)
+target_link_libraries(fuzz_c_cpp_text fuzz_ring_c_text)
+add_dependencies(fuzz_c_cpp_text fuzz_ring_cpp_text)
 
 # The wiregen targets: every spec and lang file in the tree is a seed.
 file(GLOB spec_seeds

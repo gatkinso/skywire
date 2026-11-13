@@ -10,7 +10,7 @@
 | JavaScript | `javascript`, `js` | none | `node:test` | `examples/javascript` |
 | Python 3 | `python3`, `python` | none | `unittest` | `examples/python` |
 | Rust | `rust` | none | `#[test]` | `examples/rust` |
-| Swift | `swift` | `SWStream.swift`, or the [Swift package](using.md#swift-package) | a test program (`@main`) | `examples/swift` |
+| Swift | `swift` | `SWStream.swift` (and `SkywireText.swift` for JSON, XML and BSON), or the [Swift package](using.md#swift-package) | a test program (`@main`) | `examples/swift` |
 | proto3 | `proto3` | | a text-format message | |
 
 Every language puts the same bytes on the wire for the same specification.
@@ -70,6 +70,12 @@ The specification's `namespace` and `includes` are not used. A nested message
 is imported from its default module name, so generate it without overriding
 its `outputimplfilename`. PZ mode is not available in Rust.
 
+With `--generate_json`, `--generate_xml` or `--generate_bson` the struct also
+has `to_json`/`from_json`, `to_xml`/`from_xml` or `to_bson`/`from_bson`, and
+the module `skywire_text.rs` is written beside it, to be declared with the
+others; no member's accessors can then take those names, and no message can
+be `SkywireText` (see [Rust](text-formats.md#rust) in JSON, XML and BSON).
+
 ## C#
 
 `--language csharp` (or `cs`, `c#`) writes each message as a
@@ -120,6 +126,12 @@ defines (`Size`, `Serialize`, `Deserialize`, `Equals`, `GetHashCode`,
 another member's field or string methods (`a`'s field is `m_a`). The
 specification's `includes` become `using` lines.
 
+With `--generate_json`, `--generate_xml` or `--generate_bson` the class also
+has `ToJson`/`FromJson`, `ToXml`/`FromXml` or `ToBson`/`FromBson`, and
+`SkywireText.cs` is written beside it; a member cannot then take those
+names or the helper types' (see [C#](text-formats.md#c_2) in JSON, XML and
+BSON).
+
 `examples/csharp` is a complete program, and `bench/` times C# like the other
 languages. C# has no relay yet, so it is not in the ring test.
 PZ mode is not available in C#.
@@ -166,7 +178,11 @@ would collide with something the class defines (`size`, `serialize`,
 `toJSON`, `toString`, `constructor`, `SIZE`, `then`, `valueOf`, `__proto__`,
 ...) or with another member's backing property or text getter (`a`'s is
 `_a`, string `s`'s is `sText`), and a class or nested type named after a
-reserved word or a global the module uses (`Object`, `DataView`, ...). The
+reserved word or a global the module uses (`Object`, `DataView`, ...). With
+`--generate_json`, `--generate_xml` or `--generate_bson` the methods those
+add are taken too (`toJsonText`, `readXml`, `fromBson`, ...), and a type
+cannot be named `skywireText` (see [JavaScript](text-formats.md#javascript)
+in JSON, XML and BSON). The
 specification's `namespace` is not used; its `includes` become side-effect
 imports (`import "./polyfill.js";`).
 

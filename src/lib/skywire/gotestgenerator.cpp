@@ -56,6 +56,12 @@ bool GoTestGenerator::do_test_implementation(int& errorcode)
     ss_ << "package " << package << "\n\n";
     ss_ << "import (\n";
     ss_ << "\t\"bytes\"\n";
+    if (wants_bson())
+        ss_ << "\t\"encoding/hex\"\n";
+    if (wants_json())
+        ss_ << "\t\"encoding/json\"\n";
+    if (wants_xml())
+        ss_ << "\t\"encoding/xml\"\n";
     ss_ << "\t\"testing\"\n";
     ss_ << ")\n\n";
 
@@ -118,6 +124,8 @@ bool GoTestGenerator::do_test_implementation(int& errorcode)
     }
 
     do_bitfield_setters(errorcode);
+    do_text_tests(classname);
+    do_bson_tests(classname);
 
     test_string_out.append(ss_.str());
 
@@ -232,6 +240,233 @@ bool GoTestGenerator::encode_member(const member_desc_t& member, std::vector<uin
 {
     return test_values::encode(std::get<member_type>(member), std::get<member_endianness>(member),
                                std::get<member_length>(member), out);
+}
+
+namespace
+{
+
+// text as a Go interpreted string literal; bytes outside printable ASCII as
+// \x escapes, so it holds exactly these bytes.
+std::string go_str(const std::string& text)
+{
+    std::string out = "\"";
+    for (unsigned char c : text)
+    {
+        if (c == '\\' || c == '"')
+        {
+            out += '\\';
+            out += static_cast<char>(c);
+        }
+        else if (c < 0x20 || c > 0x7E)
+        {
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "\\x%02x", c);
+            out += hex;
+        }
+        else
+        {
+            out += static_cast<char>(c);
+        }
+    }
+    return out + "\"";
+}
+
+std::string hex(const std::vector<uint8_t>& bytes)
+{
+    std::string out;
+    for (uint8_t b : bytes)
+    {
+        char h[4];
+        std::snprintf(h, sizeof(h), "%02x", b);
+        out += h;
+    }
+    return out;
+}
+
+}
+
+// The JSON and XML tests: the exact text (the same in every language, from
+// test_values), a round trip, through encoding/json or encoding/xml too, an
+// empty object or element reading as zero, and malformed or out-of-range
+// input failing without changing the message.
+void GoTestGenerator::do_text_tests(const std::string& classname)
+{
+    for (const std::string format : { "json", "xml" })
+    {
+        if ((format == "json" && false == wants_json()) || (format == "xml" && false == wants_xml()))
+        {
+            continue;
+        }
+        const bool json = format == "json";
+        const std::string upper = json ? "JSON" : "XML";
+        const std::string package = json ? "json" : "xml";
+        std::string expected;
+        const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+        ss_ << "\nfunc Test" << classname << upper << "(t *testing.T) {\n";
+        ss_ << "\tmsg := new" << classname << "()\n";
+        ss_ << "\ttext := msg.To" << upper << "()\n";
+        if (have_expected)
+        {
+            ss_ << "\tif want := " << go_str(expected) << "; string(text) != want {\n";
+            ss_ << "\t\tt.Fatalf(\"To" << upper << "\\n got %s\\nwant %s\", text, want)\n";
+            ss_ << "\t}\n";
+        }
+        ss_ << "\tout := &" << classname << "{}\n";
+        ss_ << "\tif err := out.From" << upper << "(text); err != nil {\n";
+        ss_ << "\t\tt.Fatal(err)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tif !msg.Equals(out) || !bytes.Equal(out.To" << upper << "(), text) {\n";
+        ss_ << "\t\tt.Fatalf(\"round trip\\n in %+v\\nout %+v\", *msg, *out)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tviaStd := &" << classname << "{}\n";
+        ss_ << "\tif err := " << package << ".Unmarshal(text, viaStd); err != nil {\n";
+        ss_ << "\t\tt.Fatal(err)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tif !msg.Equals(viaStd) {\n";
+        ss_ << "\t\tt.Fatalf(\"" << package << ".Unmarshal\\n in %+v\\nout %+v\", *msg, *viaStd)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tstd, err := " << package << ".Marshal(msg)\n";
+        ss_ << "\tif err != nil {\n";
+        ss_ << "\t\tt.Fatal(err)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tout = &" << classname << "{}\n";
+        ss_ << "\tif err := out.From" << upper << "(std); err != nil || !msg.Equals(out) {\n";
+        ss_ << "\t\tt.Fatalf(\"" << package << ".Marshal: %s: %v\", std, err)\n";
+        ss_ << "\t}\n";
+        ss_ << "}\n";
+
+        ss_ << "\nfunc Test" << classname << upper << "EmptyIsDefault(t *testing.T) {\n";
+        ss_ << "\tout := new" << classname << "()\n";
+        ss_ << "\tif err := out.From" << upper << "([]byte(" << go_str(json ? "{}" : "<" + classname + "/>") << ")); err != nil {\n";
+        ss_ << "\t\tt.Fatal(err)\n";
+        ss_ << "\t}\n";
+        ss_ << "\tif !out.Equals(&" << classname << "{}) {\n";
+        ss_ << "\t\tt.Fatalf(\"got %+v\", *out)\n";
+        ss_ << "\t}\n";
+        ss_ << "}\n";
+
+        ss_ << "\nfunc Test" << classname << upper << "Rejects(t *testing.T) {\n";
+        ss_ << "\tout := new" << classname << "()\n";
+        ss_ << "\tfor _, text := range []string{\n";
+        for (const auto& text : json ? rejected_json() : rejected_xml())
+        {
+            ss_ << "\t\t" << go_str(text) << ",\n";
+        }
+        ss_ << "\t} {\n";
+        ss_ << "\t\tif err := out.From" << upper << "([]byte(text)); err == nil {\n";
+        ss_ << "\t\t\tt.Errorf(\"accepted %q\", text)\n";
+        ss_ << "\t\t}\n";
+        ss_ << "\t}\n";
+        ss_ << "\tif !out.Equals(new" << classname << "()) {\n";
+        ss_ << "\t\tt.Fatalf(\"changed to %+v\", *out)\n";
+        ss_ << "\t}\n";
+        ss_ << "}\n";
+    }
+}
+
+// The BSON tests: the exact bytes (from test_values), a round trip, an empty
+// document reading as zero, uint64_t values above 2^63-1 as Decimal128, and
+// malformed or out-of-range documents failing without changing the message.
+void GoTestGenerator::do_bson_tests(const std::string& classname)
+{
+    if (false == wants_bson())
+    {
+        return;
+    }
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "\nfunc Test" << classname << "BSON(t *testing.T) {\n";
+    ss_ << "\tmsg := new" << classname << "()\n";
+    ss_ << "\tdata, err := msg.MarshalBSON()\n";
+    ss_ << "\tif err != nil {\n";
+    ss_ << "\t\tt.Fatal(err)\n";
+    ss_ << "\t}\n";
+    if (have_expected)
+    {
+        ss_ << "\tif want := \"" << hex(expected) << "\"; hex.EncodeToString(data) != want {\n";
+        ss_ << "\t\tt.Fatalf(\"MarshalBSON\\n got %x\\nwant %s\", data, want)\n";
+        ss_ << "\t}\n";
+    }
+    ss_ << "\tout := &" << classname << "{}\n";
+    ss_ << "\tif err := out.UnmarshalBSON(data); err != nil {\n";
+    ss_ << "\t\tt.Fatal(err)\n";
+    ss_ << "\t}\n";
+    ss_ << "\tagain, _ := out.MarshalBSON()\n";
+    ss_ << "\tif !msg.Equals(out) || !bytes.Equal(again, data) {\n";
+    ss_ << "\t\tt.Fatalf(\"round trip\\n in %+v\\nout %+v\", *msg, *out)\n";
+    ss_ << "\t}\n";
+    ss_ << "}\n";
+
+    ss_ << "\nfunc Test" << classname << "BSONEmptyIsDefault(t *testing.T) {\n";
+    ss_ << "\tout := new" << classname << "()\n";
+    ss_ << "\tif err := out.UnmarshalBSON([]byte{5, 0, 0, 0, 0}); err != nil {\n";
+    ss_ << "\t\tt.Fatal(err)\n";
+    ss_ << "\t}\n";
+    ss_ << "\tif !out.Equals(&" << classname << "{}) {\n";
+    ss_ << "\t\tt.Fatalf(\"got %+v\", *out)\n";
+    ss_ << "\t}\n";
+    ss_ << "}\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+        ss_ << "\nfunc Test" << classname << "BSONLargeUint64_" << name << "(t *testing.T) {\n";
+        ss_ << "\tfor _, c := range []struct {\n";
+        ss_ << "\t\tvalue   uint64\n";
+        ss_ << "\t\telement string\n";
+        ss_ << "\t}{\n";
+        ss_ << "\t\t{1<<64 - 1, \"" << hex(big) << "\"},\n";
+        ss_ << "\t\t{1<<63 - 1, \"" << hex(edge) << "\"},\n";
+        ss_ << "\t} {\n";
+        ss_ << "\t\tmsg := &" << classname << "{}\n";
+        ss_ << "\t\tmsg.Set_" << name << "(c.value)\n";
+        ss_ << "\t\tdata, _ := msg.MarshalBSON()\n";
+        ss_ << "\t\tif !bytes.Contains([]byte(hex.EncodeToString(data)), []byte(c.element)) {\n";
+        ss_ << "\t\t\tt.Fatalf(\"%x does not hold %s\", data, c.element)\n";
+        ss_ << "\t\t}\n";
+        ss_ << "\t\tout := &" << classname << "{}\n";
+        ss_ << "\t\tif err := out.UnmarshalBSON(data); err != nil || !msg.Equals(out) {\n";
+        ss_ << "\t\t\tt.Fatalf(\"round trip of %d: %v\", c.value, err)\n";
+        ss_ << "\t\t}\n";
+        ss_ << "\t}\n";
+        ss_ << "}\n";
+    }
+
+    ss_ << "\nfunc Test" << classname << "BSONRejects(t *testing.T) {\n";
+    ss_ << "\tgood, _ := new" << classname << "().MarshalBSON()\n";
+    ss_ << "\tout := new" << classname << "()\n";
+    ss_ << "\tdocs := [][]byte{\n";
+    ss_ << "\t\tgood[:len(good)-1],\n";
+    ss_ << "\t\tappend(append([]byte{}, good...), 0),\n";
+    ss_ << "\t\tappend([]byte{good[0] + 1}, good[1:]...),\n";
+    ss_ << "\t}\n";
+    ss_ << "\tfor _, h := range []string{\n";
+    for (const auto& doc : rejected_bson())
+    {
+        ss_ << "\t\t\"" << hex(doc) << "\",\n";
+    }
+    ss_ << "\t} {\n";
+    ss_ << "\t\tdoc, _ := hex.DecodeString(h)\n";
+    ss_ << "\t\tdocs = append(docs, doc)\n";
+    ss_ << "\t}\n";
+    ss_ << "\tfor _, doc := range docs {\n";
+    ss_ << "\t\tif err := out.UnmarshalBSON(doc); err == nil {\n";
+    ss_ << "\t\t\tt.Errorf(\"accepted %x\", doc)\n";
+    ss_ << "\t\t}\n";
+    ss_ << "\t}\n";
+    ss_ << "\tif !out.Equals(new" << classname << "()) {\n";
+    ss_ << "\t\tt.Fatalf(\"changed to %+v\", *out)\n";
+    ss_ << "\t}\n";
+    ss_ << "}\n";
 }
 
 }

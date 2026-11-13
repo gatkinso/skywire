@@ -101,6 +101,9 @@ bool Py3TestGenerator::do_test_implementation(int& errorcode)
         do_expected_wire(wire, errorcode);
     }
 
+    do_text_tests(classname);
+    do_bson_tests(classname);
+
     ss_ << "\n\nif __name__ == \"__main__\":\n";
     ss_ << "    unittest.main()\n";
 
@@ -159,6 +162,163 @@ bool Py3TestGenerator::do_expected_wire(const std::vector<uint8_t>& wire, int& e
     ss_ << "        self.assertEqual(make_message().serialize().hex(), want.hex())\n";
 
     return true;
+}
+
+namespace
+{
+
+// text as a Python string literal.
+std::string py_str(const std::string& text)
+{
+    std::string out = "\"";
+    for (unsigned char c : text)
+    {
+        if (c == '\\' || c == '"')
+        {
+            out += '\\';
+            out += static_cast<char>(c);
+        }
+        else if (c < 0x20 || c > 0x7E)
+        {
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "\\x%02x", c);
+            out += hex;
+        }
+        else
+        {
+            out += static_cast<char>(c);
+        }
+    }
+    return out + "\"";
+}
+
+std::string hex(const std::vector<uint8_t>& bytes)
+{
+    std::string out;
+    for (uint8_t b : bytes)
+    {
+        char h[4];
+        std::snprintf(h, sizeof(h), "%02x", b);
+        out += h;
+    }
+    return out;
+}
+
+}
+
+// The JSON and XML tests: the exact text (the same in every language, from
+// test_values), a round trip (from str and from UTF-8 bytes), an empty
+// object or element reading as zero, and malformed or out-of-range input
+// failing without changing the message.
+void Py3TestGenerator::do_text_tests(const std::string& classname)
+{
+    for (const std::string format : { "json", "xml" })
+    {
+        if ((format == "json" && false == wants_json()) || (format == "xml" && false == wants_xml()))
+        {
+            continue;
+        }
+        const bool json = format == "json";
+        std::string expected;
+        const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+        ss_ << "\n    def test_" << format << "(self):\n";
+        ss_ << "        msg = make_message()\n";
+        ss_ << "        text = msg.to_" << format << "()\n";
+        if (have_expected)
+        {
+            ss_ << "        self.assertEqual(text, " << py_str(expected) << ")\n";
+        }
+        ss_ << "        out = " << classname << "()\n";
+        ss_ << "        self.assertTrue(out.from_" << format << "(text))\n";
+        ss_ << "        self.assertEqual(msg, out)\n";
+        ss_ << "        self.assertEqual(out.to_" << format << "(), text)\n";
+        ss_ << "        out = " << classname << "()\n";
+        ss_ << "        self.assertTrue(out.from_" << format << "(text.encode()))\n";
+        ss_ << "        self.assertEqual(msg, out)\n";
+
+        ss_ << "\n    def test_" << format << "_empty_is_default(self):\n";
+        ss_ << "        out = make_message()\n";
+        ss_ << "        self.assertTrue(out.from_" << format << "(" << py_str(json ? "{}" : "<" + classname + "/>") << "))\n";
+        ss_ << "        self.assertEqual(out, " << classname << "())\n";
+
+        ss_ << "\n    def test_" << format << "_rejects(self):\n";
+        ss_ << "        out = make_message()\n";
+        ss_ << "        for text in (\n";
+        for (const auto& text : json ? rejected_json() : rejected_xml())
+        {
+            ss_ << "            " << py_str(text) << ",\n";
+        }
+        ss_ << "        ):\n";
+        ss_ << "            self.assertFalse(out.from_" << format << "(text), text)\n";
+        ss_ << "        self.assertEqual(out, make_message())\n";
+    }
+}
+
+// The BSON tests: the exact bytes (from test_values), a round trip, an empty
+// document reading as zero, uint64_t values above 2^63-1 as Decimal128, and
+// malformed or out-of-range documents failing without changing the message.
+void Py3TestGenerator::do_bson_tests(const std::string& classname)
+{
+    if (false == wants_bson())
+    {
+        return;
+    }
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "\n    def test_bson(self):\n";
+    ss_ << "        msg = make_message()\n";
+    ss_ << "        data = msg.to_bson()\n";
+    if (have_expected)
+    {
+        ss_ << "        self.assertEqual(data.hex(), \"" << hex(expected) << "\")\n";
+    }
+    ss_ << "        out = " << classname << "()\n";
+    ss_ << "        self.assertTrue(out.from_bson(data))\n";
+    ss_ << "        self.assertEqual(msg, out)\n";
+    ss_ << "        self.assertEqual(out.to_bson(), data)\n";
+
+    ss_ << "\n    def test_bson_empty_is_default(self):\n";
+    ss_ << "        out = make_message()\n";
+    ss_ << "        self.assertTrue(out.from_bson(bytes.fromhex(\"0500000000\")))\n";
+    ss_ << "        self.assertEqual(out, " << classname << "())\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+        ss_ << "\n    def test_bson_large_uint64_" << name << "(self):\n";
+        ss_ << "        for value, element in ((2 ** 64 - 1, \"" << hex(big) << "\"), (2 ** 63 - 1, \"" << hex(edge) << "\")):\n";
+        ss_ << "            msg = " << classname << "()\n";
+        ss_ << "            msg.Set_" << name << "(value)\n";
+        ss_ << "            data = msg.to_bson()\n";
+        ss_ << "            self.assertIn(bytes.fromhex(element), data)\n";
+        ss_ << "            out = " << classname << "()\n";
+        ss_ << "            self.assertTrue(out.from_bson(data))\n";
+        ss_ << "            self.assertEqual(msg, out)\n";
+    }
+
+    ss_ << "\n    def test_bson_rejects(self):\n";
+    ss_ << "        good = make_message().to_bson()\n";
+    ss_ << "        out = make_message()\n";
+    ss_ << "        for data in (\n";
+    ss_ << "            good[:-1],\n";
+    ss_ << "            good + b\"\\x00\",\n";
+    ss_ << "            bytes([(good[0] + 1) % 256]) + good[1:],\n";
+    for (const auto& doc : rejected_bson())
+    {
+        ss_ << "            bytes.fromhex(\"" << hex(doc) << "\"),\n";
+    }
+    ss_ << "        ):\n";
+    ss_ << "            self.assertFalse(out.from_bson(data), data.hex())\n";
+    ss_ << "        self.assertEqual(out, make_message())\n";
 }
 
 }

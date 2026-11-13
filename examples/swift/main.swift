@@ -62,3 +62,32 @@ let p = received.Get_position()
 print("wrote and read back \(back.count) bytes (size() = \(received.size()))")
 print("device_id \(received.Get_device_id()), callsign \(callsign), status \(received.Get_status()), "
     + "position \(p.Get_latitude()), \(p.Get_longitude()), \(p.Get_altitude_m()) m")
+
+// The same message as JSON, XML and BSON (docs/text-formats.md): each is
+// written beside the file, read back and checked. An init throws
+// SkywireText.Invalid on input it refuses.
+let base = path.hasSuffix(".bin") ? String(path.dropLast(4)) : path
+let forms: [(String, [UInt8])] = [
+    (".json", Array(sent.toJson().utf8)), (".xml", Array(sent.toXml().utf8)), (".bson", sent.toBson()),
+]
+for (ext, data) in forms {
+    guard FileManager.default.createFile(atPath: base + ext, contents: Data(data)) else {
+        fail("cannot write \(base + ext)")
+    }
+}
+func readBack(_ ext: String) -> [UInt8] {
+    guard let data = FileManager.default.contents(atPath: base + ext) else {
+        fail("cannot open \(base + ext)")
+    }
+    return [UInt8](data)
+}
+do {
+    let copies = [try Telemetry(json: readBack(".json")), try Telemetry(xml: readBack(".xml")),
+                  try Telemetry(bson: readBack(".bson"))]
+    guard copies.allSatisfy({ $0.Equals(sent) }) else {
+        fail("a JSON, XML or BSON copy is different")
+    }
+} catch {
+    fail("reading a JSON, XML or BSON copy failed: \(error)")
+}
+print(sent.toJson())

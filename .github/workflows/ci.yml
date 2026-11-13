@@ -16,13 +16,20 @@ name: CI
 # Release workflow calls it (workflow_call) for each v* tag and holds back
 # publishing unless it passes. Pull requests and pushes run nothing; run it by
 # hand (Actions > CI > Run workflow, or gh workflow run ci.yml --ref <branch>)
-# to test a branch. Check formatting locally: git clang-format origin/master.
+# to test a branch; add -f platforms=linux to run only the Linux jobs and the
+# docs build. Check formatting locally: git clang-format origin/master.
 #
 # No concurrency group: a called workflow's would be the caller's, and wait on
 # it forever.
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: "Platforms to run (a release always runs all)"
+        type: choice
+        options: [all, linux]
+        default: all
 
 permissions:
   contents: read
@@ -50,7 +57,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends $APT_PACKAGES python3-jsonschema
+          sudo apt-get install -y --no-install-recommends $APT_PACKAGES python3-jsonschema python3-pymongo
+          # TextUnitTest.NumbersIgnoreTheLocale needs a locale whose decimal
+          # separator is a comma.
+          sudo locale-gen de_DE.UTF-8
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -170,6 +180,7 @@ jobs:
 
   macos:
     name: macOS (Apple Clang)
+    if: inputs.platforms != 'linux'
     runs-on: macos-15
     timeout-minutes: 30
     steps:
@@ -203,10 +214,11 @@ jobs:
         run: ctest --test-dir build -j4 --output-on-failure --output-junit ctest.xml
       - name: No test skipped
         if: success() || failure()
-        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
+        run: python3 scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInteropC?$'
 
   windows:
     name: Windows (MSVC, VS 2026)
+    if: inputs.platforms != 'linux'
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
     steps:
@@ -259,7 +271,7 @@ jobs:
 
       - name: No test skipped
         if: success() || failure()
-        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:'
+        run: python scripts/check_ctest_skips.py build/ctest.xml --allow '^skywire_schema:|^skywire_generated_tests:BsonInteropC?$'
 
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.vcpkg.outputs.cache-hit != 'true'

@@ -36,6 +36,8 @@ protected:
     virtual bool do_test_implementation(int& errorcode);
     virtual bool do_sets(int& errorcode);
     std::string set_line(const std::string& target, const member_desc_t& member);
+    void do_text_tests(const std::string& classname);
+    void do_bson_tests(const std::string& classname);
     virtual bool do_expected_wire(const std::vector<uint8_t>& wire, int& errorcode);
 };
 

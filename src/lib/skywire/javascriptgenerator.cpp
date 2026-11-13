@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 #include "javascriptgenerator.h"
+#include "runtime_sources.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -178,6 +179,13 @@ bool JavaScriptGenerator::generate(int& errorcode)
         return false;
     }
 
+    if (wants_text())
+    {
+        // The JSON, XML and BSON helpers, a module beside this one.
+        results_["runtime"] = runtime_source("javascript/skywire_text.js");
+        results_["runtimeheader"] = runtime_source("javascript/skywire_text.d.ts");
+    }
+
     ss_.str("");
     if (false == do_implementation(errorcode))
     {
@@ -213,12 +221,29 @@ bool JavaScriptGenerator::check_names(int& errorcode)
         {
             valid = spec_error(errorcode, "type name '" + type + "' is reserved in a JavaScript module");
         }
+        if (wants_text() && type == value("runtime_binding_str"))
+        {
+            valid = spec_error(errorcode, "type name '" + type + "' is the binding the JSON, XML and BSON helpers are imported as");
+        }
     }
 
     std::map<std::string, std::string> taken; // property name -> member that has it
     for (auto& name : generated_names)
     {
         taken[name] = "";
+    }
+    // What --generate_json, --generate_xml and --generate_bson add.
+    const std::map<std::string, std::vector<std::string>> text_names = {
+        { "json", { "toJsonText", "fromJsonText", "writeJson", "readJson" } },
+        { "xml", { "toXml", "fromXml", "writeXml", "readXml" } },
+        { "bson", { "toBson", "fromBson", "writeBson", "readBson" } },
+    };
+    for (auto& format : text_formats())
+    {
+        for (auto& name : text_names.at(format))
+        {
+            taken[name] = "";
+        }
     }
 
     for (auto& member : ordered_members_)
@@ -311,6 +336,10 @@ std::string JavaScriptGenerator::imp_imports()
         std::string line = replace_all(value("import_class_str"), value("type_substr"), type);
         out += replace_all(line, value("module_substr"), module_path(type));
     }
+    if (wants_text())
+    {
+        out += replace_all(value("runtime_import_str"), value("module_substr"), value("outputruntimefilename"));
+    }
 
     return out;
 }
@@ -373,6 +402,7 @@ std::string JavaScriptGenerator::imp_class()
     body += separator + block("equals_fcn_block", imp_equals());
     body += separator + block("tojson_fcn_block", imp_tojson());
     body += separator + block("tostring_fcn_block", imp_tostring());
+    body += imp_text_functions();
 
     return block("class_block", body);
 }
@@ -763,6 +793,10 @@ bool JavaScriptGenerator::do_declarations(int& errorcode)
         std::string line = replace_all(value("import_type_str"), value("type_substr"), type);
         imports += replace_all(line, value("module_substr"), module_path(type));
     }
+    if (wants_text())
+    {
+        imports += replace_all(value("runtime_import_type_str"), value("module_substr"), value("outputruntimefilename"));
+    }
     if (false == imports.empty())
     {
         ss_ << separator << imports;
@@ -770,6 +804,7 @@ bool JavaScriptGenerator::do_declarations(int& errorcode)
 
     std::string body = dts_accessors();
     body += replace_all(block("dts_methods_str", ""), value("json_substr"), dts_json());
+    body += dts_text_methods();
     ss_ << separator << block("dts_class_block", body);
 
     results_["header"] = ss_.str();
@@ -833,6 +868,84 @@ std::string JavaScriptGenerator::dts_json()
         body += subst(replace_all(value("dts_json_mem_str"), value("type_substr"), json_type), member.second);
     }
 
+    return body;
+}
+
+std::vector<std::string> JavaScriptGenerator::text_formats() const
+{
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+    return formats;
+}
+
+// One member's lines in a write or read method. The writer method is u32,
+// i64, u64, f32 or f64 for those types and i32 for every other integer (a
+// char as signed). A value read goes through the member's setter, which
+// converts it as C and C++ do; it is already in range.
+std::string JavaScriptGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    static const std::map<std::string, std::string> kinds = {
+        { "uint32_t", "u32" }, { "int64_t", "i64" }, { "uint64_t", "u64" }, { "float", "f32" }, { "double", "f64" },
+    };
+
+    const std::string& type = std::get<member_type>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (is_user_type(type))
+        kind = "user";
+    else if (reading)
+        kind = type == "float" || type == "double" ? "real" : "int";
+
+    auto it = kinds.find(type);
+    std::string template_str = value(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, value("ctype_substr"), type);
+    template_str = replace_all(template_str, value("kind_substr"), it == kinds.end() ? "i32" : it->second);
+    template_str = replace_all(template_str, value("fieldbits_substr"),
+                               std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+    return subst(template_str, member);
+}
+
+// toJsonText/fromJsonText, toXml/fromXml and toBson/fromBson
+// (docs/text-formats.md), each only when asked for, with the write and read
+// methods a containing message calls. Members go in tag order; reading takes
+// them in any order, leaves missing ones as they are and ignores unknown
+// ones.
+std::string JavaScriptGenerator::imp_text_functions()
+{
+    const std::string separator = value("block_separator_str");
+
+    std::string body;
+    for (const auto& format : text_formats())
+    {
+        std::string writes;
+        std::string cases;
+        for (auto& member : ordered_members_)
+        {
+            writes += text_member("to_" + format, member.second);
+            cases += subst(block("read_case_block", text_member("from_" + format, member.second)), member.second);
+        }
+        body += separator + block("to_" + format + "_fcn_str", "");
+        body += separator + block("from_" + format + "_fcn_str", "");
+        body += separator + block("write_" + format + "_fcn_block", writes);
+        body += separator + block("read_" + format + "_fcn_block", block("read_switch_block", cases));
+    }
+    return body;
+}
+
+std::string JavaScriptGenerator::dts_text_methods()
+{
+    std::string body;
+    for (const auto& format : text_formats())
+    {
+        body += block("dts_" + format + "_methods_str", "");
+    }
     return body;
 }
 

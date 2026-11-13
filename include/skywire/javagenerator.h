@@ -62,6 +62,12 @@ protected:
     std::string java_endian(unsigned int endian_flag);
     bool is_widened(const std::string& type);
 
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
+    // The methods --generate_json, --generate_xml and --generate_bson add to
+    // the class, and one member's lines in them.
+    std::string imp_text_functions();
+    std::string text_member(const std::string& function, const member_desc_t& member);
+
 private:
     std::string classname_;
 

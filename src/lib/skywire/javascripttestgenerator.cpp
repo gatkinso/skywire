@@ -300,6 +300,15 @@ bool JavaScriptTestGenerator::do_test_implementation(int& errorcode)
         break;
     }
 
+    if (wants_json() || wants_xml() || wants_bson())
+    {
+        body << "\nfunction fromHex(text) {\n";
+        body << "  return Uint8Array.from(text.match(/[0-9a-f]{2}/g) ?? [], (h) => parseInt(h, 16));\n";
+        body << "}\n";
+    }
+    body << text_tests(classname);
+    body << bson_tests(classname);
+
     ss_ << body.str();
     test_string.append(ss_.str());
 
@@ -352,6 +361,203 @@ std::string JavaScriptTestGenerator::expected_wire_test(const std::string& class
     out += "  assert.equal(hex(makeMessage().serialize()), want);\n";
     out += "});\n";
 
+    return out;
+}
+
+namespace
+{
+
+// bytes as a JavaScript string of hexadecimal, 32 bytes to a line at the
+// given indent, joined with +.
+std::string hex_string(const std::string& bytes, const std::string& indent)
+{
+    if (bytes.empty())
+    {
+        return "\"\"";
+    }
+    std::string out;
+    for (size_t i = 0; i < bytes.size(); i += 32)
+    {
+        out += (i ? "\n" + indent + "+ \"" : "\"");
+        for (size_t j = i; j < std::min(i + 32, bytes.size()); j++)
+        {
+            char hex[4];
+            std::snprintf(hex, sizeof(hex), "%02x", static_cast<unsigned char>(bytes[j]));
+            out += hex;
+        }
+        out += "\"";
+    }
+    return out;
+}
+
+std::string hex_string(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    return hex_string(std::string(bytes.begin(), bytes.end()), indent);
+}
+
+// ASCII text as a JavaScript string literal, 64 characters to a line at the
+// given indent, joined with +.
+std::string js_string(const std::string& text, const std::string& indent)
+{
+    std::string out = "\"";
+    size_t piece = 0;
+    for (unsigned char c : text)
+    {
+        std::string one;
+        if (c == '"' || c == '\\')
+            one = std::string("\\") + static_cast<char>(c);
+        else if (c >= 0x20 && c <= 0x7E)
+            one = std::string(1, static_cast<char>(c));
+        else
+        {
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "\\x%02x", c);
+            one = hex;
+        }
+        if (piece + one.size() > 64)
+        {
+            out += "\"\n" + indent + "+ \"";
+            piece = 0;
+        }
+        out += one;
+        piece += one.size();
+    }
+    return out + "\"";
+}
+
+}
+
+// The JSON and XML tests: the exact text (the same in every language, from
+// test_values), a round trip, from bytes too, an empty object or element
+// reading as the default, and malformed or out-of-range input failing.
+std::string JavaScriptTestGenerator::text_tests(const std::string& classname)
+{
+    std::string out;
+    for (const std::string format : { "json", "xml" })
+    {
+        if ((format == "json" && false == wants_json()) || (format == "xml" && false == wants_xml()))
+        {
+            continue;
+        }
+        const bool json = format == "json";
+        const std::string name = json ? "Json" : "Xml";
+        const std::string to = json ? "toJsonText" : "toXml";
+        const std::string from = json ? "fromJsonText" : "fromXml";
+        const std::string label = json ? "JSON" : "XML";
+        std::string expected;
+        const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+        out += "\ntest(\"" + classname + " " + name + "\", () => {\n";
+        out += "  const input = makeMessage();\n";
+        out += "  const text = input." + to + "();\n";
+        if (have_expected)
+        {
+            out += "  assert.equal(text, " + js_string(expected, "    ") + ");\n";
+        }
+        out += "  const got = " + classname + "." + from + "(text);\n";
+        out += "  assert.ok(got.equals(input), `" + label + " round-trip value mismatch\\n in ${input}\\nout ${got}`);\n";
+        out += "  assert.equal(got." + to + "(), text);\n";
+        out += "  assert.ok(" + classname + "." + from + "(new TextEncoder().encode(text)).equals(input), \"" + label +
+               " from bytes differs\");\n";
+        out += "});\n";
+
+        out += "\ntest(\"" + classname + " " + name + "EmptyIsDefault\", () => {\n";
+        out += "  assert.ok(" + classname + "." + from + "(\"" + (json ? "{}" : "<" + classname + "/>") + "\").equals(new " +
+               classname + "()));\n";
+        out += "});\n";
+
+        // Every reject case as bytes, and a lone surrogate, which only a
+        // string can hold, as a string: in a member the message does not
+        // have, so it is the only thing wrong.
+        out += "\ntest(\"" + classname + " " + name + "Rejects\", () => {\n";
+        out += "  const texts = [\n";
+        for (const auto& text : json ? rejected_json() : rejected_xml())
+        {
+            out += "    " + hex_string(text, "      ") + ",\n";
+        }
+        out += "  ];\n";
+        out += "  for (const text of texts) {\n";
+        out += "    assert.throws(() => " + classname + "." + from + "(fromHex(text)), SyntaxError, text);\n";
+        out += "  }\n";
+        out += "  assert.throws(() => " + classname + "." + from + "(" +
+               (json ? std::string("'{\"unknown\":\"\\ud800\"}'") : "\"<" + classname + "><unknown>\\ud800</unknown></" + classname + ">\"") +
+               "), SyntaxError);\n";
+        out += "});\n";
+    }
+    return out;
+}
+
+// The BSON tests: the exact bytes (from test_values), a round trip, an empty
+// document reading as the default, uint64_t values above 2^63-1 as
+// Decimal128, and malformed or out-of-range documents failing.
+std::string JavaScriptTestGenerator::bson_tests(const std::string& classname)
+{
+    if (false == wants_bson())
+    {
+        return "";
+    }
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    std::string out;
+    out += "\ntest(\"" + classname + " Bson\", () => {\n";
+    out += "  const input = makeMessage();\n";
+    out += "  const data = input.toBson();\n";
+    out += "  assert.ok(data instanceof Uint8Array, \"toBson() returns a Uint8Array\");\n";
+    if (have_expected)
+    {
+        out += "  assert.equal(hex(data), hex(fromHex(" + hex_string(expected, "    ") + ")));\n";
+    }
+    out += "  const got = " + classname + ".fromBson(data);\n";
+    out += "  assert.ok(got.equals(input), `BSON round-trip value mismatch\\n in ${input}\\nout ${got}`);\n";
+    out += "  assert.equal(hex(got.toBson()), hex(data));\n";
+    out += "  assert.ok(" + classname + ".fromBson(data.buffer).equals(input), \"BSON from an ArrayBuffer differs\");\n";
+    out += "});\n";
+
+    out += "\ntest(\"" + classname + " BsonEmptyIsDefault\", () => {\n";
+    out += "  assert.ok(" + classname + ".fromBson(Uint8Array.of(5, 0, 0, 0, 0)).equals(new " + classname + "()));\n";
+    out += "});\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+        out += "\ntest(\"" + classname + " BsonLargeUint64_" + name + "\", () => {\n";
+        out += "  const cases = [\n";
+        out += "    [2n ** 64n - 1n, " + hex_string(big, "      ") + "],\n";
+        out += "    [2n ** 63n - 1n, " + hex_string(edge, "      ") + "],\n";
+        out += "  ];\n";
+        out += "  for (const [value, element] of cases) {\n";
+        out += "    const msg = new " + classname + "();\n";
+        out += "    msg." + name + " = value;\n";
+        out += "    const data = msg.toBson();\n";
+        out += "    assert.ok(hex(data).includes(hex(fromHex(element))), `" + name + " = ${value} is not ${element}`);\n";
+        out += "    assert.ok(" + classname + ".fromBson(data).equals(msg), `" + name + " = ${value} did not read back`);\n";
+        out += "  }\n";
+        out += "});\n";
+    }
+
+    out += "\ntest(\"" + classname + " BsonRejects\", () => {\n";
+    out += "  const good = new " + classname + "().toBson();\n";
+    out += "  const longer = new Uint8Array(good.length + 1);\n";
+    out += "  longer.set(good);\n";
+    out += "  const miscounted = good.slice();\n";
+    out += "  miscounted[0]++;\n";
+    out += "  const docs = [good.slice(0, good.length - 1), longer, miscounted];\n";
+    for (const auto& doc : rejected_bson())
+    {
+        out += "  docs.push(fromHex(" + hex_string(doc, "    ") + "));\n";
+    }
+    out += "  for (const doc of docs) {\n";
+    out += "    assert.throws(() => " + classname + ".fromBson(doc), SyntaxError, hex(doc));\n";
+    out += "  }\n";
+    out += "});\n";
     return out;
 }
 

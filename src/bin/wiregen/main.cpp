@@ -46,6 +46,9 @@ std::string name_space;
 bool silent = false;
 bool generate_tests = false;
 bool generate_relay = false;
+bool generate_json = false;
+bool generate_xml = false;
+bool generate_bson = false;
 bool file_mode = false;
 bool write_to_file = false;
 bool show_banner = false;
@@ -140,6 +143,9 @@ void print_help()
               << "  --namespace name          namespace (package) to generate into, replacing the spec's" << std::endl
               << "  --generate_tests          also generate unit tests" << std::endl
               << "  --generate_relay          also generate a relay program (cross-language test)" << std::endl
+              << "  --generate_json           also generate to_json/from_json (C++ only for now)" << std::endl
+              << "  --generate_xml            also generate to_xml/from_xml (C++ only for now)" << std::endl
+              << "  --generate_bson           also generate to_bson/from_bson (C++ only for now)" << std::endl
               << "  --write_to_file           write the generated files (otherwise print them)" << std::endl
               << "  --outdir directoryname    directory to write the files to (default: .)" << std::endl
               << "  --silent                  do not print the success or failure summary" << std::endl
@@ -280,6 +286,30 @@ void cli_callback(const std::string& flag, const std::string& value, void* param
         }
     }
 
+    if (flag.compare("--generate_json") == 0)
+    {
+        if (false != value.empty())
+        {
+            generate_json = true;
+        }
+    }
+
+    if (flag.compare("--generate_xml") == 0)
+    {
+        if (false != value.empty())
+        {
+            generate_xml = true;
+        }
+    }
+
+    if (flag.compare("--generate_bson") == 0)
+    {
+        if (false != value.empty())
+        {
+            generate_bson = true;
+        }
+    }
+
     if (flag.compare("--write_to_file") == 0)
     {
         if (false != value.empty())
@@ -294,7 +324,7 @@ const char* const value_options[] = {
 };
 
 const char* const flag_options[] = {
-    "--help", "--version", "--banner", "--generate_tests", "--generate_relay", "--silent", "--write_to_file",
+    "--help", "--version", "--banner", "--generate_tests", "--generate_relay", "--generate_json", "--generate_xml", "--generate_bson", "--silent", "--write_to_file",
 };
 
 bool process_cmd_line(int argc, const char* argv[])
@@ -503,11 +533,11 @@ int main(int argc, const char* argv[])
 
     if (true == file_mode && false == langspec.empty())
     {
-        success = process_file_langstr(input_filename, output_str_map, output_directory, langspec, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space);
+        success = process_file_langstr(input_filename, output_str_map, output_directory, langspec, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space, generate_json, generate_xml, generate_bson);
     }
     else if (true == file_mode)
     {
-        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space);
+        success = process_file(input_filename, output_str_map, output_directory, lang_file, lang_name, errorcode, generate_tests, write_to_file, generate_relay, name_space, generate_json, generate_xml, generate_bson);
     } 
     else
     {
@@ -517,7 +547,7 @@ int main(int argc, const char* argv[])
             return SW_FILEREADERROR;
         }
 
-        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file, generate_relay, name_space);
+        success = process_string(input_str, output_str_map, langspec, lang_name, output_directory, errorcode, generate_tests, write_to_file, generate_relay, name_space, generate_json, generate_xml, generate_bson);
     }
 
     if (false == write_to_file)

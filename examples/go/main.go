@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func fail(format string, args ...any) {
@@ -62,4 +63,36 @@ func main() {
 	fmt.Printf("device_id %d, callsign %s, status %d, position %.4f, %.4f, %.1f m\n",
 		received.Get_device_id(), bytes.TrimRight(callsign[:], "\x00"), received.Get_status(),
 		p.Get_latitude(), p.Get_longitude(), p.Get_altitude_m())
+
+	// The same message as JSON, XML and BSON (docs/text-formats.md): each is
+	// written beside the file, read back and checked. A From method returns
+	// an error, leaving the message unchanged, on input it refuses.
+	base := strings.TrimSuffix(path, ".bin")
+	bson, err := sent.MarshalBSON()
+	if err != nil {
+		fail("MarshalBSON failed: %v", err)
+	}
+	forms := []struct {
+		ext  string
+		data []byte
+		read func(*Telemetry, []byte) error
+	}{
+		{".json", sent.ToJSON(), (*Telemetry).FromJSON},
+		{".xml", sent.ToXML(), (*Telemetry).FromXML},
+		{".bson", bson, (*Telemetry).UnmarshalBSON},
+	}
+	for _, form := range forms {
+		if err := os.WriteFile(base+form.ext, form.data, 0o644); err != nil {
+			fail("cannot write %s: %v", base+form.ext, err)
+		}
+		data, err := os.ReadFile(base + form.ext)
+		if err != nil {
+			fail("cannot open %s: %v", base+form.ext, err)
+		}
+		var copied Telemetry
+		if err := form.read(&copied, data); err != nil || !copied.Equals(&sent) {
+			fail("the %s copy is different: %v", form.ext, err)
+		}
+	}
+	fmt.Printf("%s\n", sent.ToJSON())
 }

@@ -71,3 +71,17 @@
 "\"python3\""
 "\"rust\""
 "\"swift\""
+
+# The text forms (fuzz_cpp_json)
+"NaN"
+"Infinity"
+"-Infinity"
+"-0"
+"1e+21"
+"\\u00ff"
+"18446744073709551615"
+"\"inner\""
+"\"str_padded\""
+"\"u64_be\""
+"\"f32_be\""
+"\"bf_three\""

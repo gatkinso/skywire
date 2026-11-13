@@ -34,6 +34,10 @@ protected:
     virtual bool do_test_implementation(int& errorcode);
     virtual bool do_sets(int& errorcode);
     std::string set_line(const std::string& target, const member_desc_t& member);
+    // With --generate_json, --generate_xml or --generate_bson: the exact
+    // text or bytes, round trips and rejected input, checked on input.
+    void do_text_tests(const std::string& classname);
+    void do_bson_tests(const std::string& classname);
 };
 
 }

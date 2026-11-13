@@ -31,7 +31,8 @@ string(REPLACE "," ";" SPECS "${SPECS}")
 foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
-                --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --lang_file ${LANGFILE} --generate_tests
+                --generate_json --generate_xml --generate_bson --write_to_file
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
@@ -39,7 +40,7 @@ foreach(spec ${SPECS})
 endforeach()
 
 set(modules "")
-set(sources "")
+set(sources skywire_text.py)
 foreach(spec ${SPECS})
     get_filename_component(classname ${spec} NAME_WE)
     list(APPEND modules ${classname}Test)

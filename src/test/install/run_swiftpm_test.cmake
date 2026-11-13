@@ -47,6 +47,7 @@ file(COPY ${SOURCE_DIR}/examples/swift/main.swift DESTINATION ${sources})
 foreach(spec Position Telemetry)
     run_checked("wiregen ${spec}"
         COMMAND ${WIREGEN} --language swift --input_file ${SOURCE_DIR}/examples/specs/${spec}.json
+                --generate_json --generate_xml --generate_bson
                 --write_to_file --silent --outdir ${sources})
 endforeach()
 

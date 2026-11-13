@@ -14,10 +14,12 @@
 //
 
 #include <cctype>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
 #include "javagenerator.h"
+#include "runtime_sources.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -126,6 +128,29 @@ bool JavaGenerator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (wants_text())
+    {
+        // The generated class refers to the runtime class by its simple
+        // name, which a class or member of that name would hide.
+        const std::string runtime_class = lang_spec_.get_value_string("runtime_class_str");
+        bool valid = classname_ != runtime_class;
+        for (auto& member : ordered_members_)
+        {
+            valid = valid && std::get<member_name>(member.second) != runtime_class;
+        }
+        if (false == valid)
+        {
+            errorcode |= SW_SPEC_INVALID;
+            std::cerr << "Invalid specification for Java: with --generate_json, --generate_xml or --generate_bson, "
+                         "neither the class nor a member can be named "
+                      << runtime_class << std::endl;
+            return false;
+        }
+
+        // The JSON, XML and BSON helpers, the class skywire.text.SkywireText.
+        results_["runtime"] = runtime_source("java/SkywireText.java");
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -181,6 +206,15 @@ bool JavaGenerator::imp_imports(int& errorcode)
         }
     }
 
+    if (wants_text())
+    {
+        imports.insert(lang_spec_.get_value_string("runtime_import_str"));
+    }
+    if (wants_bson())
+    {
+        imports.insert("java.util.List");
+    }
+
     const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
     for (auto& item : values)
     {
@@ -217,6 +251,7 @@ bool JavaGenerator::imp_class(int& errorcode)
     body += separator + block("hashcode_fcn_block", imp_hashcode());
     body += separator + block("tostring_fcn_block", imp_tostring());
     body += imp_get_set_functions();
+    body += imp_text_functions();
 
     ss_ << block("class_block", body);
 
@@ -581,6 +616,81 @@ std::string JavaGenerator::set_bitfield(const member_desc_t& member)
            "    public void Set_" + std::get<member_name>(member) + "(" + jtype + " newval) {\n"
            "        this." + std::get<member_name>(member) + " = " + value + ";\n"
            "    }\n";
+}
+
+// One member's lines in a write or read method. The writer method is u32,
+// i64, u64, f32 or f64 for those types and i32 for every other integer (a
+// char as signed); a read value is cast to the member's Java type unless it
+// is already a long or double.
+std::string JavaGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    static const std::map<std::string, std::string> kinds = {
+        { "uint32_t", "u32" }, { "int64_t", "i64" }, { "uint64_t", "u64" }, { "float", "f32" }, { "double", "f64" },
+    };
+
+    const std::string& type = std::get<member_type>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (!is_native_type(type))
+        kind = "user";
+    else if (reading)
+        kind = type == "float" || type == "double" ? "real" : "int";
+
+    std::string method = "i32";
+    std::string cast;
+    if (is_native_type(type) && !is_string_type(type))
+    {
+        auto it = kinds.find(type);
+        if (it != kinds.end())
+            method = it->second;
+        const std::string jtype = java_type(type);
+        if (jtype != "long" && jtype != "double")
+            cast = "(" + jtype + ") ";
+    }
+
+    std::string template_str = lang_spec_.get_value_string(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, lang_spec_.get_value_string("ctype_substr"), type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("kind_substr"), method);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("read_cast_substr"), cast);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("fieldbits_substr"),
+                               std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+    return subst(template_str, member);
+}
+
+// toJson/fromJson, toXml/fromXml and toBson/fromBson (docs/text-formats.md),
+// each only when asked for, with the write and read methods a containing
+// message calls. Members go in tag order; reading takes them in any order,
+// leaves missing ones as they are and ignores unknown ones.
+std::string JavaGenerator::imp_text_functions()
+{
+    const std::string separator = lang_spec_.get_value_string("block_separator_str");
+
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    std::string body;
+    for (const auto& format : formats)
+    {
+        std::string writes;
+        std::string cases;
+        for (auto& member : ordered_members_)
+        {
+            writes += text_member("to_" + format, member.second);
+            cases += subst(block("read_case_block", text_member("from_" + format, member.second)), member.second);
+        }
+        body += separator + block("to_" + format + "_fcn_str", "");
+        body += separator + block("from_" + format + "_fcn_str", "");
+        body += separator + block("write_" + format + "_fcn_block", writes);
+        body += separator + block("read_" + format + "_fcn_block", block("read_switch_block", cases));
+    }
+    return body;
 }
 
 }

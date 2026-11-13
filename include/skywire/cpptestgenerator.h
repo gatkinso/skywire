@@ -46,6 +46,11 @@ protected:
     virtual bool test_pz_empty(int& errorcode);
     virtual bool test_pz_short_buffer(int& errorcode);
 
+    // The JSON or XML tests (format "json" or "xml"), when asked for.
+    virtual bool test_text(const std::string& format, int& errorcode);
+    // The BSON tests, when asked for.
+    virtual bool test_bson(int& errorcode);
+
     virtual bool do_sets(int& errorcode);
 
 };

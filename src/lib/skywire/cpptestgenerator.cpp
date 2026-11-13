@@ -52,6 +52,12 @@ bool CppTestGenerator::do_test_implementation(int& errorcode)
     test_pz_wire(errorcode);
     test_pz_empty(errorcode);
     test_pz_short_buffer(errorcode);
+    if (wants_json())
+        test_text("json", errorcode);
+    if (wants_xml())
+        test_text("xml", errorcode);
+    if (wants_bson())
+        test_bson(errorcode);
 
     header_string.append(ss_.str());
 
@@ -175,6 +181,180 @@ bool CppTestGenerator::test_equality(int& errorcode)
     ss_ << "    ASSERT_TRUE(success);\n\n";
     ss_ << "    success = out.deserialize(stream);\n";
     ss_ << "    ASSERT_TRUE(success);\n\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+namespace
+{
+
+// text as a C++ raw string literal.
+std::string raw(const std::string& text)
+{
+    return "R\"sw(" + text + ")sw\"";
+}
+
+}
+
+// The text form's tests: the exact text (the same in every language, from
+// test_values), a round trip, missing members reading as zero, and malformed
+// or out-of-range input failing without changing the message.
+bool CppTestGenerator::test_text(const std::string& format, int& errorcode)
+{
+    const std::string namespac = msg_spec_.get_value_string("namespace");
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string qualified = namespac + "::" + classname;
+    const std::string testname = classname + "Test";
+    const bool json = format == "json";
+    const std::string Format = json ? "Json" : "Xml";
+    const std::string to = "to_" + format + "()";
+    const std::string from = "from_" + format;
+
+    std::string expected;
+    const bool have_expected = json ? expected_json(expected) : expected_xml(expected);
+
+    ss_ << "TEST(" << testname << ", " << Format << ")\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    const std::string text = in." << to << ";\n";
+    if (have_expected)
+    {
+        ss_ << "    ASSERT_EQ(" << raw(expected) << ", text);\n";
+    }
+    ss_ << "    ASSERT_TRUE(out." << from << "(text));\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "    ASSERT_EQ(text, out." << to << ");\n";
+    ss_ << "}\n\n";
+
+    // An empty object or element is the all-zero message.
+    ss_ << "TEST(" << testname << ", " << Format << "EmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_TRUE(out." << from << "(" << raw(json ? "{}" : "<" + classname + "/>") << "));\n";
+    ss_ << "    ASSERT_EQ(" << qualified << "(), out);\n";
+    ss_ << "}\n\n";
+
+    // Each of these fails, leaving the message as it was.
+    const std::vector<std::string> bad = json ? rejected_json() : rejected_xml();
+
+    ss_ << "TEST(" << testname << ", " << Format << "Rejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    for (const auto& text : bad)
+    {
+        ss_ << "    EXPECT_FALSE(out." << from << "(" << raw(text) << ")) << " << raw(text) << ";\n";
+    }
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "}\n\n";
+
+    return true;
+}
+
+// The BSON tests: the exact bytes (the same in every language, from
+// test_values), a round trip, an empty document reading as zero, uint64_t
+// values above 2^63-1 as Decimal128, and malformed or out-of-range documents
+// failing without changing the message.
+bool CppTestGenerator::test_bson(int& errorcode)
+{
+    const std::string namespac = msg_spec_.get_value_string("namespace");
+    const std::string classname = msg_spec_.get_value_string("classname");
+    const std::string qualified = namespac + "::" + classname;
+    const std::string testname = classname + "Test";
+
+    std::vector<uint8_t> expected;
+    const bool have_expected = expected_bson(expected);
+
+    ss_ << "TEST(" << testname << ", Bson)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    const std::string bytes = in.to_bson();\n";
+    if (have_expected)
+    {
+        ss_ << "    static const uint8_t want[] = {" << byte_list(expected, "        ") << "\n    };\n";
+        ss_ << "    ASSERT_EQ(std::string(reinterpret_cast<const char*>(want), sizeof(want)), bytes);\n";
+    }
+    ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+    ss_ << "    ASSERT_EQ(in, out);\n";
+    ss_ << "    ASSERT_EQ(bytes, out.to_bson());\n";
+    ss_ << "}\n\n";
+
+    ss_ << "TEST(" << testname << ", BsonEmptyIsDefault)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    ASSERT_TRUE(out.from_bson(std::string(\"\\x05\\0\\0\\0\\0\", 5)));\n";
+    ss_ << "    ASSERT_EQ(" << qualified << "(), out);\n";
+    ss_ << "}\n\n";
+
+    // A uint64_t above 2^63-1 is a Decimal128, so no tool sees it negative;
+    // 2^63-1 itself is still an int64.
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::get<member_type>(member.second) != "uint64_t" || is_bitfield(member.second))
+            continue;
+
+        std::vector<uint8_t> big, edge;
+        test_values::bson_decimal128(name, 0, 0xFFFFFFFFFFFFFFFFull, false, big);
+        test_values::bson_int64(name, 0x7FFFFFFFFFFFFFFFll, edge);
+
+        ss_ << "TEST(" << testname << ", BsonLargeUint64_" << name << ")\n";
+        ss_ << "{\n";
+        ss_ << "    " << qualified << " in, out;\n";
+        ss_ << "    static const uint8_t big[] = {" << byte_list(big, "        ") << "\n    };\n";
+        ss_ << "    static const uint8_t edge[] = {" << byte_list(edge, "        ") << "\n    };\n";
+        ss_ << "    in.Set_" << name << "(UINT64_C(18446744073709551615));\n";
+        ss_ << "    std::string bytes = in.to_bson();\n";
+        ss_ << "    ASSERT_NE(std::string::npos, bytes.find(std::string(reinterpret_cast<const char*>(big), sizeof(big))));\n";
+        ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+        ss_ << "    ASSERT_EQ(in, out);\n";
+        ss_ << "    in.Set_" << name << "(UINT64_C(9223372036854775807));\n";
+        ss_ << "    bytes = in.to_bson();\n";
+        ss_ << "    ASSERT_NE(std::string::npos, bytes.find(std::string(reinterpret_cast<const char*>(edge), sizeof(edge))));\n";
+        ss_ << "    ASSERT_TRUE(out.from_bson(bytes));\n";
+        ss_ << "    ASSERT_EQ(in, out);\n";
+        ss_ << "}\n\n";
+    }
+
+    // Documents that fail, leaving the message as it was.
+    const std::vector<std::vector<uint8_t>> bad = rejected_bson();
+
+    ss_ << "TEST(" << testname << ", BsonRejects)\n";
+    ss_ << "{\n";
+    ss_ << "    " << qualified << " in, out;\n";
+    do_sets(errorcode);
+    ss_ << "\n";
+    ss_ << "    out = in;\n";
+    ss_ << "    const std::string good = in.to_bson();\n";
+    ss_ << "    std::string longer = good;\n";
+    ss_ << "    longer[0] = static_cast<char>(longer[0] + 1);\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(good.substr(0, good.size() - 1)));\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(good + '\\0'));\n";
+    ss_ << "    EXPECT_FALSE(out.from_bson(longer));\n";
+    ss_ << "    static const std::vector<std::vector<uint8_t>> bad = {\n";
+    for (const auto& doc : bad)
+    {
+        ss_ << "        {" << byte_list(doc, "            ") << (doc.empty() ? "},\n" : "\n        },\n");
+    }
+    ss_ << "    };\n";
+    ss_ << "    for (size_t i = 0; i < bad.size(); i++)\n";
+    ss_ << "    {\n";
+    ss_ << "        EXPECT_FALSE(out.from_bson(std::string(bad[i].begin(), bad[i].end()))) << \"document \" << i;\n";
+    ss_ << "    }\n";
     ss_ << "    ASSERT_EQ(in, out);\n";
     ss_ << "}\n\n";
 

@@ -44,9 +44,14 @@ run_checked("cmake --install"
 foreach(file
         include/skywire/cstream.h
         include/skywire/sw_endian.h
+        include/skywire/ctext.h
+        include/skywire/cbson.h
         include/skywire/stream.h
         include/skywire/streamable.h
+        include/skywire/text.h
+        include/skywire/bson.h
         share/skywire/runtime/swift/SWStream.swift
+        share/skywire/runtime/swift/SkywireText.swift
         share/skywire/lang/lang.c.json
         share/skywire/lang/lang.cpp.json
         share/skywire/lang/lang.csharp.json
@@ -131,12 +136,14 @@ endforeach()
 
 # Without protozero: the c component is found, the cpp component is not, and a
 # find_package that requires cpp fails and says why. The include search is
-# confined to a directory that has no protozero.
+# confined to a directory that has no protozero. The project enables C: with
+# no language, CMake does not search lib64, where Fedora, RHEL and Rocky put
+# the package.
 set(no_pz ${OUTDIR}/no_protozero)
 file(MAKE_DIRECTORY ${no_pz}/empty)
 file(WRITE ${no_pz}/CMakeLists.txt [=[
 cmake_minimum_required(VERSION 3.28)
-project(skywire_no_protozero NONE)
+project(skywire_no_protozero C)
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/empty)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 find_package(skywire CONFIG REQUIRED COMPONENTS c)

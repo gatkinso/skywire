@@ -17,7 +17,8 @@
 #                   [TARGET <target>]
 #                   [OUT_DIR <dir>]
 #                   [OUT_VAR <variable>]
-#                   [NAMESPACE <namespace>])
+#                   [NAMESPACE <namespace>]
+#                   [JSON] [XML] [BSON])
 #
 #  Runs skywire::wiregen on each specification at build time. The files are
 #  written to OUT_DIR (default ${CMAKE_CURRENT_BINARY_DIR}/skywire_<lang>) and
@@ -28,10 +29,11 @@
 #  to its include path, and it links skywire::c_runtime or skywire::cpp_runtime.
 #  OUT_VAR receives the generated files. A spec that nests another message
 #  should be given with it, in the same directory, so a change to either
-#  regenerates both.
+#  regenerates both. JSON, XML and BSON add those forms (wiregen
+#  --generate_json, --generate_xml, --generate_bson).
 
 function(skywire_generate)
-    cmake_parse_arguments(PARSE_ARGV 0 arg "" "LANGUAGE;TARGET;OUT_DIR;OUT_VAR;NAMESPACE" "SPECS")
+    cmake_parse_arguments(PARSE_ARGV 0 arg "JSON;XML;BSON" "LANGUAGE;TARGET;OUT_DIR;OUT_VAR;NAMESPACE" "SPECS")
 
     if(arg_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "skywire_generate: unknown arguments: ${arg_UNPARSED_ARGUMENTS}")
@@ -58,6 +60,17 @@ function(skywire_generate)
     set(namespace_args)
     if(arg_NAMESPACE)
         set(namespace_args --namespace "${arg_NAMESPACE}")
+    endif()
+
+    set(text_args)
+    if(arg_JSON)
+        list(APPEND text_args --generate_json)
+    endif()
+    if(arg_XML)
+        list(APPEND text_args --generate_xml)
+    endif()
+    if(arg_BSON)
+        list(APPEND text_args --generate_bson)
     endif()
 
     set(specs)
@@ -99,6 +112,7 @@ function(skywire_generate)
                     --input_file "${spec}"
                     --outdir "${out_dir}"
                     ${namespace_args}
+                    ${text_args}
                     --write_to_file
             DEPENDS ${specs} skywire::wiregen
             COMMENT "wiregen ${lang}: ${classname}"

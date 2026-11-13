@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <algorithm>
 #include "cgenerator.h"
 #include "sw_endian.h"
 
@@ -60,6 +61,7 @@ bool CGenerator::do_header(int& errorcode)
     hdr_equals_function(errorcode);
     hdr_get_functions(errorcode);
     hdr_set_functions(errorcode);
+    hdr_text(errorcode);
     hdr_extern_bottom(errorcode);
     hdr_sentry_bottom(errorcode);
 
@@ -80,6 +82,7 @@ bool CGenerator::do_implementation(int& errorcode)
     imp_equals_function(errorcode);
     imp_get_functions(errorcode);
     imp_set_functions(errorcode);
+    imp_text(errorcode);
 
     imp_string.append(ss_.str());
 
@@ -105,7 +108,17 @@ bool CGenerator::hdr_includes(int& errorcode) {
         return false;
     }
 
-    for (auto& item : with_user_headers(values))
+    std::vector<std::string> includes = values;
+    if (wants_json() || wants_xml())
+    {
+        includes.push_back(lang_spec_.get_value_string("text_include_str"));
+    }
+    if (wants_bson())
+    {
+        includes.push_back(lang_spec_.get_value_string("bson_include_str"));
+    }
+
+    for (auto& item : with_user_headers(includes))
     {
         std::string template_str = lang_spec_.get_value_string("include_str");
         std::string target_str = lang_spec_.get_value_string("include_substr");
@@ -621,6 +634,83 @@ void CGenerator::read_bitfield(uint32_t tag, const member_desc_t& member)
     insert_indents(1);
     ss_ << "structure->" << std::get<member_name>(member) << " = "
         << bitfields::c_fit(std::get<member_type>(member), place.bits, var + " >> " + std::to_string(place.shift)) << ";" << std::endl;
+}
+
+// The JSON, XML and BSON forms asked for (docs/text-formats.md).
+std::vector<std::string> CGenerator::text_formats() const
+{
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+    return formats;
+}
+
+// One member's line in function (to_json, from_xml, ...): its kind picks the
+// template, and the runtime function is named for its type, spaces as
+// underscores (sw_json_put_unsigned_char).
+std::string CGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (is_user_type(type))
+        kind = "user";
+    else if (is_bitfield(member) && function.rfind("from_", 0) == 0)
+        kind = "bits";
+
+    std::string type_id = type;
+    std::replace(type_id.begin(), type_id.end(), ' ', '_');
+
+    std::string template_str = lang_spec_.get_value_string(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, lang_spec_.get_value_string("member_substr"), std::get<member_name>(member));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("length_substr"), std::to_string(std::get<member_length>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("bits_substr"), std::to_string(std::get<member_bits>(member)));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("typeid_substr"), type_id);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), type);
+    return template_str;
+}
+
+// _ToJson/_FromJson, _ToXml/_FromXml and _ToBson/_FromBson, with the
+// _Write and _Read functions a containing message calls, each only when
+// asked for.
+bool CGenerator::hdr_text(int& errorcode)
+{
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string classname = msg_spec_.get_value_string("classname");
+
+    for (const auto& format : text_formats())
+    {
+        gen_lines(replace_all(lang_spec_.get_value_string(format + "_decl_str"), classname_substr, classname), 1);
+    }
+    return true;
+}
+
+// Members go in tag order; reading takes them in any order, leaves missing
+// ones zero, ignores unknown ones and on failure changes nothing.
+bool CGenerator::imp_text(int& errorcode)
+{
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    const std::string classname = msg_spec_.get_value_string("classname");
+
+    for (const auto& format : text_formats())
+    {
+        for (const std::string direction : { "to_", "from_" })
+        {
+            const std::string function = direction + format;
+            gen_lines(replace_all(lang_spec_.get_value_string(function + "_str"), classname_substr, classname), 0);
+            for (auto& member : ordered_members_)
+            {
+                gen_lines(text_member(function, member.second), 0);
+            }
+            gen_lines(lang_spec_.get_value_string(function + "_end_str"), 0);
+        }
+    }
+    return true;
 }
 
 }

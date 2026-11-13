@@ -14,17 +14,36 @@
 //
 
 // Fills a Telemetry message, writes it to a file, reads it back and checks
-// that the copy is equal. See README.md.
+// that the copy is equal; then the same as JSON, XML and BSON, in files beside
+// it (telemetry.json, telemetry.xml, telemetry.bson). See README.md.
 //
 //   example_cpp telemetry.bin
 
 #include <cstdio>
 #include <fstream>
 #include <iterator>
+#include <string>
 #include <vector>
 
 #include "stream.h"
 #include "Telemetry.h"
+
+namespace
+{
+
+bool write_file(const std::string& path, const std::string& bytes)
+{
+    std::ofstream out(path, std::ios::binary);
+    return bool(out.write(bytes.data(), bytes.size()));
+}
+
+std::string read_file(const std::string& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+
+}
 
 int main(int argc, char** argv)
 {
@@ -89,5 +108,29 @@ int main(int argc, char** argv)
                 received.Get_device_id(), received.Get_callsign(), unsigned(received.Get_status()),
                 received.Get_position().Get_latitude(), received.Get_position().Get_longitude(),
                 double(received.Get_position().Get_altitude_m()));
+
+    // The same message as JSON, XML and BSON (docs/text-formats.md): each is
+    // written beside the file, read back and checked. A from_ function
+    // returns false, leaving the message unchanged, on input it refuses.
+    std::string base = argv[1];
+    if (base.size() > 4 && base.compare(base.size() - 4, 4, ".bin") == 0)
+    {
+        base.resize(base.size() - 4);
+    }
+    telemetry::Telemetry from_json, from_xml, from_bson;
+    if (!write_file(base + ".json", sent.to_json()) || !write_file(base + ".xml", sent.to_xml()) ||
+        !write_file(base + ".bson", sent.to_bson()))
+    {
+        std::fprintf(stderr, "cannot write the JSON, XML and BSON files\n");
+        return 1;
+    }
+    if (!from_json.from_json(read_file(base + ".json")) || !(from_json == sent) ||
+        !from_xml.from_xml(read_file(base + ".xml")) || !(from_xml == sent) ||
+        !from_bson.from_bson(read_file(base + ".bson")) || !(from_bson == sent))
+    {
+        std::fprintf(stderr, "a JSON, XML or BSON copy is different\n");
+        return 1;
+    }
+    std::printf("%s\n", sent.to_json().c_str());
     return 0;
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A Telemetry written by hand, or by another program. -->
+<Telemetry>
+  <device_id>4207</device_id>
+  <timestamp_us>1760959800123456</timestamp_us>
+  <mode>5</mode>
+  <status>3</status>
+  <armed>1</armed>
+  <!-- A string with a byte that is not printable ASCII (here BEL, 07) is
+       written in hexadecimal. -->
+  <callsign encoding="hex">534b593107</callsign>
+  <position>
+    <latitude>47.6062</latitude>
+    <longitude> -122.3321 </longitude>
+    <altitude_m><![CDATA[56.5]]></altitude_m>
+  </position>
+  <battery_mv>3870</battery_mv>
+  <firmware>2.1 &amp; later</firmware>
+</Telemetry>

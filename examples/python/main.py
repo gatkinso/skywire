@@ -49,6 +49,22 @@ def main():
         received.Get_device_id(), received.Get_callsign().rstrip(b"\0").decode(),
         received.Get_status(), p.Get_latitude(), p.Get_longitude(), p.Get_altitude_m()))
 
+    # The same message as JSON, XML and BSON (docs/text-formats.md): each is
+    # written beside the file, read back and checked. A from_ method returns
+    # False, leaving the message unchanged, on input it refuses.
+    base = path[:-4] if path.endswith(".bin") else path
+    for ext, to, read in ((".json", sent.to_json, Telemetry.from_json),
+                          (".xml", sent.to_xml, Telemetry.from_xml),
+                          (".bson", sent.to_bson, Telemetry.from_bson)):
+        data = to()
+        with open(base + ext, "wb") as f:
+            f.write(data.encode() if isinstance(data, str) else data)
+        with open(base + ext, "rb") as f:
+            copy = Telemetry()
+            if not read(copy, f.read()) or copy != sent:
+                sys.exit("the %s copy is different" % ext)
+    print(sent.to_json())
+
 
 if __name__ == "__main__":
     main()

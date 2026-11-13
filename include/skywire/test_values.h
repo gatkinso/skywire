@@ -52,6 +52,66 @@ bool encode_pb(const std::string& type, uint32_t tag, unsigned int length, std::
 // or a quoted, escaped string. Empty for types with no test value.
 std::string textproto_value(const std::string& type, unsigned int length, unsigned int bits = 0);
 
+// The test value for one member as it appears in the JSON or XML text form
+// (docs/text-formats.md): JSON quotes 64-bit integers and strings, XML
+// escapes strings or, if they hold other than printable ASCII, gives them in
+// hex (with hex set true). Empty for types with no test value. A bitfield
+// member (bits != 0) uses bits_value.
+std::string json_value(const std::string& type, unsigned int length, unsigned int bits = 0);
+std::string xml_value(const std::string& type, unsigned int length, bool& hex, unsigned int bits = 0);
+
+// Appends the BSON element (docs/text-formats.md) for one member named name
+// holding its test value: int32 up to 32-bit and uint16_t types, int64 for
+// uint32_t and int64_t, int64 or (above 2^63-1) Decimal128 for uint64_t,
+// double for float and double, string (or binary, if not UTF-8 or holding a
+// NUL) for strings. False for types with no test value. A bitfield member
+// (bits != 0) uses bits_value.
+bool encode_bson(const std::string& type, const std::string& name, unsigned int length, std::vector<uint8_t>& out, unsigned int bits = 0);
+
+// Appends a BSON element of each kind, for building documents in tests.
+void bson_int32(const std::string& name, int32_t value, std::vector<uint8_t>& out);
+void bson_int64(const std::string& name, int64_t value, std::vector<uint8_t>& out);
+void bson_double(const std::string& name, double value, std::vector<uint8_t>& out);
+// Decimal128 holding the integer magnitude high:low (a 128-bit coefficient,
+// exponent 0), negative if negative.
+void bson_decimal128(const std::string& name, uint64_t high, uint64_t low, bool negative, std::vector<uint8_t>& out);
+void bson_string(const std::string& name, const std::string& value, std::vector<uint8_t>& out);
+void bson_binary(const std::string& name, const std::string& value, std::vector<uint8_t>& out);
+void bson_bool(const std::string& name, bool value, std::vector<uint8_t>& out);
+// Wraps elements as a document: length, elements, terminating NUL.
+std::vector<uint8_t> bson_document(const std::vector<uint8_t>& elements);
+
+// Input every language's reader must reject, leaving the message unchanged,
+// so the generated tests of every language reject exactly the same things.
+//
+// Malformed input, whatever the message: JSON and XML text (xml_malformed
+// takes the message's classname, the root element), and BSON documents that
+// break the format, hold an undefined element type or a name that is not
+// UTF-8, or nest deeper than 128.
+std::vector<std::string> json_malformed();
+std::vector<std::string> xml_malformed(const std::string& classname);
+std::vector<std::vector<uint8_t>> bson_malformed();
+
+// Values one member must reject: for a string, one byte too long; for a
+// nested message, a number; otherwise out of range for the type or bitfield
+// width, the wrong type, and (integers) not whole. JSON values are JSON
+// text; XML values are element content; BSON values are whole elements
+// named name. type is "string", a native type, or (nested) anything else.
+std::vector<std::string> json_bad_values(const std::string& type, bool nested, unsigned int length, unsigned int bits = 0);
+std::vector<std::string> xml_bad_values(const std::string& type, bool nested, unsigned int length, unsigned int bits = 0);
+std::vector<std::vector<uint8_t>> bson_bad_elements(const std::string& type, bool nested, const std::string& name,
+    unsigned int length, unsigned int bits = 0);
+
+// A whole number just outside what a member of type (or a bitfield of bits
+// bits) holds, as JSON or XML number text; for float and double, a value
+// too large for them. Empty for any other type.
+std::string text_out_of_range(const std::string& type, unsigned int bits = 0);
+
+// The same as a BSON element named name, in the narrowest BSON type that
+// holds it; for a float, a double too large for it. False if there is none
+// (a double member).
+bool bson_out_of_range(const std::string& type, const std::string& name, std::vector<uint8_t>& out, unsigned int bits = 0);
+
 // The test value of a bitfield member of bits bits, as the type's bit
 // pattern: alternating 0101... for unsigned types, so both ends of each
 // field are exercised, and a negative value for signed ones.

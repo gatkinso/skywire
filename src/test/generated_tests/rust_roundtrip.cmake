@@ -4,7 +4,8 @@
 #  Detects the Rust toolchain at test time. If rustc is absent, or older than
 #  1.58 (edition 2021, and the inline format arguments the relays use), it
 #  prints the skip marker matched by the test's SKIP_REGULAR_EXPRESSION;
-#  otherwise it generates the Rust modules and their tests with wiregen,
+#  otherwise it generates the Rust modules and their tests with wiregen (with
+#  the JSON, XML and BSON forms, and so the skywire_text module),
 #  checks they are rustfmt-clean, and builds and runs them as one crate with
 #  `rustc --test -D warnings`. When clippy-driver is
 #  present the crate must also be clippy-clean.
@@ -46,6 +47,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

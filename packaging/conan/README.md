@@ -31,7 +31,7 @@ puts `skywire/<version>` in the local cache. A project then requires it:
 
 ```python
 def requirements(self):
-    self.requires("skywire/0.9.0")
+    self.requires("skywire/0.10.0")
 ```
 
 and uses `find_package(skywire CONFIG REQUIRED)` and `skywire_generate()` as

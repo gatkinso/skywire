@@ -63,6 +63,9 @@ foreach(WG_C ${WG_C_FILES})
                 --outdir ${WG_C_DIR}
                 --language c
                 --generate_tests
+                --generate_json
+                --generate_xml
+                --generate_bson
                 --write_to_file)
     set(WG_C_RESULTS ${WG_C_RESULTS}
         ${WG_C_DIR}/${WG_C}.h
@@ -83,6 +86,9 @@ foreach(WG_CPP ${WG_CPP_FILES})
                 --outdir ${WG_CPP_DIR}
                 --language c++
                 --generate_tests
+                --generate_json
+                --generate_xml
+                --generate_bson
                 --write_to_file)
     set(WG_CPP_RESULTS ${WG_CPP_RESULTS}
         ${WG_CPP_DIR}/${WG_CPP}.h)
@@ -132,6 +138,34 @@ gtest_discover_tests(${TARGETNAME} TEST_PREFIX skywire_generated_tests:)
 
 add_dependencies(${TARGETNAME} specification skywire wiregen)
 
+# The generated BSON against pymongo's bson module, both ways
+# (bson_interop.py): BsonInterop the C++, BsonInteropC the C. Skipped without
+# Python 3 or pymongo.
+add_executable(bson_interop bson_interop.cpp ${WG_CPP_DIR}/ClassyMcClassface.h)
+add_executable(bson_interop_c bson_interop_c.cpp ${WG_C_DIR}/StructyMcStructface.c)
+find_program(SKYWIRE_PYTHON3 NAMES python3 python)
+foreach(program bson_interop bson_interop_c)
+    if(program STREQUAL "bson_interop")
+        set(test skywire_generated_tests:BsonInterop)
+    else()
+        set(test skywire_generated_tests:BsonInteropC)
+    endif()
+    if(IS_BIG_ENDIAN)
+        target_compile_definitions(${program} PRIVATE SW_BIG_ENDIAN=1 SW_LITTLE_ENDIAN=0)
+    else()
+        target_compile_definitions(${program} PRIVATE SW_BIG_ENDIAN=0 SW_LITTLE_ENDIAN=1)
+    endif()
+    if(SKYWIRE_PYTHON3)
+        add_test(NAME ${test}
+            COMMAND ${SKYWIRE_PYTHON3} ${CMAKE_CURRENT_SOURCE_DIR}/bson_interop.py
+                    $<TARGET_FILE:${program}> ${CMAKE_CURRENT_BINARY_DIR}/${program}_files)
+    else()
+        add_test(NAME ${test}
+            COMMAND ${CMAKE_COMMAND} -E echo "PYMONGO_NOT_FOUND: no Python 3 interpreter on PATH; skipping")
+    endif()
+    set_tests_properties(${test} PROPERTIES SKIP_REGULAR_EXPRESSION "PYMONGO_NOT_FOUND")
+endforeach()
+
 # Swift generated round-trip test. The Swift toolchain is detected when the
 # test runs (see swift_roundtrip.cmake); without swiftc the test reports Skipped.
 add_test(NAME skywire_generated_tests:SwiftRoundTrip
@@ -139,7 +173,7 @@ add_test(NAME skywire_generated_tests:SwiftRoundTrip
             -DWIREGEN=$<TARGET_FILE:wiregen>
             -DSPECS=${CMAKE_CURRENT_SOURCE_DIR}/SwiftyMcSwiftface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyInner.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyMcNestface.json,${CMAKE_CURRENT_SOURCE_DIR}/NestyOuter.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMcBitface.json,${CMAKE_CURRENT_SOURCE_DIR}/BitsyMsb.json
             -DLANGFILE=${CMAKE_SOURCE_DIR}/lang/swift/lang.swift.json
-            -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift
+            -DRUNTIME=${PROJECT_SOURCE_DIR}/lang/swift/SWStream.swift,${PROJECT_SOURCE_DIR}/lang/swift/SkywireText.swift
             -DOUTDIR=${PROJECT_BINARY_DIR}/generated_swift_wiregen
             -DEXE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/swift_roundtrip.cmake)

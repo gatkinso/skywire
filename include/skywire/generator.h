@@ -50,6 +50,17 @@ public:
     static bool is_bitfield(const member_desc_t& member) { return std::get<member_bits>(member) != 0; }
     virtual results_t get_results() const { return results_; }  //copy???
 
+    // Whether to also generate the JSON, XML and BSON forms (docs/text-formats.md).
+    void set_text_formats(bool json, bool xml, bool bson = false)
+    {
+        generate_json_ = json;
+        generate_xml_ = xml;
+        generate_bson_ = bson;
+    }
+    bool wants_json() const { return generate_json_; }
+    bool wants_xml() const { return generate_xml_; }
+    bool wants_bson() const { return generate_bson_; }
+
     // The specs of the nested message types this message uses (and those
     // they use), by type name, for generators that look inside nested
     // members: the relays.
@@ -62,6 +73,9 @@ protected:
     std::stringstream ss_;
     int errorcode_ = 0;
     std::map< uint32_t, member_desc_t> ordered_members_;
+    bool generate_json_ = false;
+    bool generate_xml_ = false;
+    bool generate_bson_ = false;
 
     bool insert_indents(unsigned int indents = 0);
     bool gen_one_line(const std::string& key, unsigned int indents = 0);
@@ -101,10 +115,27 @@ protected:
     // unspecified, if a member has no test value (a nested message).
     bool expected_wire(std::vector<uint8_t>& out);
 
+    // The expected JSON and XML text forms of this message holding the shared
+    // test values. False if a member has no test value (a nested message).
+    bool expected_json(std::string& out);
+    bool expected_xml(std::string& out);
+    // The expected BSON document, likewise.
+    bool expected_bson(std::vector<uint8_t>& out);
+
+    // What this message's readers must reject (test_values' malformed input,
+    // then each member's bad values alone in a message), the same for every
+    // language's generated tests.
+    std::vector<std::string> rejected_json();
+    std::vector<std::string> rejected_xml();
+    std::vector<std::vector<uint8_t>> rejected_bson();
+
     // For a bitfield narrower than its type: a value of the type with a bit
     // set above the field (hex, e.g. "0x25"), which its setter must cut back
     // to test_literal(member). Empty for other members.
     static std::string out_of_range_hex(const member_desc_t& member);
+
+    // bytes as the body of a C or C++ array initializer, eight to a line.
+    static std::string byte_list(const std::vector<uint8_t>& bytes, const std::string& indent);
 
     // Nested types' members, from set_nested_specs.
     std::map<std::string, members_t> nested_members_;

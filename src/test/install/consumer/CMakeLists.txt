@@ -14,7 +14,8 @@
 #
 
 #  A third-party project that uses an installed skywire: it builds the C and
-#  C++ example programs from examples/ with skywire_generate(), and, when
+#  C++ example programs from examples/ with skywire_generate() (with the
+#  JSON, XML and BSON forms, which the programs use), and, when
 #  pkg-config is there, the C one again with only skywire.pc. Run by
 #  run_install_test.cmake with CMAKE_PREFIX_PATH set to the install.
 
@@ -27,17 +28,17 @@ find_package(skywire CONFIG REQUIRED COMPONENTS c cpp)
 set(specs ${EXAMPLES_DIR}/specs/Position.json ${EXAMPLES_DIR}/specs/Telemetry.json)
 
 add_executable(consumer_c ${EXAMPLES_DIR}/c/main.c)
-skywire_generate(TARGET consumer_c LANGUAGE c SPECS ${specs})
+skywire_generate(TARGET consumer_c LANGUAGE c SPECS ${specs} JSON XML BSON)
 
 add_executable(consumer_cpp ${EXAMPLES_DIR}/cpp/main.cpp)
-skywire_generate(TARGET consumer_cpp LANGUAGE cpp SPECS ${specs})
+skywire_generate(TARGET consumer_cpp LANGUAGE cpp SPECS ${specs} JSON XML BSON)
 
 # The same C program, built with skywire.pc for the runtime instead of the
 # CMake package.
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(SKYWIRE_PC REQUIRED IMPORTED_TARGET skywire)
-    skywire_generate(LANGUAGE c SPECS ${specs} OUT_DIR skywire_pc OUT_VAR pc_sources)
+    skywire_generate(LANGUAGE c SPECS ${specs} OUT_DIR skywire_pc OUT_VAR pc_sources JSON XML BSON)
     add_executable(consumer_pc ${EXAMPLES_DIR}/c/main.c ${pc_sources})
     target_include_directories(consumer_pc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/skywire_pc)
     target_link_libraries(consumer_pc PRIVATE PkgConfig::SKYWIRE_PC)

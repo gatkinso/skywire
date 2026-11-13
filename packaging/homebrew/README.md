@@ -37,8 +37,8 @@ install` from the tap fails with a 404.
 ## Testing locally
 
 ```
-gh release download v0.9.0 -p '*-macos-arm64.tar.gz' -D /tmp/dist
-python3 packaging/homebrew/test_formula.py /tmp/dist --version 0.9.0
+gh release download v0.10.0 -p '*-macos-arm64.tar.gz' -D /tmp/dist
+python3 packaging/homebrew/test_formula.py /tmp/dist --version 0.10.0
 ```
 
 It needs an Apple silicon Mac with `brew`, `cmake` and Xcode's command line

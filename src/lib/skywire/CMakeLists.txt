@@ -96,7 +96,24 @@ set(_HEADERS ${TARGET_INC_DIR}/${TARGETNAME}.h
              ${TARGET_INC_DIR}/processor.h
              ${TARGET_INC_DIR}/result_presenter.h)
 
-add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES})
+# The runtime files wiregen writes beside generated code, built into it.
+set(_RUNTIME_FILES python/skywire_text.py go/skywire_text.go csharp/SkywireText.cs rust/skywire_text.rs java/SkywireText.java
+                   javascript/skywire_text.js javascript/skywire_text.d.ts)
+set(_RUNTIME_DEPENDS)
+foreach(file IN LISTS _RUNTIME_FILES)
+    list(APPEND _RUNTIME_DEPENDS ${PROJECT_SOURCE_DIR}/lang/${file})
+endforeach()
+string(REPLACE ";" "|" _RUNTIME_ARG "${_RUNTIME_FILES}")
+set(_RUNTIME_CPP ${CMAKE_CURRENT_BINARY_DIR}/runtime_sources.cpp)
+add_custom_command(
+    OUTPUT  ${_RUNTIME_CPP}
+    COMMAND ${CMAKE_COMMAND} -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang -DFILES=${_RUNTIME_ARG}
+            -DOUTPUT=${_RUNTIME_CPP} -P ${CMAKE_CURRENT_SOURCE_DIR}/embed_runtime.cmake
+    DEPENDS ${_RUNTIME_DEPENDS} ${CMAKE_CURRENT_SOURCE_DIR}/embed_runtime.cmake
+    VERBATIM)
+
+add_library(${TARGETNAME} STATIC ${_HEADERS} ${_GENERATORS} ${_SOURCES} ${_RUNTIME_CPP}
+            ${TARGET_INC_DIR}/runtime_sources.h)
 
 # skywire_version.h holds the project version, the git revision and how
 # wiregen was built, for skyloupe::version() and skyloupe::build_info()

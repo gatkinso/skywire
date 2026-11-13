@@ -41,6 +41,8 @@ protected:
     // Returns false for types whose encoding isn't known here (user types).
     bool encode_member(const member_desc_t& member, std::vector<uint8_t>& out);
     bool do_bitfield_setters(int& errorcode);
+    void do_text_tests(const std::string& classname);
+    void do_bson_tests(const std::string& classname);
 };
 
 }

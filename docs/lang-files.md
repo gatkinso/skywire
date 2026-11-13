@@ -35,6 +35,17 @@ message's `classname` and `{classname_snake}` for it in snake_case
 | rust     |                 | `{classname_snake}.rs` | `{classname_snake}_test.rs` | `{classname_snake}_relay.rs` |
 | swift    |                 | `{classname}.swift` | `{classname}_test.swift`| `{classname}Relay.swift`|
 
+With `--generate_json`, `--generate_xml` or `--generate_bson`, a language
+whose generated code has no runtime of its own also gets one helper file,
+named by `outputruntimefilename` (Python: `skywire_text.py`, Go:
+`skywire_text.go`, C#: `SkywireText.cs`, Rust: `skywire_text.rs`, Java:
+`SkywireText.java`, JavaScript: `skywire_text.js`), beside the generated
+code; JavaScript also gets its declarations, named by
+`outputruntimeheaderfilename` (`skywire_text.d.ts`). Their contents are built
+into wiregen from `lang/` (for Python, `lang/python/skywire_text.py`); the
+lang file only names them. The Go file's `package skywiretext` line becomes the
+message's package.
+
 A message specification may set any of these keys to use a different name for
 that one message; its value may also use `{classname}` or `{classname_snake}`. A name must be a plain
 file name (no directories). Java requires a public class's file to be named
@@ -55,6 +66,22 @@ generate that file; only the flags do. proto3 has no relay; its test file is a
 text-format message holding the shared test values, headed by the bytes protoc
 must encode it to (`src/test/generated_tests/proto3_roundtrip.cmake` checks
 this).
+
+## JSON, XML and BSON
+
+With `--generate_json`, `--generate_xml` or `--generate_bson` the C and C++
+generators use the `to_json_*`, `from_json_*`, `to_xml_*`, `from_xml_*`,
+`to_bson_*` and `from_bson_*` templates: for each function a `_str` that
+begins it, a `_end_str` that ends it, and one `_native_mem_str`,
+`_string_mem_str` and `_user_mem_str` per member kind (the `from_` ones also a
+`_bits_mem_str`, with `__BITS__` for the bitfield's width), and
+`text_include_str` and `bson_include_str` for the runtime headers. The C
+generator also takes `json_decl_str`, `xml_decl_str` and `bson_decl_str`, the
+header's declarations, and `__TYPEID__`, the member's type with spaces as
+underscores (`unsigned_char`), which names the runtime function that writes
+or reads it (`sw_json_put_unsigned_char`). Without the
+options they are not used, so a lang file without them still works. See
+[JSON, XML and BSON](text-formats.md).
 
 ## Includes
 

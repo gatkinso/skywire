@@ -8,7 +8,8 @@
 #  narrowing the generated code leaves out of unchecked() fails the test), and
 #  runs every generated test's Run() from a Driver class: once with the Span
 #  fast path, and once with SKYWIRE_PORTABLE defined, as .NET Framework and
-#  Unity would build it.
+#  Unity would build it. The classes have their JSON, XML and BSON forms,
+#  and the tests check them, with SkywireText.cs beside them.
 #
 #  Required -D variables: WIREGEN, SPECS, LANGFILE, OUTDIR
 #  SPECS is a comma-separated list (CTest splits arguments on ';'); a spec's
@@ -55,6 +56,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --generate_tests --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")

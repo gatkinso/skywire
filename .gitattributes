@@ -4,4 +4,8 @@
 *.rs    text eol=lf
 
 *.bin   binary
+*.bson  binary
 *.pb    binary
+
+# Golden files are compared byte for byte with what wiregen writes (LF).
+src/test/golden/*/** -text

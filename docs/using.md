@@ -33,7 +33,7 @@ The package provides:
 |---|---|
 | `skywire::wiregen` | The generator, for your own `add_custom_command` |
 | `skywire::c_runtime` | The header-only runtime for generated C (`cstream.h`) |
-| `skywire::cpp_runtime` | The header-only runtime for generated C++, with protozero's include directory and C++17 |
+| `skywire::cpp_runtime` | The header-only runtime for generated C++ (`stream.h`, `streamable.h`, and `text.h` and `bson.h` for JSON, XML and BSON), with protozero's include directory and C++17 |
 | `skywire_generate()` | Generates C or C++ at build time |
 | `SKYWIRE_INCLUDE_DIR`, `SKYWIRE_RUNTIME_DIR`, `SKYWIRE_LANG_DIR` | The installed headers, the Swift runtime and the lang files |
 
@@ -42,17 +42,20 @@ The package provides:
                      [TARGET <target>]
                      [OUT_DIR <dir>]
                      [OUT_VAR <variable>]
-                     [NAMESPACE <namespace>])
+                     [NAMESPACE <namespace>]
+                     [JSON] [XML] [BSON])
 
 `skywire_generate()` runs wiregen on each specification whenever it (or
 another in `SPECS`) changes. Its output goes to `OUT_DIR`, by default
 `skywire_c` or `skywire_cpp` in the current binary directory. With `TARGET` the
 generated sources are added to that target, which also gets `OUT_DIR` on its
 include path and links the language's runtime. `OUT_VAR` receives the generated
-file names. Give a nested message's specification in the same call as the
+file names. `JSON`, `XML` and `BSON` add the [JSON, XML and BSON forms](text-formats.md)
+(C and C++). Give a nested message's specification in the same call as the
 message that holds it, in the same directory. For the other languages, run
 `skywire::wiregen` yourself; Swift code also needs
-`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift`, or the [Swift package](#swift-package).
+`${SKYWIRE_RUNTIME_DIR}/swift/SWStream.swift` (and `SkywireText.swift`, for the
+JSON, XML and BSON forms), or the [Swift package](#swift-package).
 
 ## Without CMake
 
@@ -73,7 +76,7 @@ include directory and `-std=c++17`; protozero has no `.pc` of its own.
 ## Swift package
 
 A Swift package can depend on skywire for SWStream instead of copying
-`SWStream.swift`. The `Package.swift` at the top of the repository has one
+`SWStream.swift` (and `SkywireText.swift`, which the package holds too). The `Package.swift` at the top of the repository has one
 library, `Skywire`:
 
 ```swift

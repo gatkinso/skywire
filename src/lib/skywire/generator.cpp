@@ -13,6 +13,7 @@
 //   permissions and limitations under the License.
 //
 
+#include <cstdio>
 #include <iostream>
 #include <algorithm>
 #include "generator.h"
@@ -189,6 +190,19 @@ std::string Generator::test_literal(const member_desc_t& member)
     return literal ? literal : "";
 }
 
+std::string Generator::byte_list(const std::vector<uint8_t>& bytes, const std::string& indent)
+{
+    std::string out;
+    for (size_t i = 0; i < bytes.size(); i++)
+    {
+        out += (i % 8 == 0) ? "\n" + indent : " ";
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "0x%02x,", bytes[i]);
+        out += hex;
+    }
+    return out;
+}
+
 std::string Generator::out_of_range_hex(const member_desc_t& member)
 {
     const std::string& type = std::get<member_type>(member);
@@ -230,6 +244,106 @@ bool Generator::expected_wire(std::vector<uint8_t>& out)
     }
 
     return true;
+}
+
+bool Generator::expected_json(std::string& out)
+{
+    out = "{";
+    for (auto& member : ordered_members_)
+    {
+        const std::string value = test_values::json_value(std::get<member_type>(member.second), std::get<member_length>(member.second),
+            std::get<member_bits>(member.second));
+        if (value.empty())
+        {
+            return false;
+        }
+        out += (out.size() > 1 ? ",\"" : "\"") + std::get<member_name>(member.second) + "\":" + value;
+    }
+    out += "}";
+    return true;
+}
+
+bool Generator::expected_xml(std::string& out)
+{
+    const std::string classname = msg_spec_.get_value_string("classname");
+    out = "<" + classname + ">";
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        bool hex = false;
+        const std::string value = test_values::xml_value(std::get<member_type>(member.second), std::get<member_length>(member.second),
+            hex, std::get<member_bits>(member.second));
+        if (value.empty() && std::get<member_type>(member.second) != "string")
+        {
+            return false;
+        }
+        out += "<" + name + (hex ? " encoding=\"hex\">" : ">") + value + "</" + name + ">";
+    }
+    out += "</" + classname + ">";
+    return true;
+}
+
+bool Generator::expected_bson(std::vector<uint8_t>& out)
+{
+    std::vector<uint8_t> elements;
+    for (auto& member : ordered_members_)
+    {
+        if (false == test_values::encode_bson(std::get<member_type>(member.second), std::get<member_name>(member.second),
+                         std::get<member_length>(member.second), elements, std::get<member_bits>(member.second)))
+        {
+            return false;
+        }
+    }
+    out = test_values::bson_document(elements);
+    return true;
+}
+
+std::vector<std::string> Generator::rejected_json()
+{
+    std::vector<std::string> bad = test_values::json_malformed();
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        for (const auto& value : test_values::json_bad_values(type, is_user_type(type), std::get<member_length>(member.second),
+                 std::get<member_bits>(member.second)))
+        {
+            bad.push_back("{\"" + std::get<member_name>(member.second) + "\":" + value + "}");
+        }
+    }
+    return bad;
+}
+
+std::vector<std::string> Generator::rejected_xml()
+{
+    const std::string classname = msg_spec_.get_value_string("classname");
+    std::vector<std::string> bad = test_values::xml_malformed(classname);
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        const std::string& name = std::get<member_name>(member.second);
+        for (const auto& value : test_values::xml_bad_values(type, is_user_type(type), std::get<member_length>(member.second),
+                 std::get<member_bits>(member.second)))
+        {
+            bad.push_back("<" + classname + "><" + name + ">" + value + "</" + name + "></" + classname + ">");
+        }
+    }
+    return bad;
+}
+
+std::vector<std::vector<uint8_t>> Generator::rejected_bson()
+{
+    std::vector<std::vector<uint8_t>> bad = test_values::bson_malformed();
+    for (auto& member : ordered_members_)
+    {
+        const std::string& type = std::get<member_type>(member.second);
+        for (const auto& element : test_values::bson_bad_elements(type, is_user_type(type), std::get<member_name>(member.second),
+                 std::get<member_length>(member.second),
+                 std::get<member_bits>(member.second)))
+        {
+            bad.push_back(test_values::bson_document(element));
+        }
+    }
+    return bad;
 }
 
 bool Generator::is_native_type(const std::string& type)
@@ -314,7 +428,11 @@ void Generator::gen_lines(std::string text, unsigned int indents)
         {
             end = text.size();
         }
-        insert_indents(indents);
+        // A blank line gets no indent, so no trailing whitespace.
+        if (end > start)
+        {
+            insert_indents(indents);
+        }
         ss_ << text.substr(start, end - start) << std::endl;
         start = end + 1;
     }

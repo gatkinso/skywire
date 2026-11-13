@@ -26,8 +26,11 @@ Every test name starts with its group:
 | `skywire_generated_tests:*RoundTrip` | The generated Swift, Go, Python, Java, Rust, C# and JavaScript code, each with its generated unit tests |
 | `skywire_generated_tests:JavaScriptTypes` | The generated TypeScript declarations, checked with tsc |
 | `skywire_generated_tests:Proto3Wire` | The generated `.proto`, checked with protoc |
+| `skywire_generated_tests:BsonInterop`, `BsonInteropC` | The generated C++ and C BSON against pymongo's BSON library, both ways |
+| `skywire_text_diff:<language>` | A language's generated JSON, XML and BSON code against the C++, on 30,000 inputs |
+| `skywire_golden:<language>`, `skywire_golden:<language>_text` | wiregen's output, without and with the JSON, XML and BSON flags, byte for byte, against the files in `src/test/golden` |
 | `skywire_ring:Serial` | One message through every language in turn |
-| `skywire_example:*` | The [example programs](#examples); only with `SKYWIRE_EXAMPLES` |
+| `skywire_example:*` | The [example programs](#examples), which also write and read JSON, XML and BSON; only with `SKYWIRE_EXAMPLES` |
 | `skywire_install:Consumer` | The install and its CMake package (see [Using skywire](using.md)) |
 | `skywire_install:SwiftPM` | The Swift example as a package that depends on skywire's `Package.swift` |
 | `skywire_schema:Check` | The [JSON Schemas](specs.md#editor-support) against every spec and lang file, and against wiregen's own checks |
@@ -68,6 +71,46 @@ was installed, and builds and runs the C and C++ examples from a separate
 project that uses the install (see [Using skywire](using.md)), with the CMake package and with
 `skywire.pc`. It also checks that a project requiring the `cpp` component
 without protozero fails with a clear message.
+
+`skywire_generated_tests:BsonInterop` (C++) and `BsonInteropC` (C) have
+pymongo decode the generated BSON of a message with a member of every type, at the shared test values and
+at their limits (Decimal128, binary strings, NaN, -0), check every value and
+type, and encode it back to the same bytes; then the generated code reads
+documents pymongo wrote, with pymongo's choice of types and unknown elements
+of every type, and rejects out-of-range ones. It needs Python's `pymongo`
+module (`pip install pymongo`, or `python3-pymongo` on Debian and Ubuntu)
+and report Skipped without it. CI runs it on Linux.
+
+`skywire_golden:<language>` generates `ClassyMcClassface` (a member of every
+type) and `Telemetry` (bitfields, a string, a nested message) with their tests
+and relays, and no optional output such as `--generate_json`, and compares
+every file with `src/test/golden/<language>`. It catches any change to code
+users already generate, down to a blank line. `skywire_golden:<language>_text`
+does the same with `--generate_json --generate_xml --generate_bson`, for each
+language that has them (`c_text`, `cpp_text`, `csharp_text`, `go_text`, `java_text`, `javascript_text`, `python3_text`, `rust_text`, `swift_text`), so work on one language's text and
+BSON code cannot quietly change another's. When a change is meant, build the
+`skywire_update_golden` target, which rewrites `src/test/golden` from the
+current wiregen, and commit the result with the change.
+
+`skywire_text_diff:<language>` (in `src/test/text_diff`) holds each
+language's JSON, XML and BSON code to the C++'s: it generates the ring
+message in the language, reads every file of the fuzz corpora and 30,000
+seeded mutations of them as JSON, XML and BSON, and fails unless the
+language accepts exactly the inputs the C++ does and writes back exactly the
+same bytes. The C++ side is `oracle.cpp`; each language has a small driver.
+`src/test/fuzz/corpus/text` holds the ring message in all three forms and
+the hard floating-point cases: decimals on and either side of the halfway
+point between two floats, where rounding through a double first goes wrong,
+the edges of the float range (overflow and subnormals), and integers in BSON
+read into float members. The Rust driver is also built with clippy, when it
+is installed, as a program whose modules are private, where clippy checks
+more than it does for a library. It needs Python 3, which makes the inputs,
+and the language's toolchain (Go
+for `skywire_text_diff:go`, the .NET SDK for `skywire_text_diff:csharp`, rustc for
+`skywire_text_diff:rust`, a JDK for `skywire_text_diff:java`, swiftc for
+`skywire_text_diff:swift`, Node for `skywire_text_diff:javascript`), and reports Skipped without them.
+The C driver builds with the project; the `fuzz_c_cpp_text` fuzz target also
+holds C to C++.
 
 `skywire_schema:Check` runs `scripts/check_schemas.py`. It needs Python's
 `jsonschema` module (`pip install jsonschema`, or `python3-jsonschema` on

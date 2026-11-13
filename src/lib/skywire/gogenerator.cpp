@@ -14,11 +14,13 @@
 //
 
 #include <algorithm>
+#include <iostream>
 #include <regex>
 #include <map>
 #include <set>
 #include <string>
 #include "gogenerator.h"
+#include "runtime_sources.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -107,6 +109,20 @@ bool GoGenerator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (wants_text())
+    {
+        if (false == check_text_names(errorcode))
+        {
+            return false;
+        }
+        // The JSON, XML and BSON helpers, written into the message's package.
+        std::string runtime = runtime_source("go/skywire_text.go");
+        const std::string package_line = lang_spec_.get_value_string("runtime_package_str");
+        runtime = replace_all(runtime, package_line,
+                              "package " + msg_spec_.get_value_string("namespace") + "\n");
+        results_["runtime"] = runtime;
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -130,6 +146,7 @@ bool GoGenerator::do_implementation(int& errorcode)
     imp_size(errorcode);
     imp_get_functions(errorcode);
     imp_set_functions(errorcode);
+    imp_text(errorcode);
 
     // gofmt ends a file with exactly one newline.
     std::string body = ss_.str();
@@ -178,6 +195,11 @@ bool GoGenerator::imp_imports(int& errorcode)
             {
                 packages.insert("math");
             }
+        }
+        // MarshalXML and UnmarshalXML take encoding/xml's types.
+        if (wants_xml())
+        {
+            packages.insert("encoding/xml");
         }
 
         const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
@@ -466,6 +488,90 @@ std::string GoGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t&
     body += "\ts." + std::get<member_name>(member) + " = " + value + "\n";
 
     return body;
+}
+
+// The methods the text forms add, which a member cannot also be named.
+bool GoGenerator::check_text_names(int& errorcode)
+{
+    std::vector<std::string> reserved;
+    if (wants_json())
+        reserved.insert(reserved.end(), { "ToJSON", "FromJSON", "MarshalJSON", "UnmarshalJSON", "writeJSON", "readJSON" });
+    if (wants_xml())
+        reserved.insert(reserved.end(), { "ToXML", "FromXML", "MarshalXML", "UnmarshalXML", "writeXML", "readXML" });
+    if (wants_bson())
+        reserved.insert(reserved.end(), { "MarshalBSON", "UnmarshalBSON", "writeBSON", "readBSON" });
+
+    bool valid = true;
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (std::find(reserved.begin(), reserved.end(), name) != reserved.end())
+        {
+            std::cerr << "Member name \"" << name << "\" clashes with the generated method " << name << std::endl;
+            errorcode |= SW_SPEC_INVALID;
+            valid = false;
+        }
+    }
+    return valid;
+}
+
+// One member's lines in a to_ or from_ function. The writer method, and the
+// conversion to its argument, is int32 for every integer up to 32 bits but
+// uint32_t (a char as signed), otherwise the member's own Go type.
+std::string GoGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (!is_native_type(type))
+        kind = "user";
+    else if (reading)
+        kind = is_float_type(type) ? "real" : "int";
+
+    std::string method = go_type(type);
+    if (is_native_type(type) && !is_float_type(type) && go_bits(type) <= 32 && type != "uint32_t")
+        method = "int32";
+
+    std::string template_str = subst(lang_spec_.get_value_string(function + "_" + kind + "_mem_str"), member);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("ctype_substr"), type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("kind_substr"), method);
+    return replace_all(template_str, lang_spec_.get_value_string("fieldbits_substr"),
+                       std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+}
+
+// ToJSON/FromJSON (with json.Marshaler and json.Unmarshaler), ToXML/FromXML
+// (with xml.Marshaler and xml.Unmarshaler) and MarshalBSON/UnmarshalBSON
+// (docs/text-formats.md), each only when asked for, with the write and read
+// methods a containing message calls. Members go in tag order; reading
+// takes them in any order, leaves missing ones zero, ignores unknown ones
+// and on failure changes nothing.
+bool GoGenerator::imp_text(int& errorcode)
+{
+    const std::string structname_substr = lang_spec_.get_value_string("structname_substr");
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    for (const auto& format : formats)
+    {
+        for (const std::string direction : { "to_", "from_" })
+        {
+            const std::string function = direction + format;
+            ss_ << replace_all(lang_spec_.get_value_string(function + "_str"), structname_substr, classname_);
+            for (auto& member : ordered_members_)
+            {
+                ss_ << text_member(function, member.second);
+            }
+            ss_ << lang_spec_.get_value_string(function + "_end_str");
+        }
+    }
+    return true;
 }
 
 }

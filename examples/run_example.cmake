@@ -3,7 +3,8 @@
 #
 #  Builds one language's example program (README.md), runs it, and checks the
 #  file it wrote is byte for byte Telemetry.bin, which every language must
-#  produce. The C and C++ examples are built with the project and passed in as
+#  produce, and the JSON, XML and BSON files it writes beside it are
+#  Telemetry.json, Telemetry.xml and Telemetry.bson. The C and C++ examples are built with the project and passed in as
 #  EXE. For the others the driver generates Telemetry and Position with wiregen
 #  and compiles them with the example, the way the README in each example
 #  directory shows. A missing toolchain prints the skip marker the test's
@@ -78,10 +79,10 @@ elseif(LANG STREQUAL "swift")
         message("SWIFT_TOOLCHAIN_NOT_FOUND: swiftc not on PATH; skipping the Swift example")
         return()
     endif()
-    generate(swift)
+    generate(swift --generate_json --generate_xml --generate_bson)
     set(exe ${OUTDIR}/example_swift${EXE_SUFFIX})
     run_checked("swiftc" COMMAND ${SWIFTC_EXECUTABLE} -o ${exe} ${LANG_DIR}/swift/SWStream.swift
-        ${OUTDIR}/Position.swift ${OUTDIR}/Telemetry.swift ${src}/main.swift)
+        ${LANG_DIR}/swift/SkywireText.swift ${OUTDIR}/Position.swift ${OUTDIR}/Telemetry.swift ${src}/main.swift)
     set(run ${exe})
 
 elseif(LANG STREQUAL "go")
@@ -100,7 +101,7 @@ elseif(LANG STREQUAL "go")
         return()
     endif()
     # The example is a command, so the messages are generated into package main.
-    generate(go --namespace main)
+    generate(go --namespace main --generate_json --generate_xml --generate_bson)
     file(COPY ${src}/main.go DESTINATION ${OUTDIR})
     file(WRITE ${OUTDIR}/go.mod "module wiregen/example\n\ngo 1.21\n")
     get_filename_component(go_bindir ${GO_EXECUTABLE} DIRECTORY)
@@ -129,7 +130,7 @@ elseif(LANG STREQUAL "python")
         message("PYTHON3_NOT_FOUND: no Python 3 interpreter on PATH; skipping the Python example")
         return()
     endif()
-    generate(python)
+    generate(python --generate_json --generate_xml --generate_bson)
     # Next to the generated modules, so it imports them.
     file(COPY ${src}/main.py DESTINATION ${OUTDIR})
     set(run ${PYTHON3_EXECUTABLE} ${OUTDIR}/main.py)
@@ -145,9 +146,9 @@ elseif(LANG STREQUAL "java")
         message("JAVA_TOOLCHAIN_NOT_FOUND: no JDK on PATH; skipping the Java example")
         return()
     endif()
-    generate(java)
+    generate(java --generate_json --generate_xml --generate_bson)
     run_checked("javac" COMMAND ${JAVAC_EXECUTABLE} -Xlint:all -Werror -d ${OUTDIR}/classes
-        ${OUTDIR}/Position.java ${OUTDIR}/Telemetry.java ${src}/Main.java)
+        ${OUTDIR}/SkywireText.java ${OUTDIR}/Position.java ${OUTDIR}/Telemetry.java ${src}/Main.java)
     set(run ${JAVA_EXECUTABLE} -cp ${OUTDIR}/classes Main)
 
 elseif(LANG STREQUAL "rust")
@@ -165,7 +166,7 @@ elseif(LANG STREQUAL "rust")
         message("RUST_TOOLCHAIN_NOT_FOUND: ${rustc_version} is older than rustc 1.58; skipping the Rust example")
         return()
     endif()
-    generate(rust)
+    generate(rust --generate_json --generate_xml --generate_bson)
     # The crate root, next to the modules it declares.
     file(COPY ${src}/main.rs DESTINATION ${OUTDIR})
     get_filename_component(rust_bindir ${RUSTC_EXECUTABLE} DIRECTORY)
@@ -200,7 +201,7 @@ elseif(LANG STREQUAL "csharp")
     set(ENV{DOTNET_CLI_TELEMETRY_OPTOUT} 1)
     set(ENV{DOTNET_NOLOGO} 1)
     set(ENV{DOTNET_SKIP_FIRST_TIME_EXPERIENCE} 1)
-    generate(csharp)
+    generate(csharp --generate_json --generate_xml --generate_bson)
     # The project builds every .cs file in its directory.
     file(COPY ${src}/Program.cs ${src}/Example.csproj DESTINATION ${OUTDIR})
     run_checked("dotnet build" COMMAND ${DOTNET_EXECUTABLE} build -c Release -o ${OUTDIR}/bin
@@ -218,7 +219,7 @@ elseif(LANG STREQUAL "javascript")
         message("JAVASCRIPT_NOT_FOUND: no Node.js 18 or later on PATH; skipping the JavaScript example")
         return()
     endif()
-    generate(javascript)
+    generate(javascript --generate_json --generate_xml --generate_bson)
     # Next to the generated modules, so it imports them; package.json makes
     # Node 18 and 20 treat the .js files as ES modules.
     file(COPY ${src}/main.js DESTINATION ${OUTDIR})
@@ -240,3 +241,24 @@ if(NOT rc EQUAL 0)
     message(FATAL_ERROR "the ${LANG} example wrote different bytes:\n"
                         "  got  ${got}\n  want ${want}")
 endif()
+
+if(LANG STREQUAL "protobuf")
+    return()
+endif()
+get_filename_component(expected_dir ${EXPECTED} DIRECTORY)
+get_filename_component(expected_name ${EXPECTED} NAME_WE)
+foreach(form json xml bson)
+    set(form_written ${OUTDIR}/telemetry.${form})
+    set(form_expected ${expected_dir}/${expected_name}.${form})
+    if(NOT EXISTS ${form_written})
+        message(FATAL_ERROR "the ${LANG} example wrote no telemetry.${form}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} -E compare_files ${form_written} ${form_expected}
+        RESULT_VARIABLE rc)
+    if(NOT rc EQUAL 0)
+        file(READ ${form_written} got HEX)
+        file(READ ${form_expected} want HEX)
+        message(FATAL_ERROR "the ${LANG} example wrote a different telemetry.${form}:\n"
+                            "  got  ${got}\n  want ${want}")
+    endif()
+endforeach()

@@ -42,6 +42,10 @@ protected:
     virtual bool do_expected_wire(int& errorcode);
     virtual bool do_bitfield_setters(int& errorcode);
     virtual bool do_string_setters(int& errorcode);
+    // With --generate_json, --generate_xml or --generate_bson: the exact
+    // text or bytes, round trips and rejected input.
+    void do_text_tests(const std::string& classname);
+    void do_bson_tests(const std::string& classname);
 
     // The Rust type of a native member ("u16").
     std::string rust_type(const std::string& type);

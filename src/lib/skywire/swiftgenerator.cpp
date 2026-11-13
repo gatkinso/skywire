@@ -13,8 +13,11 @@
 //   permissions and limitations under the License.
 //
 
+#include <iostream>
 #include <map>
+#include <set>
 #include <string>
+#include <vector>
 #include "swiftgenerator.h"
 #include "sw_endian.h"
 
@@ -50,6 +53,11 @@ bool SwiftGenerator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (wants_text() && false == check_text_names(errorcode))
+    {
+        return false;
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -74,6 +82,7 @@ bool SwiftGenerator::do_implementation(int& errorcode)
     imp_equals(errorcode);
     imp_get_functions(errorcode);
     imp_set_functions(errorcode);
+    ss_ << text_functions();
     imp_classend(errorcode);
 
     imp_string.append(ss_.str());
@@ -515,6 +524,132 @@ void SwiftGenerator::deserialize_bitfield(uint32_t tag, const member_desc_t& mem
     }
     insert_indents(2);
     ss_ << std::get<member_name>(member) << " = " << value << std::endl;
+}
+
+// A member is a property, which cannot share a name with a method, and the
+// class refers to the helpers by the name SkywireText, which a class or
+// member of that name would hide.
+bool SwiftGenerator::check_text_names(int& errorcode)
+{
+    const std::string runtime_type = lang_spec_.get_value_string("runtime_type_str");
+    std::set<std::string> reserved = { runtime_type };
+    const std::vector<std::pair<bool, std::string>> formats = {
+        { wants_json(), "Json" }, { wants_xml(), "Xml" }, { wants_bson(), "Bson" },
+    };
+    for (auto& format : formats)
+    {
+        if (format.first)
+        {
+            reserved.insert({ "to" + format.second, "write" + format.second, "read" + format.second });
+        }
+    }
+
+    bool valid = true;
+    if (classname_ == runtime_type)
+    {
+        std::cerr << "Invalid specification for Swift: with --generate_json, --generate_xml or --generate_bson a message "
+                     "cannot be named "
+                  << runtime_type << std::endl;
+        valid = false;
+    }
+    for (auto& member : ordered_members_)
+    {
+        const std::string& name = std::get<member_name>(member.second);
+        if (reserved.count(name) != 0)
+        {
+            std::cerr << "Invalid specification for Swift: member name '" << name
+                      << "' is taken by --generate_json, --generate_xml or --generate_bson" << std::endl;
+            valid = false;
+        }
+    }
+    if (false == valid)
+    {
+        errorcode |= SW_SPEC_INVALID;
+    }
+    return valid;
+}
+
+// One member's lines in a write or read method. The writer method is u32,
+// i64, u64, f32 or f64 for those types and i32 for every other integer (a
+// char as signed), the value converted to Int32 unless it is one; a read
+// integer is truncated to the member's type (it is in range), a read real
+// converted.
+std::string SwiftGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    static const std::map<std::string, std::string> kinds = {
+        { "uint32_t", "u32" }, { "int64_t", "i64" }, { "uint64_t", "u64" }, { "float", "f32" }, { "double", "f64" },
+    };
+
+    const std::string& type = std::get<member_type>(member);
+    const std::string& name = std::get<member_name>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (!is_native_type(type))
+        kind = "user";
+    else if (reading)
+        kind = type == "float" || type == "double" ? "real" : "int";
+
+    std::string method = "i32";
+    std::string value = "self." + name;
+    auto it = kinds.find(type);
+    if (it != kinds.end())
+        method = it->second;
+    else if (swift_type(type) != "Int32")
+        value = "Int32(" + value + ")";
+
+    std::string template_str = lang_spec_.get_value_string(function + "_" + kind + "_mem_str");
+    template_str = replace_all(template_str, lang_spec_.get_value_string("value_substr"), value);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("ctype_substr"), type);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("kind_substr"), method);
+    template_str = replace_all(template_str, lang_spec_.get_value_string("fieldbits_substr"),
+                               std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+    template_str = replace_all(template_str, lang_spec_.get_value_string("type_substr"), swift_type(type));
+    return replace_all(template_str, lang_spec_.get_value_string("member_substr"), name);
+}
+
+// toJson/init(json:), toXml/init(xml:) and toBson/init(bson:)
+// (docs/text-formats.md), each only when asked for, with the write and read
+// methods a containing message calls. Members go in tag order; reading
+// takes them in any order, leaves missing ones as they are and ignores
+// unknown ones.
+std::string SwiftGenerator::text_functions()
+{
+    const std::string body_token = "__BLOCK_BODY__";
+    const std::string classname_substr = lang_spec_.get_value_string("classname_substr");
+    auto value = [&](const std::string& key) {
+        return replace_all(lang_spec_.get_value_string(key), classname_substr, classname_);
+    };
+    auto with_body = [&](const std::string& key, const std::string& body) {
+        return replace_all(value(key), body_token, body);
+    };
+
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    std::string body;
+    for (const auto& format : formats)
+    {
+        std::string writes;
+        std::string cases;
+        for (auto& member : ordered_members_)
+        {
+            writes += text_member("to_" + format, member.second);
+            cases += replace_all(with_body("read_case_block", text_member("from_" + format, member.second)),
+                                 lang_spec_.get_value_string("member_substr"), std::get<member_name>(member.second));
+        }
+        body += "\n" + value("to_" + format + "_fcn_str");
+        body += "\n" + value("from_" + format + "_fcn_str");
+        body += "\n" + with_body("write_" + format + "_fcn_block", writes);
+        body += "\n" + with_body("read_" + format + "_fcn_block", with_body("read_switch_block", cases));
+    }
+    return body;
 }
 
 }

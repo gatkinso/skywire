@@ -951,3 +951,486 @@ TEST_F(ProcessorNestedRelayTest, UnwritableOutputDirectory)
         output_str_map, (dir / "no_such_dir").string(), errorcode, false, true));
     ASSERT_NE(errorcode & SW_FILEWRITEERROR, 0u);
 }
+
+// --generate_json, --generate_xml and --generate_bson: each adds its own
+// methods (and generated tests), and none changes the output when not given.
+namespace
+{
+
+std::string read_lang(const std::string& relative)
+{
+    std::ifstream in(std::string(SKYWIRE_LANG_DIR) + "/" + relative);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+const char* const text_spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},
+    "members":{"1":{"type":"int16_t","name":"a"},"2":{"type":"string","name":"s","length":4}}})";
+
+bool generate_text(const std::string& spec, const std::string& lang, bool json, bool xml, results_t& out, int& errorcode,
+                   bool bson = false)
+{
+    Processor p;
+    p.set_generate_json(json);
+    p.set_generate_xml(xml);
+    p.set_generate_bson(bson);
+    return p.process_string(spec, read_lang(lang), out, "", errorcode, true, false);
+}
+
+bool has(const std::string& text, const std::string& what)
+{
+    return text.find(what) != std::string::npos;
+}
+
+}
+
+TEST(ProcessorTextFormatsTest, OffByDefault)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, false, out, errorcode));
+    EXPECT_FALSE(has(out["header"], "text.h"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "bson"));
+    EXPECT_FALSE(has(out["unittest"], "Bson"));
+}
+
+TEST(ProcessorTextFormatsTest, JsonOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", true, false, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_json() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_json(std::string_view text)"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    EXPECT_TRUE(has(out["unittest"], R"(R"sw({"a":-12345,"s":"skyw"})sw")"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+}
+
+TEST(ProcessorTextFormatsTest, XmlOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_xml() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_xml(std::string_view text)"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_TRUE(has(out["unittest"], "R\"sw(<Texty><a>-12345</a><s>skyw</s></Texty>)sw\""));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+}
+
+TEST(ProcessorTextFormatsTest, BsonOnly)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "cpp/lang.cpp.json", false, false, out, errorcode, true));
+    EXPECT_TRUE(has(out["header"], "#include \"bson.h\""));
+    EXPECT_FALSE(has(out["header"], "#include \"text.h\""));
+    EXPECT_TRUE(has(out["header"], "std::string to_bson() const"));
+    EXPECT_TRUE(has(out["header"], "bool from_bson(std::string_view bytes)"));
+    EXPECT_FALSE(has(out["header"], "_json"));
+    EXPECT_FALSE(has(out["header"], "_xml"));
+    // {"a": int32 -12345, "s": string "skyw"}, 24 bytes.
+    EXPECT_TRUE(has(out["unittest"], "0x18, 0x00, 0x00, 0x00, 0x10, 0x61, 0x00, 0xc7,\n"
+                                     "        0xcf, 0xff, 0xff, 0x02, 0x73, 0x00, 0x05, 0x00,\n"
+                                     "        0x00, 0x00, 0x73, 0x6b, 0x79, 0x77, 0x00, 0x00,"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+    EXPECT_FALSE(has(out["unittest"], "Xml"));
+}
+
+TEST(ProcessorTextFormatsTest, MemberNameClash)
+{
+    results_t out;
+    int errorcode = 0;
+    const char* spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"to_xml"}}})";
+    EXPECT_TRUE(generate_text(spec, "cpp/lang.cpp.json", true, false, out, errorcode));
+    out.clear();
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(spec, "cpp/lang.cpp.json", false, true, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* bson_spec = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"from_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(bson_spec, "cpp/lang.cpp.json", true, true, out, errorcode));
+    out.clear();
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(bson_spec, "cpp/lang.cpp.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// C: the same three forms as functions, each only when asked for.
+TEST(ProcessorTextFormatsTest, COffByDefault)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, false, out, errorcode));
+    EXPECT_FALSE(has(out["header"], "ctext.h"));
+    EXPECT_FALSE(has(out["header"], "cbson.h"));
+    EXPECT_FALSE(has(out["header"], "Json"));
+    EXPECT_FALSE(has(out["header"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "Bson"));
+    EXPECT_FALSE(has(out["unittest"], "Json"));
+}
+
+TEST(ProcessorTextFormatsTest, CEachForm)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", true, false, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "#include \"ctext.h\""));
+    EXPECT_TRUE(has(out["header"], "size_t Texty_ToJson(const Texty * structure, char * buf, size_t cap);"));
+    EXPECT_TRUE(has(out["header"], "int Texty_FromJson(Texty * structure, const char * text, size_t len);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_put_int16_t(w, structure->a);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_read_bytes(p, decoded.s, 4)"));
+    EXPECT_FALSE(has(out["header"], "Xml"));
+    EXPECT_FALSE(has(out["header"], "cbson.h"));
+    EXPECT_TRUE(has(out["unittest"], R"(R"sw({"a":-12345,"s":"skyw"})sw")"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["header"], "int Texty_FromXml(Texty * structure, const char * text, size_t len);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_xml_is(&p, &root, \"Texty\")"));
+    EXPECT_FALSE(has(out["header"], "Json"));
+    EXPECT_TRUE(has(out["unittest"], "R\"sw(<Texty><a>-12345</a><s>skyw</s></Texty>)sw\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "c/lang.c.json", false, false, out, errorcode, true));
+    EXPECT_TRUE(has(out["header"], "#include \"cbson.h\""));
+    EXPECT_FALSE(has(out["header"], "#include \"ctext.h\""));
+    EXPECT_TRUE(has(out["header"], "size_t Texty_ToBson(const Texty * structure, uint8_t * buf, size_t cap);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_int16_t(o, \"a\", structure->a);"));
+    EXPECT_TRUE(has(out["unittest"], "0x18, 0x00, 0x00, 0x00, 0x10, 0x61, 0x00, 0xc7,"));
+}
+
+TEST(ProcessorTextFormatsTest, CNestedAndBitfields)
+{
+    results_t out;
+    int errorcode = 0;
+    const char* spec = R"({"stringValues":{"classname":"Outer","namespace":"t"},"members":{
+        "1":{"type":"Inner","name":"inner"},"2":{"type":"uint8_t","name":"u","bits":3},
+        "3":{"type":"unsigned char","name":"c"}}})";
+    ASSERT_TRUE(generate_text(spec, "c/lang.c.json", true, true, out, errorcode, true));
+    EXPECT_TRUE(has(out["implementation"], "Inner_WriteJson(&structure->inner, w);"));
+    EXPECT_TRUE(has(out["implementation"], "Inner_ReadXml(&decoded.inner, p, &child)"));
+    EXPECT_TRUE(has(out["implementation"], "e.type != SW_BSON_DOCUMENT || 0 != Inner_ReadBson(&decoded.inner, &e.doc)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_json_read_uint8_t(p, &decoded.u, 3)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_uint8_t(o, \"u\", structure->u);"));
+    EXPECT_TRUE(has(out["implementation"], "sw_xml_read_unsigned_char(p, &child, &decoded.c, 0)"));
+    EXPECT_TRUE(has(out["implementation"], "sw_bson_put_unsigned_char(o, \"c\", structure->c);"));
+}
+
+// Python: methods on the class, and skywire_text.py written beside it.
+TEST(ProcessorTextFormatsTest, PythonForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "python/lang.python3.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "skywire_text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "python/lang.python3.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "class JsonWriter"));
+    EXPECT_TRUE(has(out["implementation"], "import skywire_text"));
+    EXPECT_TRUE(has(out["implementation"], "    def to_json(self):"));
+    EXPECT_TRUE(has(out["implementation"], "            self.a = skywire_text.json_number(field, \"int16_t\")"));
+    EXPECT_TRUE(has(out["implementation"], "    def from_bson(self, data):"));
+    EXPECT_FALSE(has(out["implementation"], "to_xml"));
+    EXPECT_TRUE(has(out["unittest"], "self.assertEqual(text, \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\")"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"_read_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "python/lang.python3.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "python/lang.python3.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// Go: the methods each flag adds, the runtime written into the message's
+// package, and member names that clash with the methods refused.
+TEST(ProcessorTextFormatsTest, GoForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "ToJSON"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "\npackage t\n"));
+    EXPECT_FALSE(has(out["runtime"], "package skywiretext"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) ToJSON() []byte {"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) UnmarshalJSON(b []byte) error {"));
+    EXPECT_TRUE(has(out["implementation"], "\tw.int32(\"a\", int32(s.a))\n"));
+    EXPECT_TRUE(has(out["implementation"], "x, err := swJSONInt(m.value, \"int16_t\", 0)"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) MarshalBSON() ([]byte, error) {"));
+    EXPECT_FALSE(has(out["implementation"], "ToXML"));
+    EXPECT_FALSE(has(out["implementation"], "encoding/xml"));
+    EXPECT_TRUE(has(out["unittest"], "if want := \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\"; string(text) != want {"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "go/lang.go.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "\t\"encoding/xml\"\n"));
+    EXPECT_TRUE(has(out["implementation"], "func (s *Texty) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBSON"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "go/lang.go.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "go/lang.go.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+TEST(ProcessorTextFormatsTest, CSharpForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "ToJson"));
+    EXPECT_FALSE(has(out["implementation"], "Skywire.Text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "namespace Skywire.Text\n"));
+    EXPECT_TRUE(has(out["implementation"], "using Skywire.Text;\n"));
+    EXPECT_TRUE(has(out["implementation"], "public string ToJson()\n"));
+    EXPECT_TRUE(has(out["implementation"], "public bool FromJson(byte[] utf8)\n"));
+    EXPECT_TRUE(has(out["implementation"], "w.Int32(\"a\", m_a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "m_a = unchecked((short)SwJson.Int(m.Value, \"int16_t\", 0));\n"));
+    EXPECT_TRUE(has(out["implementation"], "public byte[] ToBson()\n"));
+    EXPECT_FALSE(has(out["implementation"], "ToXml"));
+    EXPECT_TRUE(has(out["unittest"], "string want = \"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\";"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "csharp/lang.csharp.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "WriteXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "ToBson"));
+
+    // The text forms' methods and the runtime's types are taken only with
+    // the flags.
+    for (const char* name : { "ReadBson", "SwJson" })
+    {
+        const std::string clash = std::string(R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":")") +
+                                  name + R"("}}})";
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(clash, "csharp/lang.csharp.json", false, false, out, errorcode)) << name;
+        out.clear();
+        EXPECT_FALSE(generate_text(clash, "csharp/lang.csharp.json", true, true, out, errorcode, true)) << name;
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u) << name;
+    }
+}
+
+// Rust: the functions each flag adds, the runtime a sibling module, and
+// member and type names that clash with them refused.
+TEST(ProcessorTextFormatsTest, RustForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "skywire_text"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "pub(crate) struct JsonWriter"));
+    EXPECT_TRUE(has(out["implementation"], "use super::skywire_text;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    pub fn to_json(&self) -> String {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", i32::from(self.a));\n"));
+    EXPECT_TRUE(has(out["implementation"], "self.a = m.value.int(\"int16_t\", 0)? as i16;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    pub fn from_bson(bson: impl AsRef<[u8]>) -> std::io::Result<Self> {\n"));
+    EXPECT_FALSE(has(out["implementation"], "to_xml"));
+    EXPECT_TRUE(has(out["unittest"], "b\"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "rust/lang.rust.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "self.write_xml(&mut w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "to_bson"));
+
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"read_bson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "rust/lang.rust.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "rust/lang.rust.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* module = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(module, "rust/lang.rust.json", false, false, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(module, "rust/lang.rust.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+TEST(ProcessorTextFormatsTest, JavaForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "SkywireText"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    EXPECT_TRUE(has(out["runtime"], "public static final class JsonWriter {"));
+    EXPECT_TRUE(has(out["implementation"], "import skywire.text.SkywireText;\n"));
+    EXPECT_TRUE(has(out["implementation"], "import java.util.List;\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public String toJson() {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", this.a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "this.a = (short) m.value.integer(\"int16_t\", 0);\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public static Texty fromBson(byte[] bson) {\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "\"{\\\"a\\\":-12345,\\\"s\\\":\\\"skyw\\\"}\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "java/lang.java.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "writeXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+    EXPECT_FALSE(has(out["implementation"], "import java.util.List;"));
+
+    // The runtime class's simple name, which a class or member of that name
+    // would hide.
+    const char* member = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"SkywireText"}}})";
+    const char* type = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    for (const char* spec : { member, type })
+    {
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(spec, "java/lang.java.json", false, false, out, errorcode));
+        out.clear();
+        EXPECT_FALSE(generate_text(spec, "java/lang.java.json", false, true, out, errorcode));
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    }
+}
+
+TEST(ProcessorTextFormatsTest, SwiftForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_FALSE(has(out["implementation"], "SkywireText"));
+
+    // The helpers ship with SWStream.swift, not with each message.
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", true, false, out, errorcode, true));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_TRUE(has(out["implementation"], "    public func toJson() -> String {\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public convenience init(json: [UInt8]) throws {\n"));
+    EXPECT_TRUE(has(out["implementation"], "        w.i32(\"a\", Int32(self.a))\n"));
+    EXPECT_TRUE(has(out["implementation"], "self.a = try Int16(truncatingIfNeeded: m.value.integer(\"int16_t\", 0))\n"));
+    EXPECT_TRUE(has(out["implementation"], "    public convenience init(bson: [UInt8]) throws {\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "let jsonText = input.toJson()"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "swift/lang.swift.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "writeXml(w, \"Texty\")"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+
+    // A property cannot share a method's name, and SkywireText names the
+    // helpers.
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "swift/lang.swift.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "swift/lang.swift.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* member = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"SkywireText"}}})";
+    const char* type = R"({"stringValues":{"classname":"SkywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    for (const char* spec : { member, type })
+    {
+        out.clear();
+        errorcode = 0;
+        EXPECT_TRUE(generate_text(spec, "swift/lang.swift.json", false, false, out, errorcode));
+        out.clear();
+        EXPECT_FALSE(generate_text(spec, "swift/lang.swift.json", false, true, out, errorcode));
+        EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+    }
+}
+
+TEST(ProcessorTextFormatsTest, JavaScriptForms)
+{
+    results_t out;
+    int errorcode = 0;
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, false, out, errorcode));
+    EXPECT_EQ(0u, out.count("runtime"));
+    EXPECT_EQ(0u, out.count("runtimeheader"));
+    EXPECT_FALSE(has(out["implementation"], "skywireText"));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", true, false, out, errorcode, true));
+    ASSERT_EQ(1u, out.count("runtime"));
+    ASSERT_EQ(1u, out.count("runtimeheader"));
+    EXPECT_TRUE(has(out["runtime"], "export class JsonWriter {"));
+    EXPECT_TRUE(has(out["runtimeheader"], "export declare class JsonWriter {"));
+    EXPECT_TRUE(has(out["implementation"], "import * as skywireText from \"./skywire_text.js\";\n"));
+    EXPECT_TRUE(has(out["header"], "import type * as skywireText from \"./skywire_text.js\";\n"));
+    EXPECT_TRUE(has(out["implementation"], "  toJsonText() {\n"));
+    EXPECT_TRUE(has(out["implementation"], "    w.i32(\"a\", this._a);\n"));
+    EXPECT_TRUE(has(out["implementation"], "          this.a = m.value.integer(\"int16_t\", 0);\n"));
+    EXPECT_TRUE(has(out["implementation"], "  static fromBson(bytes) {\n"));
+    EXPECT_TRUE(has(out["header"], "  static fromJsonText(text: skywireText.Text): Texty;\n"));
+    EXPECT_FALSE(has(out["implementation"], "toXml"));
+    EXPECT_TRUE(has(out["unittest"], "test(\"Texty Json\""));
+
+    out.clear();
+    ASSERT_TRUE(generate_text(text_spec, "javascript/lang.javascript.json", false, true, out, errorcode));
+    EXPECT_TRUE(has(out["implementation"], "this.writeXml(w, \"Texty\");"));
+    EXPECT_FALSE(has(out["implementation"], "toBson"));
+
+    // A member's accessor cannot take a method's name, nor a type the
+    // binding the helpers are imported as.
+    const char* clash = R"({"stringValues":{"classname":"Texty","namespace":"t"},"members":{"1":{"type":"int16_t","name":"readBson"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(clash, "javascript/lang.javascript.json", true, true, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(clash, "javascript/lang.javascript.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+
+    const char* binding = R"({"stringValues":{"classname":"skywireText","namespace":"t"},"members":{"1":{"type":"int16_t","name":"a"}}})";
+    out.clear();
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(binding, "javascript/lang.javascript.json", false, false, out, errorcode));
+    out.clear();
+    EXPECT_FALSE(generate_text(binding, "javascript/lang.javascript.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_SPEC_INVALID, 0u);
+}
+
+// proto3 is a schema, with no code to add the forms to.
+TEST(ProcessorTextFormatsTest, Proto3Refuses)
+{
+    results_t out;
+    int errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", true, false, out, errorcode));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", false, true, out, errorcode));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
+    errorcode = 0;
+    EXPECT_FALSE(generate_text(text_spec, "proto/lang.proto3.json", false, false, out, errorcode, true));
+    EXPECT_NE(errorcode & SW_ERROR, 0u);
+    errorcode = 0;
+    EXPECT_TRUE(generate_text(text_spec, "proto/lang.proto3.json", false, false, out, errorcode));
+}

@@ -80,7 +80,7 @@ reconfiguring. Under the prefix:
 |---|---|
 | `bin/` | `wiregen` (on Windows, with the protobuf and abseil DLLs it needs) |
 | `include/skywire/` | The C and C++ runtimes, both header-only: `cstream.h`, `sw_endian.h`, `stream.h`, `streamable.h` |
-| `share/skywire/runtime/` | The Swift runtime, `swift/SWStream.swift` |
+| `share/skywire/runtime/` | The Swift runtime, `swift/SWStream.swift`, and `swift/SkywireText.swift` for the JSON, XML and BSON forms |
 | `share/skywire/lang/` | The lang files, `lang.*.json` |
 | `share/skywire/schema/` | The [JSON Schemas](specs.md#editor-support) for specifications and lang files |
 | `lib/cmake/skywire/` | The CMake package (see [Using skywire](using.md)). Some Linux systems use `lib64` or a multiarch directory in place of `lib`. |

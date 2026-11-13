@@ -59,6 +59,10 @@ protected:
     std::string imp_hashcode();
     std::string imp_tostring();
     std::string imp_helpers();
+    std::string imp_text();
+    std::string text_member(const std::string& function, const member_desc_t& member);
+
+    bool wants_text() const { return wants_json() || wants_xml() || wants_bson(); }
 
     std::string cs_type(const std::string& type);
     std::string cs_endian(unsigned int endian_flag);

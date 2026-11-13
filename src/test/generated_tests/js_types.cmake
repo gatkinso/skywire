@@ -3,8 +3,9 @@
 #
 #  Detects tsc 5.1 or later at test time (never npx, which would need the
 #  network). Without it, it prints the skip marker matched by the test's
-#  SKIP_REGULAR_EXPRESSION. Otherwise it generates the modules and their
-#  .d.ts files with wiregen, writes usage.ts, which reads and writes every
+#  SKIP_REGULAR_EXPRESSION. Otherwise it generates the modules (with the
+#  JSON, XML and BSON forms) and their .d.ts files with wiregen, writes
+#  usage.ts, which reads and writes every
 #  member, calls every method, and expects an error from each wrongly typed
 #  assignment (@ts-expect-error), and type-checks it with --strict.
 #
@@ -49,6 +50,7 @@ foreach(spec ${SPECS})
     execute_process(
         COMMAND ${WIREGEN} --input_file ${spec} --outdir ${OUTDIR}
                 --lang_file ${LANGFILE} --write_to_file
+                --generate_json --generate_xml --generate_bson
         RESULT_VARIABLE rc)
     if(NOT rc EQUAL 0)
         message(FATAL_ERROR "wiregen failed on ${spec} (${rc})")
@@ -70,6 +72,13 @@ foreach(spec ${SPECS})
         "const ${m}_copy: ${classname} = ${classname}.fromBytes(${m}_wire.buffer);\n"
         "const ${m}_same: boolean = ${m}.equals(${m}_copy) && ${m}.equals(null);\n"
         "const ${m}_text: string = ${m}.toString() + JSON.stringify(${m}.toJSON());\n"
+        "const ${m}_forms: string = ${classname}.fromJsonText(${m}.toJsonText()).toXml()\n"
+        "  + ${classname}.fromXml(new DataView(new ArrayBuffer(1))).toJsonText()\n"
+        "  + ${classname}.fromJsonText(new Uint8Array(0)).toXml();\n"
+        "const ${m}_bson: Uint8Array = ${classname}.fromBson(${m}.toBson().buffer).toBson();\n"
+        "void [${m}_forms, ${m}_bson];\n"
+        "// @ts-expect-error fromBson takes bytes, not text\n"
+        "${classname}.fromBson(\"x\");\n"
         "void [${m}_size, ${m}_end, ${m}_next, ${m}_same, ${m}_text];\n"
         "// @ts-expect-error SIZE is read-only\n"
         "${classname}.SIZE = 1;\n")

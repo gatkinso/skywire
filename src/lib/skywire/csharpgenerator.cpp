@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include "csharpgenerator.h"
+#include "runtime_sources.h"
 #include "sw_endian.h"
 
 namespace skyloupe
@@ -47,6 +48,16 @@ const std::set<std::string> generated_names = {
     "PutLE16", "GetLE16", "PutBE16", "GetBE16", "PutNE16", "GetNE16",
     "PutLE32", "GetLE32", "PutBE32", "GetBE32", "PutNE32", "GetNE32",
     "PutLE64", "GetLE64", "PutBE64", "GetBE64", "PutNE64", "GetNE64"
+};
+
+// What the text forms add: the methods of each, and the runtime's types,
+// which a member's property would hide.
+const std::vector<std::string> json_names = { "ToJson", "FromJson", "WriteJson", "ReadJson" };
+const std::vector<std::string> xml_names = { "ToXml", "FromXml", "WriteXml", "ReadXml" };
+const std::vector<std::string> bson_names = { "ToBson", "FromBson", "WriteBson", "ReadBson" };
+const std::vector<std::string> runtime_names = {
+    "SwText", "SwInvalidException", "SwJson", "SwJsonMember", "SwJsonWriter",
+    "SwXml", "SwXmlWriter", "SwBson", "SwBsonElement", "SwBsonWriter"
 };
 
 bool spec_error(int& errorcode, const std::string& what)
@@ -285,6 +296,12 @@ bool CSharpGenerator::generate(int& errorcode)
 
     ss_.str("");
 
+    if (wants_text())
+    {
+        // The JSON, XML and BSON helpers, written beside the class.
+        results_["runtime"] = runtime_source("csharp/SkywireText.cs");
+    }
+
     if (false == do_implementation(errorcode))
     {
         errorcode |= SW_FILE_IMP;
@@ -318,6 +335,22 @@ bool CSharpGenerator::check_names(int& errorcode)
     for (auto& name : generated_names)
     {
         taken[name] = "";
+    }
+    std::vector<std::vector<std::string>> text_names;
+    if (wants_json())
+        text_names.push_back(json_names);
+    if (wants_xml())
+        text_names.push_back(xml_names);
+    if (wants_bson())
+        text_names.push_back(bson_names);
+    if (wants_text())
+        text_names.push_back(runtime_names);
+    for (auto& names : text_names)
+    {
+        for (auto& name : names)
+        {
+            taken[name] = "";
+        }
     }
     taken[classname_] = ""; // a member may not be named after its class
 
@@ -422,6 +455,10 @@ std::string CSharpGenerator::imp_usings()
     {
         usings.insert("System.Runtime.CompilerServices");
     }
+    if (wants_text())
+    {
+        usings.insert(value("runtime_using_str"));
+    }
 
     const std::vector<std::string> values = msg_spec_.get_value("includes", "@NOTFOUND");
     for (auto& item : values)
@@ -454,6 +491,7 @@ std::string CSharpGenerator::imp_class()
     body += separator + block("equals_fcn_block", imp_equals());
     body += separator + block("hashcode_fcn_block", imp_hashcode());
     body += separator + block("tostring_fcn_block", imp_tostring());
+    body += imp_text();
     body += imp_helpers();
 
     return block("class_block", body);
@@ -753,6 +791,76 @@ std::string CSharpGenerator::imp_helpers()
     if (floats)
         body += separator + block("float_bits_block", "");
 
+    return body;
+}
+
+// One member's lines in a to_ or from_ method. The writer method is Int32
+// for every integer up to 32 bits but uint32_t (a char as signed), UInt32,
+// Int64, UInt64, Float or Double otherwise.
+std::string CSharpGenerator::text_member(const std::string& function, const member_desc_t& member)
+{
+    const std::string& type = std::get<member_type>(member);
+    const bool reading = function.rfind("from_", 0) == 0;
+    std::string kind = "native";
+    if (is_string_type(type))
+        kind = "string";
+    else if (!is_native_type(type))
+        kind = "user";
+    else if (reading)
+        kind = type == "float" || type == "double" ? "real" : "int";
+
+    std::string method;
+    if (type == "float")
+        method = "Float";
+    else if (type == "double")
+        method = "Double";
+    else if (type == "uint32_t")
+        method = "UInt32";
+    else if (type == "int64_t")
+        method = "Int64";
+    else if (type == "uint64_t")
+        method = "UInt64";
+    else
+        method = "Int32";
+
+    std::string template_str = value(function + "_" + kind + "_mem_str");
+    template_str = replace(template_str, "ctype_substr", type);
+    template_str = replace(template_str, "kind_substr", method);
+    template_str = replace(template_str, "fieldbits_substr",
+                           std::to_string(is_bitfield(member) ? std::get<member_bits>(member) : 0));
+    return subst(template_str, member);
+}
+
+// ToJson/FromJson, ToXml/FromXml and ToBson/FromBson (docs/text-formats.md),
+// each only when asked for, with the write and read methods a containing
+// message calls. Members go in tag order; reading takes them in any order,
+// leaves missing ones zero, ignores unknown ones and on failure changes
+// nothing.
+std::string CSharpGenerator::imp_text()
+{
+    const std::string separator = value("block_separator_str");
+    std::vector<std::string> formats;
+    if (wants_json())
+        formats.push_back("json");
+    if (wants_xml())
+        formats.push_back("xml");
+    if (wants_bson())
+        formats.push_back("bson");
+
+    std::string body;
+    for (const auto& format : formats)
+    {
+        for (const std::string direction : { "to_", "from_" })
+        {
+            const std::string function = direction + format;
+            body += separator + block(function + "_str", "");
+            for (auto& member : ordered_members_)
+            {
+                body += text_member(function, member.second);
+            }
+            body += value(function + "_end_str");
+        }
+    }
     return body;
 }
 

@@ -24,6 +24,36 @@
 #include "cstream.h"
 #include "Telemetry.h"
 
+/* Writes n bytes to path; 0 on success. */
+static int write_file(const char* path, const void* data, size_t n)
+{
+    FILE* f = fopen(path, "wb");
+    if (f == NULL)
+    {
+        return -1;
+    }
+    if (fwrite(data, 1, n, f) != n)
+    {
+        fclose(f);
+        return -1;
+    }
+    return fclose(f) == 0 ? 0 : -1;
+}
+
+/* Reads up to cap bytes from path into data; the count, or 0 on failure. */
+static size_t read_file(const char* path, void* data, size_t cap)
+{
+    size_t n;
+    FILE* f = fopen(path, "rb");
+    if (f == NULL)
+    {
+        return 0;
+    }
+    n = fread(data, 1, cap, f);
+    fclose(f);
+    return n;
+}
+
 int main(int argc, char** argv)
 {
     Telemetry sent, received;
@@ -111,5 +141,64 @@ int main(int argc, char** argv)
            (unsigned)received.device_id, received.callsign, (unsigned)received.status,
            received.position.latitude, received.position.longitude,
            (double)received.position.altitude_m);
+
+    /* The same message as JSON, XML and BSON (docs/text-formats.md): each is
+     * written beside the file, read back and checked. The To functions follow
+     * snprintf (they return the length the whole form needs); a From function
+     * returns 0, or -1, leaving the message unchanged, on input it refuses. */
+    {
+        char base[1024];
+        char path[1040];
+        char text[1024];
+        uint8_t bson[512];
+        Telemetry copy;
+        size_t len = strlen(argv[1]);
+        if (len >= sizeof base)
+        {
+            fprintf(stderr, "the file name is too long\n");
+            return 1;
+        }
+        memcpy(base, argv[1], len + 1);
+        if (len > 4 && strcmp(base + len - 4, ".bin") == 0)
+        {
+            base[len - 4] = '\0';
+        }
+
+        n = Telemetry_ToJson(&sent, text, sizeof text);
+        snprintf(path, sizeof path, "%s.json", base);
+        memset(&copy, 0, sizeof copy);
+        if (n >= sizeof text || write_file(path, text, n) != 0 ||
+            Telemetry_FromJson(&copy, text, read_file(path, text, sizeof text)) != 0 ||
+            Telemetry_Equals(&sent, &copy) != 1)
+        {
+            fprintf(stderr, "the JSON copy is different\n");
+            return 1;
+        }
+
+        n = Telemetry_ToXml(&sent, text, sizeof text);
+        snprintf(path, sizeof path, "%s.xml", base);
+        memset(&copy, 0, sizeof copy);
+        if (n >= sizeof text || write_file(path, text, n) != 0 ||
+            Telemetry_FromXml(&copy, text, read_file(path, text, sizeof text)) != 0 ||
+            Telemetry_Equals(&sent, &copy) != 1)
+        {
+            fprintf(stderr, "the XML copy is different\n");
+            return 1;
+        }
+
+        n = Telemetry_ToBson(&sent, bson, sizeof bson);
+        snprintf(path, sizeof path, "%s.bson", base);
+        memset(&copy, 0, sizeof copy);
+        if (n > sizeof bson || write_file(path, bson, n) != 0 ||
+            Telemetry_FromBson(&copy, bson, read_file(path, bson, sizeof bson)) != 0 ||
+            Telemetry_Equals(&sent, &copy) != 1)
+        {
+            fprintf(stderr, "the BSON copy is different\n");
+            return 1;
+        }
+
+        Telemetry_ToJson(&sent, text, sizeof text);
+        printf("%s\n", text);
+    }
     return 0;
 }

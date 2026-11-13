@@ -13,8 +13,9 @@
 //   express or implied. See the License for the specific language governing
 //   permissions and limitations under the License.
 //
-//  The Swift runtime, SWStream, as the library Skywire, so a Swift package can
-//  depend on skywire instead of copying lang/swift/SWStream.swift:
+//  The Swift runtime, SWStream (and SkywireText, for the JSON, XML and BSON
+//  forms), as the library Skywire, so a Swift package can depend on skywire
+//  instead of copying lang/swift/SWStream.swift and SkywireText.swift:
 //
 //    .package(url: "https://github.com/gatkinso/skywire.git", from: "0.10.0")
 //    .product(name: "Skywire", package: "skywire")
@@ -30,6 +31,6 @@ let package = Package(
         .library(name: "Skywire", targets: ["Skywire"]),
     ],
     targets: [
-        .target(name: "Skywire", path: "lang/swift", exclude: ["lang.swift.json"], sources: ["SWStream.swift"]),
+        .target(name: "Skywire", path: "lang/swift", exclude: ["lang.swift.json"], sources: ["SWStream.swift", "SkywireText.swift"]),
     ]
 )
