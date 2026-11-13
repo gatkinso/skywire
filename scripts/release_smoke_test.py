@@ -22,9 +22,11 @@ PREFIX is the unpacked archive (it holds bin/, include/, share/). The checks:
   1. wiregen --version prints the expected version, and --banner runs.
   2. wiregen needs only system libraries: no protobuf, abseil or C++ runtime
      to install (ldd, otool -L or dumpbin /dependents).
-  3. wiregen generates every language from the installed lang files.
+  3. wiregen generates every language from the installed lang files, with
+     the JSON, XML and BSON forms (but proto3, which has no code for them).
   4. The generated C, compiled against the installed runtime headers, writes
-     the same bytes as examples/Telemetry.bin.
+     the same bytes as examples/Telemetry.bin, and the same JSON, XML and
+     BSON as examples/Telemetry.json, .xml and .bson.
 
 The C compiler is $CC or cc, or cl on Windows (run it from a developer shell,
 which dumpbin also needs).
@@ -41,6 +43,7 @@ import tempfile
 
 LANGUAGES = ["c", "cpp", "go", "java", "proto3", "python3", "rust", "swift"]
 SPECS = ["Position.json", "Telemetry.json"]
+FORMS = ["--generate_json", "--generate_xml", "--generate_bson"]
 
 # Libraries every machine has. Anything else wiregen needs would have to be
 # installed alongside it.
@@ -112,8 +115,9 @@ def check_dependencies(wiregen, prefix):
 def generate(wiregen, specs_dir, language, outdir):
     os.makedirs(outdir)
     for spec in SPECS:
+        forms = [] if language == "proto3" else FORMS
         run([wiregen, "--language", language, "--write_to_file", "--silent",
-             "--input_file", os.path.join(specs_dir, spec), "--outdir", outdir])
+             "--input_file", os.path.join(specs_dir, spec), "--outdir", outdir] + forms)
     if not os.listdir(outdir):
         fail(f"wiregen --language {language} wrote nothing")
 
@@ -165,10 +169,11 @@ def main():
                   os.path.join(examples, "c", "main.c"), program)
         written = os.path.join(work, "telemetry.bin")
         run([program, written])
-        if not filecmp.cmp(written, os.path.join(examples, "Telemetry.bin"),
-                           shallow=False):
-            fail("the C example's output differs from examples/Telemetry.bin")
-        print("generated C compiles and writes examples/Telemetry.bin")
+        for ext in ("bin", "json", "xml", "bson"):
+            if not filecmp.cmp(os.path.join(work, "telemetry." + ext),
+                               os.path.join(examples, "Telemetry." + ext), shallow=False):
+                fail(f"the C example's telemetry.{ext} differs from examples/Telemetry.{ext}")
+        print("generated C compiles and writes examples/Telemetry.bin, .json, .xml and .bson")
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
