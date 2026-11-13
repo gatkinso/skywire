@@ -98,6 +98,25 @@ sensor 42 at 123456 ms: 25.00 C, mode 3, flags 1
 
 The runtime (`cstream.h`) is header-only, so there is nothing to link.
 
+## 5. JSON, XML and BSON
+
+Add `--generate_json` to the wiregen command (or `--generate_xml`,
+`--generate_bson`, or all three), and the reading has its text form too:
+
+```c
+char json[128];
+SensorReading_ToJson(&r, json, sizeof json);   /* returns the length, like snprintf */
+puts(json);
+SensorReading_FromJson(&r, json, strlen(json)); /* 0, or -1 if it is not one */
+```
+
+```
+{"sensor_id":42,"timestamp_ms":123456,"temp_centi_c":2500,"mode":3,"flags":1}
+```
+
+Every language writes exactly that, and reads it back; see
+[JSON, XML and BSON](text-formats.md).
+
 ## Next
 
 - Another language: the same specification with `--language` `c++`, `csharp`,

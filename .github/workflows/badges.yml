@@ -1,0 +1,69 @@
+#
+#  Copyright (C) 2026 Geoffrey Atkinson
+#
+#  Licensed under the Apache License, Version 2.0 (the "License").
+#  You may not use this file except in compliance with the License.
+#  A copy of the License is located at
+#
+#  https://www.apache.org/licenses/LICENSE-2.0.html
+#
+#  or in the "license" file accompanying this file. This file is distributed
+#  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+#  express or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+#
+name: Badges
+
+# The README's coverage badge: after CI succeeds on a push to master, the
+# line coverage its coverage job measured goes to coverage.json on the
+# badges branch, in shields.io's endpoint format. CI itself stays read-only
+# (the Release workflow calls it with read-only permissions); this workflow
+# only reads that run's coverage artifact and writes the badges branch.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  coverage:
+    name: Coverage badge
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage
+          path: coverage
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Publish coverage.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pct=$(sed -nE 's/^lines: ([0-9.]+)%.*/\1/p' coverage/summary.txt)
+          if [ -z "$pct" ]; then
+            echo "no line coverage in summary.txt" >&2
+            exit 1
+          fi
+          whole=${pct%.*}
+          if [ "$whole" -ge 90 ]; then color=brightgreen
+          elif [ "$whole" -ge 80 ]; then color=green
+          elif [ "$whole" -ge 70 ]; then color=yellowgreen
+          elif [ "$whole" -ge 60 ]; then color=yellow
+          else color=red; fi
+          mkdir badges && cd badges
+          git init -q -b badges
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$pct" "$color" > coverage.json
+          cat coverage.json
+          git add coverage.json
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Coverage badge: $pct% (CI run ${{ github.event.workflow_run.id }})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges
