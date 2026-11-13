@@ -12,16 +12,21 @@
 
 name: CI
 
-# To keep Actions minutes down, CI runs only when a release is cut: the
-# Release workflow calls it (workflow_call) for each v* tag and holds back
-# publishing unless it passes. Pull requests and pushes run nothing; run it by
-# hand (Actions > CI > Run workflow, or gh workflow run ci.yml --ref <branch>)
-# to test a branch; add -f platforms=linux to run only the Linux jobs and the
-# docs build. Check formatting locally: git clang-format origin/master.
+# CI runs on every push to master and every pull request, and when a release
+# is cut: the Release workflow calls it (workflow_call) for each v* tag and
+# holds back publishing unless it passes. To test a branch without a pull
+# request, run it by hand (Actions > CI > Run workflow, or gh workflow run
+# ci.yml --ref <branch>); add -f platforms=linux to run only the Linux jobs
+# and the docs build. Check formatting locally: git clang-format origin/master.
+# A successful run on master also updates the README's coverage badge
+# (badges.yml).
 #
 # No concurrency group: a called workflow's would be the caller's, and wait on
 # it forever.
 on:
+  push:
+    branches: [master]
+  pull_request:
   workflow_call:
   workflow_dispatch:
     inputs:

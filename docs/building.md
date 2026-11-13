@@ -35,14 +35,17 @@ Skywire is built and tested on:
 The tests that compile generated code in other languages need that language's
 toolchain, and are skipped without it (see [Testing](testing.md)).
 
-Every release is built and tested by GitHub Actions before it is published
-(`.github/workflows/ci.yml`, called from `release.yml`): Ubuntu 24.04 with GCC
+GitHub Actions builds and tests every push to `master`, every pull request, and
+every release before it is published (`.github/workflows/ci.yml`, which
+`release.yml` also calls): Ubuntu 24.04 with GCC
 and every language toolchain (no test may be skipped), Ubuntu with Clang under
 AddressSanitizer and UndefinedBehaviorSanitizer, and macOS 15 with Apple clang
 and Windows with Visual Studio 2026, both with every language toolchain (again,
 no test may be skipped). CI can also be run by hand on any branch, as can the
 libFuzzer workflow (`.github/workflows/fuzz.yml`); see
-[`src/test/fuzz`](https://github.com/gatkinso/skywire/blob/master/src/test/fuzz/README.md). Pull requests run no workflows.
+[`src/test/fuzz`](https://github.com/gatkinso/skywire/blob/master/src/test/fuzz/README.md).
+A successful run on `master` also updates the README's coverage badge
+(`.github/workflows/badges.yml`).
 
 ## Building
 

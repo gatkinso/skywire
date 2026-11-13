@@ -1,6 +1,12 @@
 # Skywire - Multilanguage Message Serialization Generator
 
 [![CI](https://github.com/gatkinso/skywire/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/gatkinso/skywire/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/gatkinso/skywire/badges/coverage.json)](https://github.com/gatkinso/skywire/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/gatkinso/skywire)](https://github.com/gatkinso/skywire/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/gatkinso/skywire/total)](https://github.com/gatkinso/skywire/releases)
+[![License: Apache 2.0](https://img.shields.io/github/license/gatkinso/skywire)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/gatkinso/skywire)](https://github.com/gatkinso/skywire/stargazers)
+[![Generates C, C++, C#, Go, Java, JavaScript, Python, Rust, Swift](https://img.shields.io/badge/generates-C%20%7C%20C%2B%2B%20%7C%20C%23%20%7C%20Go%20%7C%20Java%20%7C%20JavaScript%20%7C%20Python%20%7C%20Rust%20%7C%20Swift-informational)](docs/languages.md)
 
                                         )
             _                          /
