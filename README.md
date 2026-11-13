@@ -71,7 +71,7 @@ Download the archive for your platform from the
 unpack it. On Linux x86_64:
 
 ```sh
-VERSION=0.10.0
+VERSION=0.11.0
 curl -LO https://github.com/gatkinso/skywire/releases/download/v$VERSION/skywire-$VERSION-linux-x86_64.tar.gz
 tar xzf skywire-$VERSION-linux-x86_64.tar.gz
 SKYWIRE=$PWD/skywire-$VERSION-linux-x86_64

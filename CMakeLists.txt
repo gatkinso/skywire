@@ -21,7 +21,7 @@ if(POLICY CMP0207)
     cmake_policy(SET CMP0207 NEW)
 endif()
 
-project(skywire VERSION 0.10.0)
+project(skywire VERSION 0.11.0)
 
 include(TestBigEndian)
 include (CTest)

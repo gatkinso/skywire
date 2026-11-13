@@ -7,6 +7,8 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-13
+
 ### Changed
 - **Byte order: little-endian is now the default, and the `endian` values
   are swapped**: `0` (or no `endian`) is little-endian, `1` big-endian, `2`
@@ -288,6 +290,7 @@ The first versioned release, covering the work since the `modernize` merge.
 - The unused `lang_file` field in specifications (#42).
 - The obsolete `c++11` lang file (#48).
 
-[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/gatkinso/skywire/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/gatkinso/skywire/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/gatkinso/skywire/releases/tag/v0.9.0
