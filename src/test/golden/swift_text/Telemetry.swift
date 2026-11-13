@@ -31,7 +31,7 @@ public final class Telemetry {
         unit_0 |= (UInt8(truncatingIfNeeded: mode) & 0xf)
         unit_0 |= (UInt8(truncatingIfNeeded: status) & 0x7) << 4
         unit_0 |= (UInt8(truncatingIfNeeded: armed) & 0x1) << 7
-        SWWire.put(&p, unit_0, .big)
+        SWWire.put(&p, unit_0, .little)
         SWWire.put(&p, callsign, 8)
         position.serialize(into: &p)
         SWWire.put(&p, battery_mv, .little)
@@ -47,7 +47,7 @@ public final class Telemetry {
     public func deserialize(from p: inout UnsafeRawPointer) {
         device_id = SWWire.get(&p, .big)
         timestamp_us = SWWire.get(&p, .little)
-        let unit_0: UInt8 = SWWire.get(&p, .big)
+        let unit_0: UInt8 = SWWire.get(&p, .little)
         mode = UInt8(truncatingIfNeeded: unit_0 << 4) >> 4
         status = UInt8(truncatingIfNeeded: unit_0 << 1) >> 5
         armed = UInt8(truncatingIfNeeded: unit_0) >> 7

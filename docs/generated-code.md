@@ -10,8 +10,8 @@ What wiregen writes for a message, using this [specification](specs.md),
       "namespace": "SomeNamespace"
    },
    "members": {
-      "100": { "type": "float",    "name": "myfloat100",   "endian": 1 },
-      "200": { "type": "uint32_t", "name": "myuint32_200", "endian": 0 }
+      "100": { "type": "float",    "name": "myfloat100",   "endian": 0 },
+      "200": { "type": "uint32_t", "name": "myuint32_200", "endian": 1 }
    }
 }
 ```

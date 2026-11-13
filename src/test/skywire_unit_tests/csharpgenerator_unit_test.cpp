@@ -99,14 +99,14 @@ TEST_F(CSharpGeneratorUnitTest, NativeTypesMapToCSharpTypes)
         "2":{"type":"unsigned char","name":"b"},
         "3":{"type":"uint8_t","name":"c"},
         "4":{"type":"int8_t","name":"d"},
-        "5":{"type":"uint16_t","name":"e"},
-        "6":{"type":"int16_t","name":"f"},
-        "7":{"type":"uint32_t","name":"g"},
-        "8":{"type":"int32_t","name":"h"},
-        "9":{"type":"uint64_t","name":"i"},
-        "10":{"type":"int64_t","name":"j"},
-        "11":{"type":"float","name":"k"},
-        "12":{"type":"double","name":"l"}})"));
+        "5":{"type":"uint16_t","name":"e","endian":1},
+        "6":{"type":"int16_t","name":"f","endian":1},
+        "7":{"type":"uint32_t","name":"g","endian":1},
+        "8":{"type":"int32_t","name":"h","endian":1},
+        "9":{"type":"uint64_t","name":"i","endian":1},
+        "10":{"type":"int64_t","name":"j","endian":1},
+        "11":{"type":"float","name":"k","endian":1},
+        "12":{"type":"double","name":"l","endian":1}})"));
 
     const char* types[] = { "sbyte", "byte", "byte", "sbyte", "ushort", "short", "uint", "int", "ulong", "long", "float", "double" };
     const char* names[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l" };
@@ -123,8 +123,8 @@ TEST_F(CSharpGeneratorUnitTest, NativeTypesMapToCSharpTypes)
 TEST_F(CSharpGeneratorUnitTest, EndianSelectsByteOrder)
 {
     ASSERT_TRUE(generate(R"({
-        "1":{"type":"uint32_t","name":"big"},
-        "2":{"type":"uint32_t","name":"little","endian":1},
+        "1":{"type":"uint32_t","name":"big","endian":1},
+        "2":{"type":"uint32_t","name":"little","endian":0},
         "3":{"type":"uint32_t","name":"native","endian":2}})"));
 
     EXPECT_TRUE(has_line("            PutBE32(buf, o, m_big);"));
@@ -146,10 +146,10 @@ TEST_F(CSharpGeneratorUnitTest, SignedAndFloatingPointConversions)
 {
     ASSERT_TRUE(generate(R"({
         "1":{"type":"int8_t","name":"a"},
-        "2":{"type":"int16_t","name":"b"},
-        "3":{"type":"uint64_t","name":"c"},
-        "4":{"type":"float","name":"d"},
-        "5":{"type":"double","name":"e"}})"));
+        "2":{"type":"int16_t","name":"b","endian":1},
+        "3":{"type":"uint64_t","name":"c","endian":1},
+        "4":{"type":"float","name":"d","endian":1},
+        "5":{"type":"double","name":"e","endian":1}})"));
 
     EXPECT_TRUE(has_line("            buf[o] = unchecked((byte)m_a);"));
     EXPECT_TRUE(has_line("            m_a = unchecked((sbyte)buf[o]);"));
@@ -177,7 +177,7 @@ TEST_F(CSharpGeneratorUnitTest, HelpersOnlyWhenUsed)
     EXPECT_FALSE(has("CompilerServices"));
     EXPECT_FALSE(has("SKYWIRE_SPAN"));
 
-    ASSERT_TRUE(generate(R"({"1":{"type":"uint16_t","name":"a"},"2":{"type":"float","name":"b","endian":1},"3":{"type":"string","name":"c","length":3}})"));
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint16_t","name":"a","endian":1},"2":{"type":"float","name":"b","endian":0},"3":{"type":"string","name":"c","length":3}})"));
     EXPECT_TRUE(has("private static void PutBE16("));
     EXPECT_TRUE(has("private static ushort GetBE16("));
     EXPECT_TRUE(has("private static void PutLE32("));
@@ -195,7 +195,7 @@ TEST_F(CSharpGeneratorUnitTest, HelpersOnlyWhenUsed)
 
 TEST_F(CSharpGeneratorUnitTest, SpanFastPathUnlessPortable)
 {
-    ASSERT_TRUE(generate(R"({"1":{"type":"uint16_t","name":"a","endian":1}})"));
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint16_t","name":"a","endian":0}})"));
 
     // The #define must come before the usings, the file's first tokens.
     const size_t define = cs.find("#if (NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER) && !SKYWIRE_PORTABLE\n#define SKYWIRE_SPAN\n#endif\n");
@@ -227,7 +227,7 @@ TEST_F(CSharpGeneratorUnitTest, StringsUseCopyingMethods)
 
 TEST_F(CSharpGeneratorUnitTest, NestedMembersUseOffsetOverloads)
 {
-    ASSERT_TRUE(generate(R"({"1":{"type":"uint32_t","name":"a"},"2":{"type":"NestyInner","name":"n"},"3":{"type":"uint16_t","name":"b"}})"));
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint32_t","name":"a","endian":1},"2":{"type":"NestyInner","name":"n"},"3":{"type":"uint16_t","name":"b","endian":1}})"));
 
     EXPECT_TRUE(has_line("        private NestyInner m_n = new NestyInner();"));
     EXPECT_TRUE(has_line("        public NestyInner n { get { return m_n; } set { m_n = value ?? throw new ArgumentNullException(nameof(value)); } }"));
@@ -256,7 +256,7 @@ TEST_F(CSharpGeneratorUnitTest, OnlyNestedMembersSizeHasNoFixedPart)
 
 TEST_F(CSharpGeneratorUnitTest, KeywordMemberIsVerbatimIdentifier)
 {
-    ASSERT_TRUE(generate(R"({"1":{"type":"uint32_t","name":"event"},"2":{"type":"string","name":"class","length":2}})"));
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint32_t","name":"event","endian":1},"2":{"type":"string","name":"class","length":2}})"));
 
     EXPECT_TRUE(has_line("        private uint m_event;"));
     EXPECT_TRUE(has_line("        public uint @event { get { return m_event; } set { m_event = value; } }"));
@@ -308,7 +308,7 @@ TEST_F(CSharpGeneratorUnitTest, BitfieldsPackIntoLocalUnits)
     ASSERT_TRUE(generate(R"({
         "1":{"type":"uint8_t","name":"a","bits":3},
         "2":{"type":"uint8_t","name":"b","bits":5},
-        "3":{"type":"int16_t","name":"c","bits":9,"endian":1}})"));
+        "3":{"type":"int16_t","name":"c","bits":9,"endian":0}})"));
 
     EXPECT_TRUE(has_line("            ulong unit_0 = 0;"));
     EXPECT_TRUE(has_line("            unit_0 |= (m_a & 0x7UL);"));
@@ -330,9 +330,9 @@ TEST_F(CSharpGeneratorUnitTest, BitfieldSettersMaskOrSignExtend)
 {
     ASSERT_TRUE(generate(R"({
         "1":{"type":"uint8_t","name":"a","bits":3},
-        "2":{"type":"int32_t","name":"b","bits":7},
-        "3":{"type":"uint64_t","name":"c","bits":33},
-        "4":{"type":"int64_t","name":"d","bits":64},
+        "2":{"type":"int32_t","name":"b","bits":7,"endian":1},
+        "3":{"type":"uint64_t","name":"c","bits":33,"endian":1},
+        "4":{"type":"int64_t","name":"d","bits":64,"endian":1},
         "5":{"type":"int8_t","name":"e","bits":3}})"));
 
     EXPECT_TRUE(has("public byte a { get { return m_a; } set { m_a = unchecked((byte)(value & 0x7)); } }"));
@@ -388,11 +388,11 @@ TEST_F(CSharpTestGeneratorUnitTest, RunAndOptionalMain)
 TEST_F(CSharpTestGeneratorUnitTest, LiteralsSuitTheType)
 {
     ASSERT_TRUE(generate_test(R"({
-        "1":{"type":"uint32_t","name":"a"},
-        "2":{"type":"int64_t","name":"b"},
-        "3":{"type":"float","name":"c"},
+        "1":{"type":"uint32_t","name":"a","endian":1},
+        "2":{"type":"int64_t","name":"b","endian":1},
+        "3":{"type":"float","name":"c","endian":1},
         "4":{"type":"string","name":"d","length":4},
-        "5":{"type":"uint64_t","name":"event"}})"));
+        "5":{"type":"uint64_t","name":"event","endian":1}})"));
 
     EXPECT_TRUE(test_has("msg.a = 3000000000U;"));
     EXPECT_TRUE(test_has("msg.b = -9000000000L;"));

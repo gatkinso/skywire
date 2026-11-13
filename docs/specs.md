@@ -12,14 +12,14 @@ language; the command line picks that. `examples/specs/Telemetry.json`:
       "bitorder": "lsb"
    },
    "members": {
-      "1": { "type": "uint32_t", "name": "device_id",    "endian": 0 },
-      "2": { "type": "uint64_t", "name": "timestamp_us", "endian": 1 },
+      "1": { "type": "uint32_t", "name": "device_id",    "endian": 1 },
+      "2": { "type": "uint64_t", "name": "timestamp_us", "endian": 0 },
       "3": { "type": "uint8_t",  "name": "mode",         "bits": 4 },
       "4": { "type": "uint8_t",  "name": "status",       "bits": 3 },
       "5": { "type": "uint8_t",  "name": "armed",        "bits": 1 },
       "6": { "type": "string",   "name": "callsign",     "length": 8 },
       "7": { "type": "Position", "name": "position" },
-      "8": { "type": "uint16_t", "name": "battery_mv",   "endian": 1 }
+      "8": { "type": "uint16_t", "name": "battery_mv",   "endian": 0 }
    }
 }
 ```
@@ -67,7 +67,7 @@ from 1 to 536870911, and not 19000–19999, which protobuf reserves.
 |---|---|
 | `type` | Required. A type from the table below, `string`, or another message's `classname`. |
 | `name` | Required. An identifier, different from every other member's. Each language also rejects names that would collide with what it generates; see [Languages](languages.md). |
-| `endian` | Byte order: `0` big-endian (the default), `1` little-endian, `2` the host's own order. No effect on 8-bit types or [nested messages](#nested-messages). |
+| `endian` | Byte order: `0` little-endian (the default), `1` big-endian, `2` the host's own order. No effect on 8-bit types or [nested messages](#nested-messages). |
 | `length` | For a `string`, its size in bytes, at least 1. |
 | `bits` | Makes an integer member a [bitfield](#bitfield-members) this many bits wide. |
 
@@ -105,8 +105,8 @@ with its neighbours into a storage unit:
 "members": {
    "1": { "type": "uint8_t",  "name": "version", "bits": 4 },
    "2": { "type": "uint8_t",  "name": "flags",   "bits": 4 },
-   "3": { "type": "uint16_t", "name": "id",      "bits": 12, "endian": 0 },
-   "4": { "type": "int16_t",  "name": "delta",   "bits": 4,  "endian": 0 }
+   "3": { "type": "uint16_t", "name": "id",      "bits": 12, "endian": 1 },
+   "4": { "type": "int16_t",  "name": "delta",   "bits": 4,  "endian": 1 }
 }
 ```
 

@@ -105,14 +105,14 @@ TEST_F(JavaScriptGeneratorUnitTest, NativeTypesMapToDataViewAndSetterWraps)
         "2":{"type":"unsigned char","name":"b"},
         "3":{"type":"uint8_t","name":"c"},
         "4":{"type":"int8_t","name":"d"},
-        "5":{"type":"uint16_t","name":"e"},
-        "6":{"type":"int16_t","name":"f"},
-        "7":{"type":"uint32_t","name":"g"},
-        "8":{"type":"int32_t","name":"h"},
-        "9":{"type":"uint64_t","name":"i"},
-        "10":{"type":"int64_t","name":"j"},
-        "11":{"type":"float","name":"k"},
-        "12":{"type":"double","name":"l"}})"));
+        "5":{"type":"uint16_t","name":"e","endian":1},
+        "6":{"type":"int16_t","name":"f","endian":1},
+        "7":{"type":"uint32_t","name":"g","endian":1},
+        "8":{"type":"int32_t","name":"h","endian":1},
+        "9":{"type":"uint64_t","name":"i","endian":1},
+        "10":{"type":"int64_t","name":"j","endian":1},
+        "11":{"type":"float","name":"k","endian":1},
+        "12":{"type":"double","name":"l","endian":1}})"));
 
     const char* views[] = { "Int8", "Uint8", "Uint8", "Int8", "Uint16", "Int16", "Uint32", "Int32", "BigUint64", "BigInt64", "Float32", "Float64" };
     const char* wraps[] = { "(v << 24) >> 24", "v & 0xff", "v & 0xff", "(v << 24) >> 24", "v & 0xffff", "(v << 16) >> 16",
@@ -147,10 +147,10 @@ TEST_F(JavaScriptGeneratorUnitTest, NativeTypesMapToDataViewAndSetterWraps)
 TEST_F(JavaScriptGeneratorUnitTest, EndianSelectsLittleEndianFlag)
 {
     ASSERT_TRUE(generate(R"({
-        "1":{"type":"uint32_t","name":"big"},
-        "2":{"type":"uint32_t","name":"little","endian":1},
+        "1":{"type":"uint32_t","name":"big","endian":1},
+        "2":{"type":"uint32_t","name":"little","endian":0},
         "3":{"type":"uint32_t","name":"native","endian":2},
-        "4":{"type":"uint8_t","name":"byte","endian":1}})"));
+        "4":{"type":"uint8_t","name":"byte","endian":0}})"));
 
     EXPECT_TRUE(has_line("    view.setUint32(offset, this._big, false);"));
     EXPECT_TRUE(has_line("    view.setUint32(offset + 4, this._little, true);"));
@@ -166,7 +166,7 @@ TEST_F(JavaScriptGeneratorUnitTest, EndianSelectsLittleEndianFlag)
 TEST_F(JavaScriptGeneratorUnitTest, NativeOrderConstantOnlyWhenUsed)
 {
     // A single byte has no byte order.
-    ASSERT_TRUE(generate(R"({"1":{"type":"uint8_t","name":"a","endian":2},"2":{"type":"uint16_t","name":"b","endian":1}})"));
+    ASSERT_TRUE(generate(R"({"1":{"type":"uint8_t","name":"a","endian":2},"2":{"type":"uint16_t","name":"b","endian":0}})"));
     EXPECT_FALSE(has("SW_NATIVE_LE"));
     EXPECT_FALSE(has("swEncoder"));
     EXPECT_FALSE(has("function swCheck"));
@@ -202,7 +202,7 @@ TEST_F(JavaScriptGeneratorUnitTest, NestedMembersImportAndChainOffsets)
     ASSERT_TRUE(generate(R"({
         "1":{"type":"uint8_t","name":"a"},
         "2":{"type":"Inner","name":"first"},
-        "3":{"type":"uint16_t","name":"b"},
+        "3":{"type":"uint16_t","name":"b","endian":1},
         "4":{"type":"Inner","name":"second"}})"));
 
     EXPECT_TRUE(has_line("import { Inner } from \"./Inner.js\";"));
@@ -288,9 +288,9 @@ TEST_F(JavaScriptGeneratorUnitTest, RejectsCollidingNames)
 TEST_F(JavaScriptGeneratorUnitTest, BitfieldsPackIntoNumberUnits)
 {
     ASSERT_TRUE(generate(R"({
-        "1":{"type":"uint16_t","name":"a","bits":5,"endian":1},
-        "2":{"type":"int16_t","name":"b","bits":6,"endian":1},
-        "3":{"type":"uint16_t","name":"c","bits":3,"endian":1}})"));
+        "1":{"type":"uint16_t","name":"a","bits":5,"endian":0},
+        "2":{"type":"int16_t","name":"b","bits":6,"endian":0},
+        "3":{"type":"uint16_t","name":"c","bits":3,"endian":0}})"));
 
     // a and c share a unit; b's type differs, so it has its own.
     EXPECT_TRUE(has_line("    let unit_0 = 0;"));
@@ -310,10 +310,10 @@ TEST_F(JavaScriptGeneratorUnitTest, BitfieldsPackIntoNumberUnits)
 TEST_F(JavaScriptGeneratorUnitTest, BitfieldShiftsAndFullWidth)
 {
     ASSERT_TRUE(generate(R"({
-        "1":{"type":"uint32_t","name":"lo","bits":4},
-        "2":{"type":"uint32_t","name":"hi","bits":28},
-        "3":{"type":"int32_t","name":"all","bits":32},
-        "4":{"type":"uint32_t","name":"whole","bits":32}})"));
+        "1":{"type":"uint32_t","name":"lo","bits":4,"endian":1},
+        "2":{"type":"uint32_t","name":"hi","bits":28,"endian":1},
+        "3":{"type":"int32_t","name":"all","bits":32,"endian":1},
+        "4":{"type":"uint32_t","name":"whole","bits":32,"endian":1}})"));
 
     EXPECT_TRUE(has_line("    unit_0 |= ((this._hi & 0xfffffff) << 4);"));
     EXPECT_TRUE(has_line("    this._hi = (unit_0 >>> 4) & 0xfffffff;"));
@@ -325,9 +325,9 @@ TEST_F(JavaScriptGeneratorUnitTest, BitfieldShiftsAndFullWidth)
 TEST_F(JavaScriptGeneratorUnitTest, SixtyFourBitBitfieldsUseBigInt)
 {
     ASSERT_TRUE(generate(R"({
-        "1":{"type":"uint64_t","name":"a","bits":33},
-        "2":{"type":"uint64_t","name":"b","bits":31},
-        "3":{"type":"int64_t","name":"c","bits":40}})"));
+        "1":{"type":"uint64_t","name":"a","bits":33,"endian":1},
+        "2":{"type":"uint64_t","name":"b","bits":31,"endian":1},
+        "3":{"type":"int64_t","name":"c","bits":40,"endian":1}})"));
 
     EXPECT_TRUE(has_line("    let unit_0 = 0n;"));
     EXPECT_TRUE(has_line("    unit_0 |= BigInt.asUintN(33, this._a);"));
@@ -397,11 +397,11 @@ TEST_F(JavaScriptTestGeneratorUnitTest, NodeTestWithNoPackages)
 TEST_F(JavaScriptTestGeneratorUnitTest, LiteralsSuitTheType)
 {
     ASSERT_TRUE(generate_test(R"({
-        "1":{"type":"uint32_t","name":"a"},
-        "2":{"type":"int64_t","name":"b"},
-        "3":{"type":"float","name":"c"},
+        "1":{"type":"uint32_t","name":"a","endian":1},
+        "2":{"type":"int64_t","name":"b","endian":1},
+        "3":{"type":"float","name":"c","endian":1},
         "4":{"type":"string","name":"d","length":4},
-        "5":{"type":"uint64_t","name":"e","bits":40}})"));
+        "5":{"type":"uint64_t","name":"e","bits":40,"endian":1}})"));
 
     EXPECT_TRUE(test_has("msg.a = 3000000000;"));
     EXPECT_TRUE(test_has("msg.b = -9000000000n;"));

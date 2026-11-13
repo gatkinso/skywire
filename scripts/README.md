@@ -59,7 +59,7 @@ A new type:
 2. Add a row to `TYPES` in `make_ring_bin.py`: the `struct` format code and the
    **same value** as in step 1.
 3. Add members using it to `RingyMcRingface.json`, preferably one big-endian
-   (`endian: 0`) and one little-endian (`endian: 1`).
+   (`endian: 1`) and one little-endian (`endian: 0`, the default).
 4. Run `make_ring_bin.py`, check the printed offsets, update the table in the
    ring README, and commit the new `.bin`.
 

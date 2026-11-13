@@ -7,6 +7,16 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Changed
+- **Byte order: little-endian is now the default, and the `endian` values
+  are swapped**: `0` (or no `endian`) is little-endian, `1` big-endian, `2`
+  still the host's order (`SW_LITTLE_ENDIAN_FLAG` is 0, `SW_BIG_ENDIAN_FLAG`
+  1). A spec written for 0.10.0 or earlier generates different bytes unless
+  it is updated: change each `"endian": 0` to `1` and each `"endian": 1` to
+  `0`, and give every multi-byte member that had no `endian` an
+  `"endian": 1` to keep it big-endian. Members of 8-bit types are
+  unaffected.
+
 ## [0.10.0] - 2026-11-13
 
 ### Added

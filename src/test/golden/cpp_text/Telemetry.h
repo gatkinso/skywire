@@ -31,7 +31,7 @@ namespace telemetry {
             unit_0 |= static_cast<uint8_t>((static_cast<uint8_t>(mode) & 0xfu) << 0);
             unit_0 |= static_cast<uint8_t>((static_cast<uint8_t>(status) & 0x7u) << 4);
             unit_0 |= static_cast<uint8_t>((static_cast<uint8_t>(armed) & 0x1u) << 7);
-            p = skyloupe::wire::put(p, unit_0, skyloupe::Endianness::Big);
+            p = skyloupe::wire::put(p, unit_0, skyloupe::Endianness::Little);
             p = skyloupe::wire::put_bytes(p, callsign, 8);
             p = position.serialize_sw(p);
             p = skyloupe::wire::put(p, battery_mv, skyloupe::Endianness::Little);
@@ -59,7 +59,7 @@ namespace telemetry {
             p = skyloupe::wire::get(p, device_id, skyloupe::Endianness::Big);
             p = skyloupe::wire::get(p, timestamp_us, skyloupe::Endianness::Little);
             uint8_t unit_0 = 0;
-            p = skyloupe::wire::get(p, unit_0, skyloupe::Endianness::Big);
+            p = skyloupe::wire::get(p, unit_0, skyloupe::Endianness::Little);
             mode = (uint8_t)((uint8_t)(unit_0 >> 0) & 0xfu);
             status = (uint8_t)((uint8_t)(unit_0 >> 4) & 0x7u);
             armed = (uint8_t)((uint8_t)(unit_0 >> 7) & 0x1u);

@@ -24,8 +24,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SW_BIG_ENDIAN_FLAG    0
-#define SW_LITTLE_ENDIAN_FLAG 1
+// A spec's "endian": 0 (and a member that gives none) is little-endian, 1
+// big-endian, 2 the host's order.
+#define SW_LITTLE_ENDIAN_FLAG 0
+#define SW_BIG_ENDIAN_FLAG    1
 #define SW_NATIVE_ENDIAN_FLAG 2
 
 

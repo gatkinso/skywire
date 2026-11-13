@@ -117,7 +117,7 @@
           "$ref": "#/$defs/identifier"
         },
         "endian": {
-          "description": "Byte order on the wire: 0 big-endian (the default), 1 little-endian, 2 the host's. No effect on 8-bit types or nested messages.",
+          "description": "Byte order on the wire: 0 little-endian (the default), 1 big-endian, 2 the host's. No effect on 8-bit types or nested messages.",
           "type": "integer",
           "enum": [0, 1, 2]
         },
