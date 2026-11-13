@@ -1,6 +1,6 @@
 <!--
-  Builds Program.cs with the generated Position.cs and Telemetry.cs: every .cs
-  file in this project's directory. The target framework is the one the
+  Builds Program.cs with the generated Position.cs, Telemetry.cs and
+  SkywireText.cs: every .cs file in this project's directory. The target framework is the one the
   installed .NET SDK ships with; the code itself is C# 7.3.
 -->
 <Project Sdk="Microsoft.NET.Sdk">

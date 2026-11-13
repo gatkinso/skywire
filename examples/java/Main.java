@@ -61,5 +61,23 @@ public final class Main {
         System.out.printf("device_id %d, callsign %s, status %d, position %.4f, %.4f, %.1f m%n",
                 received.Get_device_id(), callsign, received.Get_status(),
                 p.Get_latitude(), p.Get_longitude(), p.Get_altitude_m());
+
+        // The same message as JSON, XML and BSON (docs/text-formats.md): each
+        // is written beside the file, read back and checked. A from method
+        // throws IllegalArgumentException on input it refuses.
+        String name = path.getFileName().toString();
+        String stem = name.endsWith(".bin") ? name.substring(0, name.length() - 4) : name;
+        Path json = path.resolveSibling(stem + ".json");
+        Path xml = path.resolveSibling(stem + ".xml");
+        Path bson = path.resolveSibling(stem + ".bson");
+        Files.write(json, sent.toJson().getBytes(StandardCharsets.UTF_8));
+        Files.write(xml, sent.toXml().getBytes(StandardCharsets.UTF_8));
+        Files.write(bson, sent.toBson());
+        if (!Telemetry.fromJson(Files.readAllBytes(json)).equals(sent)
+                || !Telemetry.fromXml(Files.readAllBytes(xml)).equals(sent)
+                || !Telemetry.fromBson(Files.readAllBytes(bson)).equals(sent)) {
+            fail("a JSON, XML or BSON copy is different");
+        }
+        System.out.println(sent.toJson());
     }
 }

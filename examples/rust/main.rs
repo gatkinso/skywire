@@ -1,11 +1,14 @@
 //! Fills a Telemetry message, writes it to a file, reads it back and checks
-//! that the copy is equal. See README.md.
+//! that the copy is equal; then the same as JSON, XML and BSON, in files
+//! beside it (telemetry.json, telemetry.xml, telemetry.bson). See README.md.
 //!
 //!     example_rust telemetry.bin
 
 // The generated modules are the whole message API; this program uses part of it.
 #[allow(dead_code)]
 mod position;
+// The JSON, XML and BSON helpers, which wiregen writes beside the modules.
+mod skywire_text;
 #[allow(dead_code)]
 mod telemetry;
 
@@ -65,5 +68,23 @@ fn main() -> std::io::Result<()> {
         p.longitude(),
         p.altitude_m()
     );
+
+    // The same message as JSON, XML and BSON (docs/text-formats.md): each is
+    // written beside the file, read back and checked. A from_ function is an
+    // InvalidData error on input it refuses.
+    let base = path.strip_suffix(".bin").unwrap_or(path);
+    std::fs::write(format!("{base}.json"), sent.to_json())?;
+    std::fs::write(format!("{base}.xml"), sent.to_xml())?;
+    std::fs::write(format!("{base}.bson"), sent.to_bson())?;
+    let copies = [
+        Telemetry::from_json(std::fs::read(format!("{base}.json"))?)?,
+        Telemetry::from_xml(std::fs::read(format!("{base}.xml"))?)?,
+        Telemetry::from_bson(std::fs::read(format!("{base}.bson"))?)?,
+    ];
+    if copies.iter().any(|copy| *copy != sent) {
+        eprintln!("a JSON, XML or BSON copy is different");
+        exit(1);
+    }
+    println!("{}", sent.to_json());
     Ok(())
 }

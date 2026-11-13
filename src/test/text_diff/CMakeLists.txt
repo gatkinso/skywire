@@ -14,8 +14,8 @@
 #
 # skywire_text_diff:<language>: each language's generated JSON, XML and BSON
 # code against the C++, on the fuzz corpora and seeded mutations of them
-# (text_diff.cmake). The C code has its own check, the fuzz_c_cpp_text
-# fuzz target.
+# (text_diff.cmake). C, like C++, builds with the project; the
+# fuzz_c_cpp_text fuzz target also holds C to C++.
 
 add_executable(text_diff_oracle oracle.cpp)
 target_include_directories(text_diff_oracle PRIVATE
@@ -30,6 +30,10 @@ else()
     target_compile_definitions(text_diff_oracle PRIVATE SW_BIG_ENDIAN=0 SW_LITTLE_ENDIAN=1)
 endif()
 add_dependencies(text_diff_oracle fuzz_ring_cpp_text)
+
+add_executable(text_diff_c_driver driver.c)
+target_link_libraries(text_diff_c_driver PRIVATE fuzz_ring_c_text)
+target_include_directories(text_diff_c_driver PRIVATE ${PROJECT_SOURCE_DIR}/lang/c)
 
 find_program(SKYWIRE_PYTHON3 NAMES python3 python)
 find_program(SKYWIRE_GO go)
@@ -58,7 +62,7 @@ endforeach()
 set(corpus ${PROJECT_SOURCE_DIR}/src/test/fuzz/corpus)
 set(corpora "${corpus}/text|${corpus}/fuzz_cpp_json|${corpus}/fuzz_cpp_xml|${corpus}/fuzz_cpp_bson")
 
-foreach(language python3 go csharp rust java swift javascript)
+foreach(language c python3 go csharp rust java swift javascript)
     add_test(NAME skywire_text_diff:${language}
         COMMAND ${CMAKE_COMMAND}
                 -DLANGUAGE=${language}
@@ -72,6 +76,7 @@ foreach(language python3 go csharp rust java swift javascript)
                 -DJAVA=${SKYWIRE_JAVA}
                 -DSWIFTC=${SKYWIRE_SWIFTC}
                 -DNODE=${SKYWIRE_NODE}
+                -DC_DRIVER=$<TARGET_FILE:text_diff_c_driver>
                 -DLANG_DIR=${PROJECT_SOURCE_DIR}/lang
                 -DCOUNT=30000
                 -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}

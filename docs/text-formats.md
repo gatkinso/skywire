@@ -451,6 +451,10 @@ straight to 32 bits. The generated tests check the same expected bytes as
 every other language, and `skywire_text_diff:rust` checks that Rust accepts
 exactly the input C++ does and writes back the same bytes.
 
+`to_json`, `to_xml` and `to_bson` borrow the message, as `serialize`
+does, and allow clippy's `wrong_self_convention`, which would have a `Copy`
+type's `to_` functions take it by value.
+
 `write_json`, `read_json`, `write_xml`, `read_xml`, `write_bson` and
 `read_bson` (`pub(crate)`) are what nested messages use. With
 `--generate_json` a member cannot be named `to_json`, `from_json`,

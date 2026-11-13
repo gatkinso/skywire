@@ -18,7 +18,7 @@
 # (make_inputs.py: the fuzz corpora and COUNT seeded mutations of them), and
 # compares the language's driver with ORACLE (oracle.cpp).
 #
-#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] [-DSWIFTC=...] [-DNODE=...] -DCOUNT=30000
+#   cmake -DLANGUAGE=python3 -DWIREGEN=... -DORACLE=... -DPYTHON=... [-DGO=...] [-DDOTNET=...] [-DRUSTC=...] [-DJAVAC=... -DJAVA=...] [-DSWIFTC=...] [-DNODE=...] [-DC_DRIVER=...] -DCOUNT=30000
 #         -DSOURCE_DIR=src/test/text_diff -DRING_DIR=... -DCORPORA="a|b" -DOUTDIR=... -P text_diff.cmake
 
 if(NOT PYTHON)
@@ -89,7 +89,11 @@ if(NOT rc EQUAL 0)
     message(FATAL_ERROR "the C++ oracle failed (${rc})")
 endif()
 
-if(LANGUAGE STREQUAL "python3")
+if(LANGUAGE STREQUAL "c")
+    # Built with the project, from the C the fuzz targets generate.
+    execute_process(COMMAND ${C_DRIVER} ${inputs}
+        OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
+elseif(LANGUAGE STREQUAL "python3")
     execute_process(COMMAND ${PYTHON} ${SOURCE_DIR}/driver.py ${OUTDIR}/generated ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 elseif(LANGUAGE STREQUAL "go")
@@ -139,6 +143,14 @@ elseif(LANGUAGE STREQUAL "rust")
         string(APPEND driver .exe)
     endif()
     run("rustc" ${RUSTC} --edition 2021 -O -o ${driver} main.rs WORKING_DIRECTORY ${OUTDIR}/generated)
+    # The modules are private here, as in most programs, so clippy checks
+    # lints it skips for a library's exported API.
+    get_filename_component(rust_bindir ${RUSTC} DIRECTORY)
+    find_program(CLIPPY clippy-driver HINTS ${rust_bindir})
+    if(CLIPPY)
+        run("clippy" ${CLIPPY} --edition 2021 -D warnings -o ${OUTDIR}/clippy_driver${CMAKE_EXECUTABLE_SUFFIX} main.rs
+            WORKING_DIRECTORY ${OUTDIR}/generated)
+    endif()
     execute_process(COMMAND ${driver} ${inputs}
         OUTPUT_FILE ${OUTDIR}/got.txt RESULT_VARIABLE rc ERROR_VARIABLE err)
 elseif(LANGUAGE STREQUAL "java")

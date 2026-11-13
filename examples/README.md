@@ -30,7 +30,10 @@ Every program except the protobuf one:
 2. serializes it and writes it to the file named on its command line;
 3. reads the file back and deserializes a second message;
 4. checks the two are equal, prints a few fields and the wire size, and exits
-   non-zero if anything went wrong.
+   non-zero if anything went wrong;
+5. does the same with the message's JSON, XML and BSON forms (see
+   [JSON, XML and BSON](../docs/text-formats.md)), written beside the file as
+   `telemetry.json`, `telemetry.xml` and `telemetry.bson`, and prints the JSON.
 
 The protobuf program fills the same message and sends it through a PZ-mode
 stream to protoc's generated class for the same message, which checks it and
@@ -76,6 +79,18 @@ Every language writes the same 43 bytes, [Telemetry.bin](Telemetry.bin):
     00 00 62 42                ← position.altitude_m
     1e 0f                      ← battery_mv
 
+Every language writes the same JSON, [Telemetry.json](Telemetry.json) (one
+line, wrapped here):
+
+    {"device_id":4207,"timestamp_us":"1760959800123456","mode":5,"status":3,"armed":1,
+     "callsign":"SKY1","position":{"latitude":47.6062,"longitude":-122.3321,"altitude_m":56.5},
+     "battery_mv":3870}
+
+the same XML, [Telemetry.xml](Telemetry.xml), and the same 186-byte BSON
+document, [Telemetry.bson](Telemetry.bson): `device_id` (a `uint32_t`) and
+`timestamp_us` as int64, the bitfields and `battery_mv` as int32, `callsign`
+as a string, and `position` as an embedded document of three doubles.
+
 The protobuf example writes the same message as protobuf, 52 bytes,
 [Telemetry.pb](Telemetry.pb). Each field is a tag byte (field number << 3 |
 wire type) and its value. Protobuf leaves out zero fields and a string's NUL
@@ -105,12 +120,19 @@ Each example's README explains its build. In short:
 | C | generated dir, `lang/c` | nothing (header-only) | `lang/c/lang.c.json` |
 | C++ | generated dir, `lang/cpp`, `lang/c`, protozero `include` | nothing (header-only) | `lang/cpp/lang.cpp.json` |
 | Protobuf | as C++, plus protoc's output dir and protobuf `include` | protoc's `.pb.cc`, `libprotobuf` | `lang/cpp/lang.cpp.json`, `lang/proto/lang.proto3.json` |
-| Swift | none | `lang/swift/SWStream.swift`, same module | `lang/swift/lang.swift.json` |
-| Go | none (one package dir) | nothing (standard library) | `lang/go/lang.go.json` |
-| Python | generated dir on the import path | nothing (standard library) | `lang/python/lang.python3.json` |
-| Java | `-cp` the class output dir | nothing (JDK only) | `lang/java/lang.java.json` |
-| Rust | none (`mod` next to the modules) | nothing (`std` only) | `lang/rust/lang.rust.json` |
-| C# | none (`Example.csproj` next to the generated files) | nothing (base class library only) | `lang/csharp/lang.csharp.json` |
+| Swift | none | `lang/swift/SWStream.swift` and `SkywireText.swift`, same module | `lang/swift/lang.swift.json` |
+| Go | none (one package dir) | the generated `skywire_text.go` (standard library only) | `lang/go/lang.go.json` |
+| Python | generated dir on the import path | the generated `skywire_text.py` (standard library only) | `lang/python/lang.python3.json` |
+| Java | `-cp` the class output dir | the generated `SkywireText.java` (JDK only) | `lang/java/lang.java.json` |
+| Rust | none (`mod` next to the modules) | the generated `skywire_text.rs` (`std` only) | `lang/rust/lang.rust.json` |
+| C# | none (`Example.csproj` next to the generated files) | the generated `SkywireText.cs` (base class library only) | `lang/csharp/lang.csharp.json` |
+| JavaScript | ES module imports | the generated `skywire_text.js` | `lang/javascript/lang.javascript.json` |
+
+The JSON, XML and BSON helpers are the ones `--generate_json`,
+`--generate_xml` and `--generate_bson` need: header-only `text.h` and
+`bson.h` (C++), `ctext.h` and `cbson.h` (C), `SkywireText.swift`, which ships
+like `SWStream.swift`, and for the other languages one file wiregen writes
+beside the messages.
 
 The build copies every lang file next to `wiregen`, and `--language <name>`
 reads it from there; `--lang_file <path>` uses another copy instead. The lang
@@ -128,7 +150,7 @@ generates and builds the others when their test runs.
 
 | Test | Passes when |
 |---|---|
-| `skywire_example:C`, `:C++`, `:Swift`, `:Go`, `:Python`, `:Java`, `:Rust`, `:CSharp` | The program succeeds and the file it wrote is `Telemetry.bin`, byte for byte. |
+| `skywire_example:C`, `:C++`, `:Swift`, `:Go`, `:Python`, `:Java`, `:Rust`, `:CSharp`, `:JavaScript` | The program succeeds and the files it wrote are `Telemetry.bin`, `Telemetry.json`, `Telemetry.xml` and `Telemetry.bson`, byte for byte. |
 | `skywire_example:Protobuf` | protoc encodes `telemetry.txtpb` to `Telemetry.pb`, and the program succeeds and writes `Telemetry.pb`. |
 
 Like the round-trip tests, a test whose toolchain is missing reports Skipped.
@@ -143,12 +165,13 @@ they are installed; C# with warnings as errors.
 | `specs/` | The two message specifications. |
 | `<example>/` | The program and its README. |
 | `Telemetry.bin` | The skywire wire bytes every language must write. |
+| `Telemetry.json`, `Telemetry.xml`, `Telemetry.bson` | The JSON, XML and BSON every language must write. |
 | `Telemetry.pb`, `protobuf/telemetry.txtpb` | The protobuf bytes, and the same message as text. |
 | `CMakeLists.txt` | Builds the C, C++ and protobuf programs; defines the tests. |
-| `run_example.cmake` | The test driver: builds the other languages, runs a program, compares its file. |
+| `run_example.cmake` | The test driver: builds the other languages, runs a program, compares its files. |
 
 To change the message, edit the specs and the values in every program, then
-regenerate both expected files: run any example to get `Telemetry.bin`, check
-its bytes by hand, and run
+regenerate the expected files: run any example to get `Telemetry.bin` and the
+JSON, XML and BSON beside it, check their bytes by hand, and run
 `protoc --encode=telemetry.pb.Telemetry Telemetry.proto < protobuf/telemetry.txtpb`
 (on the `.proto` files the protobuf README generates) to get `Telemetry.pb`.

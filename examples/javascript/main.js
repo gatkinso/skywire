@@ -47,6 +47,24 @@ function main(args) {
   console.log(`wrote and read back ${back.length} bytes (size() = ${received.size()})`);
   console.log(`device_id ${received.device_id}, callsign ${received.callsignText}, status ${received.status}, ` +
               `position ${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)}, ${p.altitude_m.toFixed(1)} m`);
+
+  // The same message as JSON, XML and BSON (docs/text-formats.md): each is
+  // written beside the file, read back and checked. A from method throws a
+  // SyntaxError on input it refuses.
+  const base = path.endsWith(".bin") ? path.slice(0, -4) : path;
+  writeFileSync(base + ".json", sent.toJsonText());
+  writeFileSync(base + ".xml", sent.toXml());
+  writeFileSync(base + ".bson", sent.toBson());
+  const copies = [
+    Telemetry.fromJsonText(readFileSync(base + ".json")),
+    Telemetry.fromXml(readFileSync(base + ".xml")),
+    Telemetry.fromBson(readFileSync(base + ".bson")),
+  ];
+  if (!copies.every((copy) => copy.equals(sent))) {
+    console.error("a JSON, XML or BSON copy is different");
+    return 1;
+  }
+  console.log(sent.toJsonText());
   return 0;
 }
 

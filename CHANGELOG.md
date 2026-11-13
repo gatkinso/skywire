@@ -81,6 +81,12 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   `skywire_text_diff:javascript` checks JavaScript against C++ as for Python.
   With it every language has the forms; proto3, which has no code to add
   them to, refuses the options for good.
+- `skywire_text_diff:c`, and the hard floating-point cases (float midpoints,
+  overflow, subnormals, BSON integers into floats) in the shared corpus, so
+  every language's readers are held to C++'s on them.
+- Every example program also writes and reads the JSON, XML and BSON forms,
+  and its test checks them against `examples/Telemetry.json`, `.xml` and
+  `.bson`, the same in every language.
 - Golden files: `skywire_golden:<language>` compares wiregen's output for
   every language, byte for byte, with `src/test/golden`, and
   `skywire_golden:c_text` and `cpp_text` the C and C++ output with the JSON, XML

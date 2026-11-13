@@ -44,6 +44,7 @@ foreach(lang c cpp)
         ARGS    --input_file ${SPECS_DIR}/Position.json
                 --outdir ${dir}
                 --language ${lang}
+                --generate_json --generate_xml --generate_bson
                 --write_to_file)
     add_custom_command(
         OUTPUT  ${telemetry_outputs}
@@ -52,6 +53,7 @@ foreach(lang c cpp)
         ARGS    --input_file ${SPECS_DIR}/Telemetry.json
                 --outdir ${dir}
                 --language ${lang}
+                --generate_json --generate_xml --generate_bson
                 --write_to_file)
 
     # Each language's Position.h is in its own directory, so neither sees the

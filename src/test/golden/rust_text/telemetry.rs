@@ -181,6 +181,9 @@ impl Telemetry {
     }
 
     /// Returns the JSON form of `self` (docs/text-formats.md).
+    // Borrowed, as serialize is: a message is Copy but can be large, which
+    // clippy's to_ convention for Copy types does not weigh.
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_json(&self) -> String {
         let mut w = skywire_text::JsonWriter::default();
         self.write_json(&mut w);
@@ -253,6 +256,9 @@ impl Telemetry {
     }
 
     /// Returns the XML form of `self` (docs/text-formats.md).
+    // Borrowed, as serialize is: a message is Copy but can be large, which
+    // clippy's to_ convention for Copy types does not weigh.
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_xml(&self) -> String {
         let mut w = skywire_text::XmlWriter::default();
         self.write_xml(&mut w, "Telemetry");
@@ -326,6 +332,9 @@ impl Telemetry {
     }
 
     /// Returns the BSON document of `self` (docs/text-formats.md).
+    // Borrowed, as serialize is: a message is Copy but can be large, which
+    // clippy's to_ convention for Copy types does not weigh.
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_bson(&self) -> Vec<u8> {
         let mut w = skywire_text::BsonWriter::default();
         self.write_bson(&mut w);
