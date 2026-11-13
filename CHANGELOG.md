@@ -165,6 +165,11 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
   and unwritable files, and specification file writing.
 
 ### Changed
+- wiregen parses its command line itself, and the qwikpirate submodule is
+  gone: a clone needs no `--recursive`, GitHub's source archives build as
+  they are, and skywire bundles nothing under another license. The options,
+  their order (`--help` and `--version` first) and the error messages are
+  unchanged.
 - The README is now a short introduction with a quick start; the reference
   material moved to `docs/`, which is also built as a site with MkDocs
   (`mkdocs.yml`) and checked by CI's new docs job. New pages: a quick start

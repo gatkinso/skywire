@@ -5,12 +5,11 @@ You only need to build skywire to work on it, or on a platform with no
 
 ## Getting the source
 
-The source is at https://github.com/gatkinso/skywire.
-Qwikpirate (command-line parsing) is a git submodule, so clone with
+The source is at https://github.com/gatkinso/skywire:
 
-    git clone --recursive https://github.com/gatkinso/skywire.git
+    git clone https://github.com/gatkinso/skywire.git
 
-or run `git submodule update --init` in an existing clone.
+A release's source archive builds as it is; there are no submodules.
 
 ## Dependencies
 
@@ -19,7 +18,6 @@ or run `git submodule update --init` in an existing clone.
 | Google Protocol Buffers | wiregen reads specifications through it; the proto3 tests run its `protoc` |
 | protozero | The C++ runtime: every generated C++ message has protobuf (PZ) functions, so any program with generated C++ needs its headers, as do skywire's tests and examples |
 | Google Test | Skywire's tests, and the C and C++ tests that `--generate_tests` writes |
-| Qwikpirate | wiregen's command line (bundled as a submodule) |
 
 ## Requirements
 

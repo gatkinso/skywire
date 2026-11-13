@@ -22,7 +22,7 @@
 
 Counts wiregen (src/lib, src/bin, include) and the C and C++ runtimes
 (lang/c, lang/cpp), which the generated C/C++ tests exercise. Tests,
-examples, benchmarks, 3rd_party and generated code are left out.
+examples, benchmarks and generated code are left out.
 
 Needs gcovr (pip install gcovr). Uses gcov for a GCC build and
 llvm-cov gcov for a Clang one (xcrun llvm-cov gcov with Apple Clang).

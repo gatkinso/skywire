@@ -53,7 +53,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = os.path.join(HERE, "skywire")
 
 # What the port builds from; the hash covers these.
-SOURCES = ["CMakeLists.txt", "LICENSE", "cmake", "lang", "src", "include", "3rd_party"]
+SOURCES = ["CMakeLists.txt", "LICENSE", "cmake", "lang", "src", "include", "schema"]
 
 SOURCE_PATH_LINE = ('get_filename_component(SOURCE_PATH '
                     '"${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)')

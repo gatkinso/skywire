@@ -186,9 +186,6 @@ if(UNIX AND NOT APPLE)
     add_definitions(-DLINUX)
 endif(UNIX AND NOT APPLE)
 
-# qwikpirate's own tests follow BUILD_TESTING.
-set(BUILD_UNIT_TESTS ${BUILD_TESTING})
-add_subdirectory(3rd_party/qwikpirate)
 add_subdirectory(src)
 
 if(SKYWIRE_BENCH)

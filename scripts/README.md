@@ -164,8 +164,7 @@ Runs [gcovr](https://gcovr.com) over the build's counters (`.gcda` files) and
 prints each file's line coverage with the lines never run, then the line,
 function and branch totals. It counts `src/lib`, `src/bin`, `include`,
 `lang/c` and `lang/cpp`, the code wiregen and the C/C++ runtimes are built
-from, and leaves out tests, examples, benchmarks, `3rd_party` and generated
-code. `--html` writes a page per file, `--xml` Cobertura XML for a coverage
+from, and leaves out tests, examples, benchmarks and generated code. `--html` writes a page per file, `--xml` Cobertura XML for a coverage
 service. It picks `gcov` for a GCC build and `llvm-cov gcov` for Clang
 (through `xcrun` for Apple Clang). Branch totals differ between the two; CI
 reports with GCC.

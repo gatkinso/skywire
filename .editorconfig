@@ -21,14 +21,6 @@ indent_size = unset
 [*.md]
 trim_trailing_whitespace = false
 
-[3rd_party/**]
-charset = unset
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-indent_style = unset
-indent_size = unset
-
 # Exactly what wiregen writes; see src/test/golden/CMakeLists.txt.
 [src/test/golden/*/**]
 charset = unset
