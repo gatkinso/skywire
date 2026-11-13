@@ -188,6 +188,9 @@ program and a document from MongoDB.
 
 ## Documentation
 
+The documentation is at **https://gatkinso.github.io/skywire/**, and in
+[`docs/`](docs):
+
 | Page | What's in it |
 |---|---|
 | [Quick start](docs/quick-start.md) | The example above, step by step |
