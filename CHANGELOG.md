@@ -7,16 +7,18 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-13
+
 ### Added
 - JSON and XML text forms for generated C++ messages: `--generate_json` adds
   `to_json` and `from_json`, `--generate_xml` adds `to_xml` and `from_xml`
   (and `skywire_generate()` takes `JSON` and `XML`). The format, which every
-  language will write byte for byte, is in `docs/text-formats.md`. The
+  language writes byte for byte, is in `docs/text-formats.md`. The
   runtime is the header-only, standard-library-only `lang/cpp/text.h`,
   installed with `stream.h`. Generated tests check the exact text, round
   trips and rejection of bad input; `fuzz_cpp_json` and `fuzz_cpp_xml` fuzz
-  the readers. Without the options the generated code is unchanged; the other
-  languages refuse them for now.
+  the readers. Without the options the generated code is unchanged. Every
+  other language followed (the entries below); proto3 refuses the options.
 - BSON for generated C++ messages: `--generate_bson` adds `to_bson` and
   `from_bson` (and `skywire_generate()` takes `BSON`). Elements are in tag
   order, named after the members; integers are int32 or int64, a `uint64_t`
@@ -262,5 +264,6 @@ The first versioned release, covering the work since the `modernize` merge.
 - The unused `lang_file` field in specifications (#42).
 - The obsolete `c++11` lang file (#48).
 
-[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/gatkinso/skywire/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/gatkinso/skywire/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/gatkinso/skywire/releases/tag/v0.9.0
