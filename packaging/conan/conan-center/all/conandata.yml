@@ -1,0 +1,4 @@
+sources:
+  "0.11.0":
+    url: "https://github.com/gatkinso/skywire/archive/refs/tags/v0.11.0.tar.gz"
+    sha256: "80eddb49af4d537eaf906a5108bf87e97bce50e199e80601bb7a459de4bed5d8"

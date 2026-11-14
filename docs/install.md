@@ -48,7 +48,7 @@ with a browser, remove the quarantine attribute:
 ## Homebrew
 
 On Apple silicon Macs, Homebrew installs the same archive, with protozero
-for generated C++:
+for generated C++. The formula is in skywire's own tap, not homebrew-core:
 
     brew install gatkinso/tap/skywire
 

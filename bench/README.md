@@ -111,26 +111,35 @@ bench/wiregen_scale.py --sizes 1000 10000 --languages c c++ --runs 5
 
 `--keep DIR` keeps the specifications and generated files. Times include
 starting wiregen and reading its lang file, a few milliseconds. On an Apple
-M1 Pro (October 2026):
+M1 Pro (November 2026, skywire 0.11.0):
 
 | Language | 100 members | 1000 members | 4000 members | Output at 4000 |
 |---|---:|---:|---:|---:|
-| C | 0.008 | 0.032 | 0.093 | 3.8 MB |
-| C++ | 0.008 | 0.038 | 0.119 | 4.1 MB |
-| C# | 0.017 | 0.123 | 0.520 | 2.9 MB |
-| Go | 0.012 | 0.055 | 0.200 | 1.9 MB |
-| Java | 0.016 | 0.087 | 0.364 | 2.9 MB |
-| JavaScript | 0.016 | 0.117 | 0.426 | 2.6 MB |
-| proto3 | 0.006 | 0.010 | 0.028 | 0.3 MB |
-| Python | 0.009 | 0.025 | 0.092 | 1.6 MB |
-| Rust | 0.012 | 0.068 | 0.233 | 2.0 MB |
-| Swift | 0.007 | 0.018 | 0.068 | 2.4 MB |
+| C | 0.008 | 0.036 | 0.096 | 3.8 MB |
+| C++ | 0.010 | 0.043 | 0.153 | 4.1 MB |
+| C# | 0.020 | 0.156 | 0.663 | 2.9 MB |
+| Go | 0.014 | 0.083 | 0.296 | 1.9 MB |
+| Java | 0.018 | 0.116 | 0.392 | 2.9 MB |
+| JavaScript | 0.019 | 0.100 | 0.581 | 2.6 MB |
+| proto3 | 0.005 | 0.009 | 0.025 | 0.3 MB |
+| Python | 0.008 | 0.038 | 0.161 | 1.6 MB |
+| Rust | 0.016 | 0.081 | 0.380 | 2.0 MB |
+| Swift | 0.007 | 0.023 | 0.078 | 2.4 MB |
 
 Time grows linearly with the number of members (checked to 8000 on macOS,
-Linux and Windows). A chain of 64 nested messages takes under 10 ms in every
-language. Expect a few times longer on older or virtual machines: a 2017
-Intel i7-7700 took 0.3 to 1.0 s at 4000 members, and a 3-vCPU Windows VM
-0.1 to 4 s, with C#, Java and JavaScript the slowest there.
+Linux and Windows). A chain of 64 nested messages takes about 10 ms in every
+language on the M1 Pro and on a Linux VM, and under 40 ms on the slower
+machines below. Expect a few times longer on older or virtual machines. At
+4000 members (the machines are those in
+[docs/testing.md](../docs/testing.md#benchmarks)):
+
+| Machine | Fastest (proto3) | Slowest | Swift, C, C++ |
+|---|---:|---:|---:|
+| Linux, i7-7700 | 0.29 | 1.5 (JavaScript) | 0.37 to 0.48 |
+| Linux VM, Xeon E3-1231 v3 | 0.04 | 1.0 (JavaScript, C#) | 0.14 to 0.25 |
+| Windows VM, Xeon E3-1231 v3 | 0.09 | 4.3 (Java, C#, JavaScript) | 0.54 to 0.95 |
+
+C#, Java and JavaScript are the slowest everywhere.
 
 ## Files
 

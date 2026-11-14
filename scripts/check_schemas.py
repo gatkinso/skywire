@@ -28,6 +28,7 @@ SPEC_GLOBS = [
     "examples/specs/*.json",
     "src/test/generated_tests/*.json",
     "src/test/generated_tests/ring/*.json",
+    "packaging/conan/conan-center/all/test_package/*.json",
 ]
 LANG_GLOBS = ["lang/*/lang.*.json"]
 
