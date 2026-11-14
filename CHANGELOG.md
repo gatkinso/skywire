@@ -7,6 +7,11 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Added
+
+- `packaging/conan/conan-center/`: a draft ConanCenter recipe (not yet
+  submitted), tested with Release and Debug builds on macOS and Linux.
+
 ## [0.11.0] - 2026-11-13
 
 ### Changed
