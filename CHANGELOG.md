@@ -10,7 +10,9 @@ break compatibility; such changes are listed under **Changed** or **Removed**.
 ### Added
 
 - `packaging/conan/conan-center/`: a draft ConanCenter recipe (not yet
-  submitted), tested with Release and Debug builds on macOS and Linux.
+  submitted), with protobuf 7.36.2 and CMake 3.28 as a `tool_requires`.
+  Tested with Release and Debug builds on macOS, Ubuntu 24.04 and Rocky
+  Linux 10, and a Release build on Windows 11 (MSVC).
 
 ## [0.11.0] - 2026-11-13
 

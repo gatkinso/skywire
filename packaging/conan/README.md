@@ -76,5 +76,14 @@ cd packaging/conan/conan-center/all
 conan create . --version 0.11.0 --build=missing
 ```
 
+protobuf 7 needs C++17. Conan's detected profile on Windows (MSVC) is C++14,
+so add `-s:a compiler.cppstd=17` there; `-s:a` sets it for the build profile
+too, which builds the protoc that runs during the build.
+
+It has passed Release and Debug builds on macOS, Ubuntu 24.04 (GCC 13) and
+Rocky Linux 10 (GCC 14), and a Release build on Windows 11 (MSVC 19.50). It
+needs CMake 3.28, which it gets as a `tool_requires`: ConanCenter's build
+machines have older CMake.
+
 For each release, add the version to `config.yml` and `conandata.yml`, with
 the sha256 of `https://github.com/gatkinso/skywire/archive/refs/tags/vX.Y.Z.tar.gz`.
