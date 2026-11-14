@@ -175,13 +175,37 @@ Every language writes exactly that, and reads it back; the
 [examples](examples/README.md) read JSON written by hand, XML from another
 program and a document from MongoDB.
 
+## Performance
+
+Nanoseconds to serialize / deserialize a 135-byte message with mixed byte
+order, a nested message, bitfields and strings (skywire 0.11.0, November
+2026):
+
+| Language | macOS, M1 Pro | Linux, i7-7700 | Linux VM, Xeon | Windows VM, Xeon |
+|---|---:|---:|---:|---:|
+| C | 7.9 / 10.3 | 12.1 / 15.1 | 14.9 / 18.2 | 16.0 / 28.1 |
+| C++ | 7.8 / 12.1 | 9.8 / 14.8 | 12.2 / 8.3 | 14.5 / 36.3 |
+| Go | 8.7 / 8.5 | 12.3 / 11.6 | 16.2 / 14.2 | 15.2 / 14.2 |
+| Rust | 9.9 / 8.0 | 18.2 / 10.9 | 31 / 13.8 | 16.3 / 14.0 |
+| C# | 20 / 20 | 37 / 28 | 35 / 33 | 33 / 32 |
+| Java | 29 / 31 | 63 / 58 | 73 / 72 | 71 / 81 |
+| Swift | 34 / 43 | 46 / 80 | 61 / 118 | 114 / 164 |
+| JavaScript | 53 / 120 | 189 / 291 | 219 / 342 | 214 / 383 |
+| Python | 983 / 918 | 1852 / 1360 | 2427 / 1860 | 5717 / 4769 |
+
+The toolchains, what each number times, and how fast wiregen itself is are in
+[Testing](docs/testing.md#benchmarks).
+
 ## Installing
 
 - **Release archives** for Linux (x86_64, arm64), macOS (Apple silicon) and
   Windows (x64): unpack and run, nothing else needed. See
   [Installing](docs/install.md).
-- **Homebrew** on Apple silicon: `brew install gatkinso/tap/skywire`.
-- **vcpkg and Conan**: a port and a recipe in [`packaging/`](packaging).
+- **Homebrew** on Apple silicon, from skywire's own tap (it isn't in
+  homebrew-core): `brew install gatkinso/tap/skywire`.
+- **vcpkg and Conan**: an overlay port and a recipe in
+  [`packaging/`](packaging), used from a clone of this repository. Skywire
+  isn't in the vcpkg registry or ConanCenter yet.
 - **Swift package**: the Swift runtime, from this repository's `Package.swift`.
 - **From source**: CMake 3.28, a C++17 compiler and protobuf; see
   [Building](docs/building.md).

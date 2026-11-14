@@ -151,30 +151,47 @@ or, after a build, `bench/run.sh --build build-bench [c cpp swift go python java
 [`bench/README.md`](https://github.com/gatkinso/skywire/blob/master/bench/README.md) says exactly what each number times and how to run them on
 Windows.
 
-Nanoseconds per message on an Apple M1 Pro (October 2026; Apple clang, Swift
-6.4 with `-wmo`, Go 1.21, Python 3.14, JDK 19, Rust 1.99, .NET 10, Node 26), serializing into a
-reused buffer:
+Nanoseconds per message, serialize / deserialize, serializing into a reused
+buffer (November 2026, skywire 0.11.0):
 
-| Language | Serialize | Deserialize | Notes |
-|---|---:|---:|---|
-| C++ | 7.8 | 11.9 | |
-| C | 7.9 | 10.3 | |
-| Go | 8.8 | 8.6 | `Serialize()` to a new slice: 33 |
-| Rust | 10.0 | 8.1 | `serialize()` to a new `Vec`: 26 |
-| C# | 20 | 20 | `Serialize()` to a new `byte[]`: 28 |
-| Java | 30 | 31 | `serialize()` to a new `byte[]`: 35 |
-| Swift | 34 | 43 | |
-| JavaScript | 53 | 121 | `serialize()` to a new `Uint8Array`: 255 |
-| Python | 1096 | 852 | 368 / 446 for a message in one byte order |
+| Language | macOS, M1 Pro | Linux, i7-7700 | Linux VM, Xeon E3-1231 v3 | Windows VM, Xeon E3-1231 v3 |
+|---|---:|---:|---:|---:|
+| C | 7.9 / 10.3 | 12.1 / 15.1 | 14.9 / 18.2 | 16.0 / 28.1 |
+| C++ | 7.8 / 12.1 | 9.8 / 14.8 | 12.2 / 8.3 | 14.5 / 36.3 |
+| Go | 8.7 / 8.5 | 12.3 / 11.6 | 16.2 / 14.2 | 15.2 / 14.2 |
+| Rust | 9.9 / 8.0 | 18.2 / 10.9 | 31 / 13.8 | 16.3 / 14.0 |
+| C# | 20 / 20 | 37 / 28 | 35 / 33 | 33 / 32 |
+| Java | 29 / 31 | 63 / 58 | 73 / 72 | 71 / 81 |
+| Swift | 34 / 43 | 46 / 80 | 61 / 118 | 114 / 164 |
+| JavaScript | 53 / 120 | 189 / 291 | 219 / 342 | 214 / 383 |
+| Python | 983 / 918 | 1852 / 1360 | 2427 / 1860 | 5717 / 4769 |
+
+The machines and toolchains:
+
+| Machine | OS | C and C++ | Swift | Go | Python | JDK | Rust | .NET | Node |
+|---|---|---|---|---|---|---|---|---|---|
+| Apple M1 Pro | macOS | Apple clang 21 | 6.4 | 1.21 | 3.15 | 19 | 1.99 | 10.0 | 26 |
+| Intel i7-7700, 4 cores | Ubuntu 24.04 | GCC 13.3 | 6.4 | 1.22 | 3.12 | 21 | 1.99 | 10.0 | 22 |
+| Xeon E3-1231 v3, 3 vCPUs (KVM) | Rocky Linux 10.2 | GCC 14.3 | 6.3 | 1.26 | 3.12 | 21 | 1.92 | 10.0 | 22 |
+| Xeon E3-1231 v3, 3 vCPUs (same host) | Windows 11 | MSVC 19.50 (VS 2026) | 6.4 | 1.26 | 3.10 | 21 | 1.99 | 10.0 | 22 |
+
+The two VMs share a host and were run one at a time. Python's numbers depend
+mostly on its version: the Windows VM had 3.10, the slowest here.
+
+Allocating forms on the M1 Pro: Go's `Serialize()` to a new slice 32 ns,
+Rust's `serialize()` to a new `Vec` 26, C#'s `Serialize()` to a new `byte[]`
+28, Java's `serialize()` to a new `byte[]` 35 and JavaScript's `serialize()`
+to a new `Uint8Array` 251. `bench/run.sh` prints these, and the rest, as notes.
 
 The deserialize times for C, C++ and Swift include copying the input into the
 stream. Expect Swift to be slower without `-wmo` (whole-module optimization,
 the default for SwiftPM and Xcode release builds).
 
 wiregen's own time grows linearly with message size: on the M1 Pro a
-4000-member message, with its tests and relay, generates in 0.03 to 0.5 s
-depending on the language (a few times that on older or virtual machines).
-`bench/wiregen_scale.py` measures it on your machine (see `bench/README.md`).
+4000-member message, with its tests and relay, generates in 0.03 to 0.7 s
+depending on the language, and in up to 1.5 s on the i7-7700, 1.0 s on the
+Linux VM and 4.3 s on the Windows VM. `bench/wiregen_scale.py` measures it on your
+machine (see `bench/README.md`).
 
 ## Examples
 

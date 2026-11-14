@@ -1,0 +1,7 @@
+{
+  "stringValues": { "classname": "Point", "namespace": "demo" },
+  "members": {
+    "1": { "type": "uint16_t", "name": "x", "endian": 1 },
+    "2": { "type": "uint16_t", "name": "y", "endian": 0 }
+  }
+}
